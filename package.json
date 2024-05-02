@@ -1,46 +1,51 @@
 {
-    "private": true,
-    "name": "balancer-core",
-    "version": "0.0.7",
-    "license": "GPL-3.0-only",
-    "description": "Balancer Core Contracts and ABI",
-    "scripts": {
-        "compile": "truffle compile",
-        "testrpc": "ganache-cli --deterministic --gasLimit 10000000",
-        "test": "truffle test",
-        "test:verbose": "VERBOSE=true truffle test",
-        "coverage": "yarn solidity-coverage",
-        "lint": "eslint .",
-        "lint:contracts": "solhint contracts/*.sol"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/balancer-labs/balancer-core.git"
-    },
-    "bugs": {
-        "url": "https://github.com/balancer-labs/balancer-core/issues"
-    },
-    "homepage": "https://github.com/balancer-labs/balancer-core#readme",
-    "devDependencies": {
-        "chai": "^4.2.0",
-        "coveralls": "^3.0.8",
-        "eslint": "^6.7.1",
-        "eslint-config-airbnb": "^18.0.1",
-        "eslint-plugin-import": "^2.18.2",
-        "eslint-plugin-jsx-a11y": "^6.2.3",
-        "eslint-plugin-react": "^7.17.0",
-        "ganache-core": "^2.6.1",
-        "mocha": "^6.2.0",
-        "solhint": "^2.3.0",
-        "solidity-coverage": "^0.6.7",
-        "standard": "^14.0.2",
-        "truffle": "^5.0.41",
-        "truffle-assertions": "^0.9.1",
-        "web3": "^1.2.0"
-    },
-    "dependencies": {
-        "decimal.js": "^10.2.0",
-        "ganache-cli": "^6.7.0",
-        "global": "^4.4.0"
-    }
+  "name": "balancer-core",
+  "version": "0.0.7",
+  "private": true,
+  "description": "Balancer Core Contracts and ABI",
+  "homepage": "https://github.com/balancer-labs/balancer-core#readme",
+  "bugs": {
+    "url": "https://github.com/balancer-labs/balancer-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/balancer-labs/balancer-core.git"
+  },
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "build": "forge build",
+    "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
+    "coverage": "forge coverage --match-contract Unit",
+    "deploy:mainnet": "bash -c 'source .env && forge script Deploy --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK'",
+    "deploy:sepolia": "bash -c 'source .env && forge script Deploy --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK'",
+    "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt --check",
+    "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
+    "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
+    "lint:sol-logic": "solhint -c .solhint.json 'src/**/*.sol' 'script/**/*.sol'",
+    "lint:sol-tests": "solhint -c .solhint.tests.json 'test/**/*.sol'",
+    "prepare": "husky install",
+    "test": "forge test -vvv",
+    "test:integration": "forge test --match-contract Integration -vvv",
+    "test:unit": "forge test --match-contract Unit -vvv",
+    "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit"
+  },
+  "lint-staged": {
+    "*.{js,css,md,ts,sol}": "forge fmt",
+    "(src|script)/**/*.sol": "yarn lint:sol-logic",
+    "test/**/*.sol": "yarn lint:sol-tests",
+    "package.json": "sort-package-json"
+  },
+  "dependencies": {
+    "solmate": "github:transmissions11/solmate#a9e3ea2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "19.3.0",
+    "@commitlint/config-conventional": "19.2.2",
+    "@defi-wonderland/natspec-smells": "1.1.1",
+    "forge-std": "github:foundry-rs/forge-std#5475f85",
+    "husky": ">=8",
+    "lint-staged": ">=10",
+    "solhint": "solhint-community/solhint-community#v4.0.0",
+    "sort-package-json": "2.10.0"
+  }
 }
