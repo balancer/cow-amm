@@ -1,23 +1,23 @@
 pragma solidity 0.8.23;
 
 contract Migrations {
-    address public owner;
-    uint public lastCompletedMigration;
+  address public owner;
+  uint256 public lastCompletedMigration;
 
-    constructor() {
-        owner = msg.sender;
-    }
+  constructor() {
+    owner = msg.sender;
+  }
 
-    modifier restricted() {
-        if (msg.sender == owner) _;
-    }
+  modifier restricted() {
+    if (msg.sender == owner) _;
+  }
 
-    function setCompleted(uint completed) external restricted {
-        lastCompletedMigration = completed;
-    }
+  function setCompleted(uint256 completed) external restricted {
+    lastCompletedMigration = completed;
+  }
 
-    function upgrade(address new_address) external restricted {
-        Migrations upgraded = Migrations(new_address);
-        upgraded.setCompleted(lastCompletedMigration);
-    }
+  function upgrade(address new_address) external restricted {
+    Migrations upgraded = Migrations(new_address);
+    upgraded.setCompleted(lastCompletedMigration);
+  }
 }

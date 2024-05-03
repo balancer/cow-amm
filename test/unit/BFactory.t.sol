@@ -31,7 +31,7 @@ contract BFactory_Unit_IsBPool is Base {
    */
   function test_Returns_IsValidPool(address _pool) public {
     // Writing TRUE (1) to the mapping with the `_pool` key
-    vm.store(address(bFactory), keccak256(abi.encode(_pool, uint(0))), bytes32(uint(1)));
+    vm.store(address(bFactory), keccak256(abi.encode(_pool, uint256(0))), bytes32(uint256(1)));
     assertTrue(bFactory.isBPool(address(_pool)));
   }
 
@@ -139,7 +139,7 @@ contract BFactory_Unit_Collect is Base {
   /**
    * @notice Test that LP token `balanceOf` function is called
    */
-  function test_Call_BalanceOf(address _lpToken, uint _toCollect) public {
+  function test_Call_BalanceOf(address _lpToken, uint256 _toCollect) public {
     vm.assume(_lpToken != address(VM_ADDRESS));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(true));
@@ -152,7 +152,7 @@ contract BFactory_Unit_Collect is Base {
   /**
    * @notice Test that LP token `transfer` function is called
    */
-  function test_Call_Transfer(address _lpToken, uint _toCollect) public {
+  function test_Call_Transfer(address _lpToken, uint256 _toCollect) public {
     vm.assume(_lpToken != address(VM_ADDRESS));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(true));
@@ -165,7 +165,7 @@ contract BFactory_Unit_Collect is Base {
   /**
    * @notice Test that the function fail if the transfer failed
    */
-  function test_Revert_TransferFailed(address _lpToken, uint _toCollect) public {
+  function test_Revert_TransferFailed(address _lpToken, uint256 _toCollect) public {
     vm.assume(_lpToken != address(VM_ADDRESS));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(false));
