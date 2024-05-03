@@ -56,21 +56,23 @@ contract BFactory_Unit_NewBPool is Base {
   /**
    * @notice Test that event is emitted
    */
-  function test_Emit_Log() public {
+  function test_Emit_Log(address _randomCaller) public {
+    vm.assume(_randomCaller != VM_ADDRESS);
     vm.expectEmit(true, true, true, true);
     address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
-    emit BFactory.LOG_NEW_POOL(owner, _expectedPoolAddress);
-    vm.prank(owner);
+    emit BFactory.LOG_NEW_POOL(_randomCaller, _expectedPoolAddress);
+    vm.prank(_randomCaller);
     bFactory.newBPool();
   }
 
   /**
    * @notice Test that msg.sender is set as the controller
    */
-  function test_Set_Controller() public {
-    vm.prank(owner);
-    BPool _pool = new BPool();
-    assertEq(owner, _pool.getController());
+  function test_Set_Controller(address _randomCaller) public {
+    vm.assume(_randomCaller != VM_ADDRESS);
+    vm.prank(_randomCaller);
+    BPool _pool = bFactory.newBPool();
+    assertEq(_randomCaller, _pool.getController());
   }
 
   /**
