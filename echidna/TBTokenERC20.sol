@@ -17,7 +17,7 @@ contract CryticInterface{
 
 contract TBTokenERC20 is CryticInterface, BToken {
 
-    constructor() public {
+    constructor() {
         _totalSupply = initialTotalSupply;
         _balance[crytic_owner] = 0;
         _balance[crytic_user] = initialTotalSupply/2;

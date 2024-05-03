@@ -3,7 +3,7 @@ import "./CryticInterface.sol";
 
 contract MyToken is BToken, CryticInterface{
 
-    constructor(uint balance, address allowed) public {
+    constructor(uint balance, address allowed) {
         // balance is the new totalSupply
         _totalSupply = balance;
         // each user receives 1/3 of the balance and sets 

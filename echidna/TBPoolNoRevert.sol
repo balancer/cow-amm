@@ -4,7 +4,7 @@ import "./CryticInterface.sol";
 
 contract TBPoolNoRevert is CryticInterface, BPool {
 
-    constructor() public { // out-of-gas?
+    constructor() { // out-of-gas?
         // Create a new token with initial_token_balance as total supply.
         // After the token is created, each user defined in CryticInterface
         // (crytic_owner, crytic_user and crytic_attacker) receives 1/3 of 

@@ -5,7 +5,7 @@
 
 
 
-pragma solidity 0.5.12;
+pragma solidity 0.8.23;
 contract BColor {
     function getColor()
         internal view

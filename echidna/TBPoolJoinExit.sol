@@ -6,7 +6,7 @@ contract TBPoolJoinExit is CryticInterface, BPool {
 
     uint MAX_BALANCE = BONE * 10**12;
 
-    constructor() public {
+    constructor() {
         MyToken t;
         t = new MyToken(uint(-1), address(this));
         bind(address(t), MAX_BALANCE, MAX_WEIGHT); 

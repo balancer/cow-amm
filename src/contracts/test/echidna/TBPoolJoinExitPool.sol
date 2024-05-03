@@ -1,6 +1,6 @@
 import "../../BNum.sol";
 
-pragma solidity 0.5.12;
+pragma solidity 0.8.23;
 
 //  This test is similar to TBPoolJoin but with an exit fee
 contract TBPoolJoinExit is BNum {

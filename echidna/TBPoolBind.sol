@@ -4,7 +4,7 @@ import "./CryticInterface.sol";
 
 contract TBPoolBindPrivileged is CryticInterface, BPool {
 
-    constructor() public {
+    constructor() {
         // Create a new token with initial_token_balance as total supply.
         // After the token is created, each user defined in CryticInterface
         // (crytic_owner, crytic_user and crytic_attacker) receives 1/3 of 
@@ -114,7 +114,7 @@ contract TBPoolBindUnprivileged is CryticInterface, BPool {
     // initial token balances is the max amount for uint256
     uint internal initial_token_balance = uint(-1);
  
-    constructor() public {
+    constructor() {
         // two tokens with minimal balances and weights are created by the controller
         t1 = new MyToken(initial_token_balance, address(this));
         bind(address(t1), MIN_BALANCE, MIN_WEIGHT);

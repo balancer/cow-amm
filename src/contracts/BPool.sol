@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity 0.5.12;
+pragma solidity 0.8.23;
 
 import "./BToken.sol";
 import "./BMath.sol";
@@ -83,7 +83,7 @@ contract BPool is BBronze, BToken, BMath {
     mapping(address=>Record) private  _records;
     uint private _totalWeight;
 
-    constructor() public {
+    constructor() {
         _controller = msg.sender;
         _factory = msg.sender;
         _swapFee = MIN_FEE;

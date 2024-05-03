@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity 0.5.12;
+pragma solidity 0.8.23;
 
 import "./BNum.sol";
 
@@ -32,14 +32,11 @@ interface IERC20 {
     ) external returns (bool);
 }
 
-contract BTokenBase is BNum {
+abstract contract BTokenBase is BNum, IERC20 {
 
     mapping(address => uint)                   internal _balance;
     mapping(address => mapping(address=>uint)) internal _allowance;
     uint internal _totalSupply;
-
-    event Approval(address indexed src, address indexed dst, uint amt);
-    event Transfer(address indexed src, address indexed dst, uint amt);
 
     function _mint(uint amt) internal {
         _balance[address(this)] = badd(_balance[address(this)], amt);
@@ -70,7 +67,7 @@ contract BTokenBase is BNum {
     }
 }
 
-contract BToken is BTokenBase, IERC20 {
+contract BToken is BTokenBase {
 
     string  private _name     = "Balancer Pool Token";
     string  private _symbol   = "BPT";
@@ -88,19 +85,19 @@ contract BToken is BTokenBase, IERC20 {
         return _decimals;
     }
 
-    function allowance(address src, address dst) external view returns (uint) {
+    function allowance(address src, address dst) external view override returns (uint) {
         return _allowance[src][dst];
     }
 
-    function balanceOf(address whom) external view returns (uint) {
+    function balanceOf(address whom) external view override returns (uint) {
         return _balance[whom];
     }
 
-    function totalSupply() public view returns (uint) {
+    function totalSupply() public view override returns (uint) {
         return _totalSupply;
     }
 
-    function approve(address dst, uint amt) external returns (bool) {
+    function approve(address dst, uint amt) external override returns (bool) {
         _allowance[msg.sender][dst] = amt;
         emit Approval(msg.sender, dst, amt);
         return true;
@@ -123,15 +120,15 @@ contract BToken is BTokenBase, IERC20 {
         return true;
     }
 
-    function transfer(address dst, uint amt) external returns (bool) {
+    function transfer(address dst, uint amt) external override returns (bool) {
         _move(msg.sender, dst, amt);
         return true;
     }
 
-    function transferFrom(address src, address dst, uint amt) external returns (bool) {
+    function transferFrom(address src, address dst, uint amt) external override returns (bool) {
         require(msg.sender == src || amt <= _allowance[src][msg.sender], "ERR_BTOKEN_BAD_CALLER");
         _move(src, dst, amt);
-        if (msg.sender != src && _allowance[src][msg.sender] != uint256(-1)) {
+        if (msg.sender != src && _allowance[src][msg.sender] != type(uint256).max) {
             _allowance[src][msg.sender] = bsub(_allowance[src][msg.sender], amt);
             emit Approval(msg.sender, dst, _allowance[src][msg.sender]);
         }
