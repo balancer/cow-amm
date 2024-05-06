@@ -45,7 +45,7 @@
     "forge-std": "github:foundry-rs/forge-std#5475f85",
     "husky": ">=8",
     "lint-staged": ">=10",
-    "solhint": "solhint-community/solhint-community#v4.0.0",
+    "solhint": "github:solhint-community/solhint-community#v4.0.0-rc01",
     "sort-package-json": "2.10.0"
   }
 }

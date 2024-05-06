@@ -1689,9 +1689,9 @@ solc@0.8.24:
     semver "^5.5.0"
     tmp "0.0.33"
 
-solhint@solhint-community/solhint-community#v4.0.0:
-  version "4.0.0"
-  resolved "https://codeload.github.com/solhint-community/solhint-community/tar.gz/1bdcfa270e9054607f154c39557906a9da9aaed0"
+"solhint@github:solhint-community/solhint-community#v4.0.0-rc01":
+  version "4.0.0-rc01"
+  resolved "https://codeload.github.com/solhint-community/solhint-community/tar.gz/b04088d3d2bb6ceb8c9bf77783e71195d19fb653"
   dependencies:
     "@solidity-parser/parser" "^0.16.0"
     ajv "^6.12.6"
