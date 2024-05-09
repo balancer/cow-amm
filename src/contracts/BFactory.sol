@@ -22,7 +22,7 @@ contract BFactory is BBronze {
 
   event LOG_BLABS(address indexed caller, address indexed blabs);
 
-  mapping(address => bool) private _isBPool;
+  mapping(address => bool) internal _isBPool;
 
   function isBPool(address b) external view returns (bool) {
     return _isBPool[b];
@@ -36,7 +36,7 @@ contract BFactory is BBronze {
     return bpool;
   }
 
-  address private _blabs;
+  address internal _blabs;
 
   constructor() {
     _blabs = msg.sender;

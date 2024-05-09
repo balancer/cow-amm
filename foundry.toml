@@ -26,6 +26,7 @@ src = 'src/interfaces/'
 
 [fuzz]
 runs = 1000
+max_test_rejects = 500000
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC}"

@@ -24,6 +24,7 @@
     "lint:sol-logic": "solhint -c .solhint.json 'src/**/*.sol' 'script/**/*.sol'",
     "lint:sol-tests": "solhint -c .solhint.tests.json 'test/**/*.sol'",
     "prepare": "husky install",
+    "smock": "smock-foundry --contracts src/contracts",
     "test": "forge test -vvv",
     "test:integration": "forge test --match-contract Integration -vvv",
     "test:unit": "forge test --match-contract Unit -vvv",
@@ -36,12 +37,13 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "solmate": "github:transmissions11/solmate#a9e3ea2"
+    "solmate": "github:transmissions11/solmate#c892309"
   },
   "devDependencies": {
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "@defi-wonderland/natspec-smells": "1.1.1",
+    "@defi-wonderland/smock-foundry": "1.5.0",
     "forge-std": "github:foundry-rs/forge-std#5475f85",
     "husky": ">=8",
     "lint-staged": ">=10",

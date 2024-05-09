@@ -13,6 +13,9 @@
     "immutable-name-snakecase": "warn",
     "avoid-low-level-calls": "off",
     "no-console": "off",
-    "max-line-length": ["warn", 120]
+    "max-line-length": ["warn", 120],
+    "TODO": "REMOVE_TEMPORARY_LINTER_SETTINGS_BELOW",
+    "custom-errors": "warn",
+    "definition-name-capwords": "warn"
   }
 }

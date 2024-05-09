@@ -19,7 +19,7 @@ import './BToken.sol';
 contract BPool is BBronze, BToken, BMath {
   struct Record {
     bool bound; // is token bound to pool
-    uint256 index; // private
+    uint256 index; // internal
     uint256 denorm; // denormalized weight
     uint256 balance;
   }
@@ -55,20 +55,20 @@ contract BPool is BBronze, BToken, BMath {
     _;
   }
 
-  bool private _mutex;
+  bool internal _mutex;
 
-  address private _factory; // BFactory address to push token exitFee to
-  address private _controller; // has CONTROL role
-  bool private _publicSwap; // true if PUBLIC can call SWAP functions
+  address internal _factory; // BFactory address to push token exitFee to
+  address internal _controller; // has CONTROL role
+  bool internal _publicSwap; // true if PUBLIC can call SWAP functions
 
   // `setSwapFee` and `finalize` require CONTROL
   // `finalize` sets `PUBLIC can SWAP`, `PUBLIC can JOIN`
-  uint256 private _swapFee;
-  bool private _finalized;
+  uint256 internal _swapFee;
+  bool internal _finalized;
 
-  address[] private _tokens;
-  mapping(address => Record) private _records;
-  uint256 private _totalWeight;
+  address[] internal _tokens;
+  mapping(address => Record) internal _records;
+  uint256 internal _totalWeight;
 
   constructor() {
     _controller = msg.sender;
