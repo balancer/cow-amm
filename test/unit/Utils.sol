@@ -61,4 +61,21 @@ contract Utils is Test {
     bytes32 _slot = keccak256(abi.encode(_mappingKey, _mappingSlotNumber));
     _writeUintToStorage(_target, uint256(_slot) + _propertySlotNumber, _value);
   }
+
+  /**
+   * @dev Write a uint256 value to an address mapping in storage.
+   * @param _target The address of the contract.
+   * @param _mappingSlotNumber The slot number of the mapping.
+   * @param _mappingKey The address key of the mapping.
+   * @param _value The value to write.
+   */
+  function _writeUintAtAddressMapping(
+    address _target,
+    uint256 _mappingSlotNumber,
+    address _mappingKey,
+    uint256 _value
+  ) internal {
+    bytes32 _slot = keccak256(abi.encode(_mappingKey, _mappingSlotNumber));
+    _writeUintToStorage(_target, uint256(_slot), _value);
+  }
 }
