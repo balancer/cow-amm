@@ -44,6 +44,7 @@
     "@commitlint/config-conventional": "19.2.2",
     "@defi-wonderland/natspec-smells": "1.1.1",
     "@defi-wonderland/smock-foundry": "1.5.0",
+    "forge-gas-snapshot": "github:marktoda/forge-gas-snapshot#9161f7c",
     "forge-std": "github:foundry-rs/forge-std#5475f85",
     "husky": ">=8",
     "lint-staged": ">=10",

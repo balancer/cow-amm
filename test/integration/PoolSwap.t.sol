@@ -6,7 +6,9 @@ import {BFactory} from 'contracts/BFactory.sol';
 import {BPool} from 'contracts/BPool.sol';
 import {IERC20} from 'contracts/BToken.sol';
 
-abstract contract PoolSwapIntegrationTest is Test {
+import {GasSnapshot} from 'forge-gas-snapshot/GasSnapshot.sol';
+
+abstract contract PoolSwapIntegrationTest is Test, GasSnapshot {
   BFactory public factory;
   BPool public pool;
 
@@ -66,7 +68,9 @@ contract DirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
     tokenA.approve(address(pool), type(uint256).max);
 
     // swap 0.5 tokenA for tokenB
+    snapStart('swapExactAmountIn');
     pool.swapExactAmountIn(address(tokenA), 0.5e18, address(tokenB), 0, type(uint256).max);
+    snapEnd();
 
     vm.stopPrank();
   }
