@@ -9,7 +9,8 @@ import {BMath} from 'contracts/BMath.sol';
 import {IERC20} from 'contracts/BToken.sol';
 import {Test} from 'forge-std/Test.sol';
 import {LibString} from 'solmate/utils/LibString.sol';
-import {Utils} from 'test/unit/Utils.sol';
+import {Pow} from 'test/utils/Pow.sol';
+import {Utils} from 'test/utils/Utils.sol';
 
 // TODO: remove once `private` keyword is removed in all test cases
 /* solhint-disable */
@@ -23,6 +24,10 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
 
   MockBPool public bPool;
   address[TOKENS_AMOUNT] public tokens;
+
+  // Deploy this external contract to perform a try-catch when calling bpow.
+  // If the call fails, it means that the function overflowed, then we reject the fuzzed inputs
+  Pow public pow = new Pow();
 
   function setUp() public {
     bPool = new MockBPool();
@@ -134,6 +139,36 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     uint256 _tokenInRatio = bdiv(_newTokenBalanceIn, _tokenInBalance);
     uint256 _poolRatio = bpow(_tokenInRatio, _normalizedWeight);
     vm.assume(_poolRatio < type(uint256).max / _totalSupply);
+  }
+
+  function _assumeCalcSingleInGivenPoolOut(
+    uint256 _tokenInBalance,
+    uint256 _tokenInDenorm,
+    uint256 _poolSupply,
+    uint256 _totalWeight,
+    uint256 _poolAmountOut,
+    uint256
+  ) internal view {
+    uint256 _normalizedWeight = bdiv(_tokenInDenorm, _totalWeight);
+    uint256 _newPoolSupply = badd(_poolSupply, _poolAmountOut);
+    vm.assume(_newPoolSupply < type(uint256).max / BONE);
+    vm.assume(_newPoolSupply * BONE < type(uint256).max - (_poolSupply / 2)); // bdiv require
+
+    uint256 _poolRatio = bdiv(_newPoolSupply, _poolSupply);
+    vm.assume(_poolRatio < MAX_BPOW_BASE);
+    vm.assume(BONE > _normalizedWeight);
+
+    uint256 _boo = bdiv(BONE, _normalizedWeight);
+    uint256 _tokenRatio;
+    try pow.pow(_poolRatio, _boo) returns (uint256 _result) {
+      // pow didn't overflow
+      _tokenRatio = _result;
+    } catch {
+      // pow did an overflow. Reject this inputs
+      vm.assume(false);
+    }
+
+    vm.assume(_tokenRatio < type(uint256).max / _tokenInBalance);
   }
 }
 
@@ -961,7 +996,103 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
   function test_Emit_LogCall() private view {}
 }
 
-contract BPool_Unit_JoinswapExternAmountOut is BasePoolTest {
+contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
+  address tokenIn;
+
+  struct JoinswapPoolAmountOut_FuzzScenario {
+    uint256 poolAmountOut;
+    uint256 tokenInBalance;
+    uint256 tokenInDenorm;
+    uint256 totalSupply;
+    uint256 totalWeight;
+    uint256 swapFee;
+  }
+
+  function _setValues(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) internal {
+    tokenIn = tokens[0];
+
+    // Create mocks for tokenIn
+    _mockTransferFrom(tokenIn);
+
+    // Set balances
+    _setRecord(
+      tokenIn,
+      BPool.Record({
+        bound: true,
+        index: 0, // NOTE: irrelevant for this method
+        denorm: _fuzz.tokenInDenorm,
+        balance: _fuzz.tokenInBalance
+      })
+    );
+
+    // Set swapFee
+    _setSwapFee(_fuzz.swapFee);
+    // Set public swap
+    _setPublicSwap(true);
+    // Set finalize
+    _setFinalize(true);
+    // Set totalSupply
+    _setTotalSupply(_fuzz.totalSupply);
+    // Set totalWeight
+    _setTotalWeight(_fuzz.totalWeight);
+  }
+
+  function _assumeHappyPath(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) internal view {
+    // safe bound assumptions
+    _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
+    _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
+    _fuzz.totalWeight = bound(_fuzz.totalWeight, MIN_WEIGHT * MAX_BOUND_TOKENS, MAX_WEIGHT * MAX_BOUND_TOKENS);
+
+    // min
+    vm.assume(_fuzz.totalSupply >= INIT_POOL_SUPPLY);
+
+    // max
+    vm.assume(_fuzz.totalSupply < type(uint256).max - _fuzz.poolAmountOut);
+
+    // min
+    vm.assume(_fuzz.tokenInBalance >= MIN_BALANCE);
+
+    // internal calculation for calcSingleInGivenPoolOut
+    _assumeCalcSingleInGivenPoolOut(
+      _fuzz.tokenInBalance,
+      _fuzz.tokenInDenorm,
+      _fuzz.totalSupply,
+      _fuzz.totalWeight,
+      _fuzz.poolAmountOut,
+      _fuzz.swapFee
+    );
+
+    uint256 _tokenAmountIn = calcSingleInGivenPoolOut(
+      _fuzz.tokenInBalance,
+      _fuzz.tokenInDenorm,
+      _fuzz.totalSupply,
+      _fuzz.totalWeight,
+      _fuzz.poolAmountOut,
+      _fuzz.swapFee
+    );
+
+    // L428 BPool.sol
+    vm.assume(_tokenAmountIn > 0);
+
+    // max
+    vm.assume(_fuzz.tokenInBalance < type(uint256).max - _tokenAmountIn);
+
+    // MAX_IN_RATIO
+    vm.assume(_fuzz.tokenInBalance < type(uint256).max / MAX_IN_RATIO);
+    vm.assume(_tokenAmountIn <= bmul(_fuzz.tokenInBalance, MAX_IN_RATIO));
+  }
+
+  modifier happyPath(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) {
+    _assumeHappyPath(_fuzz);
+    _setValues(_fuzz);
+    _;
+  }
+
+  function test_HappyPath(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    uint256 _maxAmountIn = type(uint256).max;
+    bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, _maxAmountIn);
+  }
+
   function test_Revert_NotFinalized() private view {}
 
   function test_Revert_NotBound() private view {}
