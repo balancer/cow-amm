@@ -544,7 +544,7 @@ contract BPool_Unit_JoinPool is BasePoolTest {
   }
 
   function test_Revert_MathApprox(JoinPool_FuzzScenario memory _fuzz, uint256 _poolAmountOut) public happyPath(_fuzz) {
-    _poolAmountOut = bound(_poolAmountOut, 0, INIT_POOL_SUPPLY / 2 / BONE); // bdiv rounds up
+    _poolAmountOut = bound(_poolAmountOut, 0, (INIT_POOL_SUPPLY / 2 / BONE) - 1); // bdiv rounds up
 
     vm.expectRevert('ERR_MATH_APPROX');
     bPool.joinPool(_poolAmountOut, new uint256[](tokens.length));
@@ -680,8 +680,8 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   }
 
   function _assumeHappyPath(ExitPool_FuzzScenario memory _fuzz) internal pure {
-    vm.assume(_fuzz.initPoolSupply >= INIT_POOL_SUPPLY);
-    vm.assume(_fuzz.initPoolSupply < type(uint256).max / BONE);
+    uint256 _maxInitSupply = type(uint256).max / BONE;
+    _fuzz.initPoolSupply = bound(_fuzz.initPoolSupply, INIT_POOL_SUPPLY, _maxInitSupply);
 
     uint256 _poolAmountInAfterFee = _fuzz.poolAmountIn - (_fuzz.poolAmountIn * EXIT_FEE);
     vm.assume(_poolAmountInAfterFee <= _fuzz.initPoolSupply);
@@ -713,7 +713,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   }
 
   function test_Revert_MathApprox(ExitPool_FuzzScenario memory _fuzz, uint256 _poolAmountIn) public happyPath(_fuzz) {
-    _poolAmountIn = bound(_poolAmountIn, 0, INIT_POOL_SUPPLY / 2 / BONE); // bdiv rounds up
+    _poolAmountIn = bound(_poolAmountIn, 0, (INIT_POOL_SUPPLY / 2 / BONE) - 1); // bdiv rounds up
 
     vm.expectRevert('ERR_MATH_APPROX');
     bPool.exitPool(_poolAmountIn, _zeroAmountsArray());
