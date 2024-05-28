@@ -36,6 +36,14 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     }
   }
 
+  function _setRandomTokens(uint256 _length) internal returns (address[] memory _tokensToAdd) {
+    _tokensToAdd = new address[](_length);
+    for (uint256 i = 0; i < _length; i++) {
+      _tokensToAdd[i] = makeAddr(i.toString());
+    }
+    _setTokens(_tokensToAdd);
+  }
+
   // TODO: move tokens and this method to Utils.sol
   function _tokensToMemory() internal view returns (address[] memory _tokens) {
     _tokens = new address[](tokens.length);
@@ -104,12 +112,24 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     uint256 _tokenOutDenorm,
     uint256 _swapFee
   ) internal pure {
+    vm.assume(_tokenInDenorm > 0);
+    vm.assume(_tokenInBalance < type(uint256).max / BONE);
+    vm.assume(_tokenInBalance * BONE < type(uint256).max - (_tokenInDenorm / 2));
+
     uint256 _numer = bdiv(_tokenInBalance, _tokenInDenorm);
+    vm.assume(_tokenOutDenorm > 0);
+    vm.assume(_tokenOutBalance < type(uint256).max / BONE);
+    vm.assume(_tokenOutBalance * BONE < type(uint256).max - (_tokenOutDenorm / 2));
+
     uint256 _denom = bdiv(_tokenOutBalance, _tokenOutDenorm);
+    vm.assume(_denom > 0);
     vm.assume(_numer < type(uint256).max / BONE);
     vm.assume(_numer * BONE < type(uint256).max - (_denom / 2));
+    vm.assume(_swapFee <= BONE);
 
     uint256 _ratio = bdiv(_numer, _denom);
+    vm.assume(bsub(BONE, _swapFee) > 0);
+
     uint256 _scale = bdiv(BONE, bsub(BONE, _swapFee));
     vm.assume(_ratio < type(uint256).max / _scale);
   }
@@ -283,63 +303,201 @@ contract BPool_Unit_IsBound is BasePoolTest {
 }
 
 contract BPool_Unit_GetNumTokens is BasePoolTest {
-  function test_Returns_NumTokens() private view {}
+  using LibString for *;
+
+  function test_Returns_NumTokens(uint256 _tokensToAdd) public {
+    vm.assume(_tokensToAdd > 0);
+    vm.assume(_tokensToAdd <= MAX_BOUND_TOKENS);
+    _setRandomTokens(_tokensToAdd);
+
+    assertEq(bPool.getNumTokens(), _tokensToAdd);
+  }
 }
 
 contract BPool_Unit_GetCurrentTokens is BasePoolTest {
-  function test_Returns_CurrentTokens() private view {}
+  function test_Returns_CurrentTokens(uint256 _length) public {
+    vm.assume(_length > 0);
+    vm.assume(_length <= MAX_BOUND_TOKENS);
+    address[] memory _tokensToAdd = _setRandomTokens(_length);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getCurrentTokens(), _tokensToAdd);
+  }
+
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getCurrentTokens();
+  }
 }
 
 contract BPool_Unit_GetFinalTokens is BasePoolTest {
-  function test_Returns_FinalTokens() private view {}
+  function test_Returns_FinalTokens(uint256 _length) public {
+    vm.assume(_length > 0);
+    vm.assume(_length <= MAX_BOUND_TOKENS);
+    address[] memory _tokensToAdd = _setRandomTokens(_length);
+    _setFinalize(true);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getFinalTokens(), _tokensToAdd);
+  }
 
-  function test_Revert_NotFinalized() private view {}
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getFinalTokens();
+  }
+
+  function test_Revert_NotFinalized(uint256 _length) public {
+    vm.assume(_length > 0);
+    vm.assume(_length <= MAX_BOUND_TOKENS);
+    _setRandomTokens(_length);
+    _setFinalize(false);
+
+    vm.expectRevert('ERR_NOT_FINALIZED');
+    bPool.getFinalTokens();
+  }
 }
 
 contract BPool_Unit_GetDenormalizedWeight is BasePoolTest {
-  function test_Returns_DenormalizedWeight() private view {}
+  function test_Returns_DenormalizedWeight(address _token, uint256 _weight) public {
+    bPool.set__records(_token, BPool.Record({bound: true, index: 0, denorm: _weight, balance: 0}));
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getDenormalizedWeight(_token), _weight);
+  }
 
-  function test_Revert_NotBound() private view {}
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getDenormalizedWeight(address(0));
+  }
+
+  function test_Revert_NotBound(address _token) public {
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getDenormalizedWeight(_token);
+  }
 }
 
 contract BPool_Unit_GetTotalDenormalizedWeight is BasePoolTest {
-  function test_Returns_TotalDenormalizedWeight() private view {}
+  function test_Returns_TotalDenormalizedWeight(uint256 _totalWeight) public {
+    _setTotalWeight(_totalWeight);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getTotalDenormalizedWeight(), _totalWeight);
+  }
+
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getTotalDenormalizedWeight();
+  }
 }
 
 contract BPool_Unit_GetNormalizedWeight is BasePoolTest {
-  function test_Returns_NormalizedWeight() private view {}
+  function test_Returns_NormalizedWeight(address _token, uint256 _weight, uint256 _totalWeight) public {
+    _weight = bound(_weight, MIN_WEIGHT, MAX_WEIGHT);
+    _totalWeight = bound(_totalWeight, MIN_WEIGHT, MAX_WEIGHT * MAX_BOUND_TOKENS);
+    vm.assume(_weight < _totalWeight);
+    _setRecord(_token, BPool.Record({bound: true, index: 0, denorm: _weight, balance: 0}));
+    _setTotalWeight(_totalWeight);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getNormalizedWeight(_token), bdiv(_weight, _totalWeight));
+  }
 
-  function test_Revert_NotBound() private view {}
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getNormalizedWeight(address(0));
+  }
+
+  function test_Revert_NotBound(address _token) public {
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getNormalizedWeight(_token);
+  }
 }
 
 contract BPool_Unit_GetBalance is BasePoolTest {
-  function test_Returns_Balance() private view {}
+  function test_Returns_Balance(address _token, uint256 _balance) public {
+    bPool.set__records(_token, BPool.Record({bound: true, index: 0, denorm: 0, balance: _balance}));
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getBalance(_token), _balance);
+  }
 
-  function test_Revert_NotBound() private view {}
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getBalance(address(0));
+  }
+
+  function test_Revert_NotBound(address _token) public {
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getBalance(_token);
+  }
 }
 
 contract BPool_Unit_GetSwapFee is BasePoolTest {
-  function test_Returns_SwapFee() private view {}
+  function test_Returns_SwapFee(uint256 _swapFee) public {
+    _setSwapFee(_swapFee);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getSwapFee(), _swapFee);
+  }
+
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getSwapFee();
+  }
 }
 
 contract BPool_Unit_GetController is BasePoolTest {
-  function test_Returns_Controller() private view {}
+  function test_Returns_Controller(address _controller) public {
+    bPool.set__controller(_controller);
 
-  function test_Revert_Reentrancy() private view {}
+    assertEq(bPool.getController(), _controller);
+  }
+
+  function test_Revert_Reentrancy() public {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getController();
+  }
 }
 
 contract BPool_Unit_SetSwapFee is BasePoolTest {
@@ -488,23 +646,82 @@ contract BPool_Unit_SetPublicSwap is BasePoolTest {
 }
 
 contract BPool_Unit_Finalize is BasePoolTest {
-  function test_Revert_NotController() private view {}
+  modifier happyPath(uint256 _tokensLength) {
+    _tokensLength = bound(_tokensLength, MIN_BOUND_TOKENS, MAX_BOUND_TOKENS);
+    _setRandomTokens(_tokensLength);
+    _;
+  }
 
-  function test_Revert_Finalized() private view {}
+  function test_Revert_NotController(
+    address _controller,
+    address _caller,
+    uint256 _tokensLength
+  ) public happyPath(_tokensLength) {
+    vm.assume(_controller != _caller);
+    bPool.set__controller(_controller);
 
-  function test_Revert_MinTokens() private view {}
+    vm.prank(_caller);
+    vm.expectRevert('ERR_NOT_CONTROLLER');
+    bPool.finalize();
+  }
 
-  function test_Revert_Reentrancy() private view {}
+  function test_Revert_Finalized(uint256 _tokensLength) public happyPath(_tokensLength) {
+    _setFinalize(true);
 
-  function test_Set_Finalize() private view {}
+    vm.expectRevert('ERR_IS_FINALIZED');
+    bPool.finalize();
+  }
 
-  function test_Set_PublicSwap() private view {}
+  function test_Revert_MinTokens(uint256 _tokensLength) public {
+    _tokensLength = bound(_tokensLength, 0, MIN_BOUND_TOKENS - 1);
+    _setRandomTokens(_tokensLength);
 
-  function test_Mint_InitPoolSupply() private view {}
+    vm.expectRevert('ERR_MIN_TOKENS');
+    bPool.finalize();
+  }
 
-  function test_Push_InitPoolSupply() private view {}
+  function test_Revert_Reentrancy(uint256 _tokensLength) public happyPath(_tokensLength) {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
 
-  function test_Emit_LogCall() private view {}
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.finalize();
+  }
+
+  function test_Set_Finalize(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.finalize();
+
+    assertEq(bPool.call__finalized(), true);
+  }
+
+  function test_Set_PublicSwap(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.finalize();
+
+    assertEq(bPool.call__publicSwap(), true);
+  }
+
+  function test_Mint_InitPoolSupply(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.finalize();
+
+    assertEq(bPool.totalSupply(), INIT_POOL_SUPPLY);
+  }
+
+  function test_Push_InitPoolSupply(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.finalize();
+
+    assertEq(bPool.balanceOf(address(this)), INIT_POOL_SUPPLY);
+  }
+
+  function test_Emit_LogCall(uint256 _tokensLength) public happyPath(_tokensLength) {
+    vm.expectEmit(true, true, true, true);
+    bytes memory _data = abi.encodeWithSelector(BPool.finalize.selector);
+    emit BPool.LOG_CALL(BPool.finalize.selector, address(this), _data);
+
+    bPool.finalize();
+  }
 }
 
 contract BPool_Unit_Bind is BasePoolTest {
@@ -596,23 +813,153 @@ contract BPool_Unit_Gulp is BasePoolTest {
 }
 
 contract BPool_Unit_GetSpotPrice is BasePoolTest {
-  function test_Revert_NotBoundTokenIn() private view {}
+  struct GetSpotPrice_FuzzScenario {
+    address tokenIn;
+    address tokenOut;
+    uint256 tokenInBalance;
+    uint256 tokenInDenorm;
+    uint256 tokenOutBalance;
+    uint256 tokenOutDenorm;
+    uint256 swapFee;
+  }
 
-  function test_Revert_NotBoundTokenOut() private view {}
+  function _setValues(GetSpotPrice_FuzzScenario memory _fuzz) internal {
+    _setRecord(
+      _fuzz.tokenIn, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm, balance: _fuzz.tokenInBalance})
+    );
+    _setRecord(
+      _fuzz.tokenOut,
+      BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm, balance: _fuzz.tokenOutBalance})
+    );
+    _setSwapFee(_fuzz.swapFee);
+  }
 
-  function test_Returns_SpotPrice() private view {}
+  function _assumeHappyPath(GetSpotPrice_FuzzScenario memory _fuzz) internal pure {
+    vm.assume(_fuzz.tokenIn != _fuzz.tokenOut);
+    _assumeCalcSpotPrice(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
+    );
+  }
 
-  function test_Revert_Reentrancy() private view {}
+  modifier happyPath(GetSpotPrice_FuzzScenario memory _fuzz) {
+    _assumeHappyPath(_fuzz);
+    _setValues(_fuzz);
+    _;
+  }
+
+  function test_Revert_NotBoundTokenIn(
+    address _tokenIn,
+    GetSpotPrice_FuzzScenario memory _fuzz
+  ) public happyPath(_fuzz) {
+    vm.assume(_tokenIn != _fuzz.tokenIn);
+    vm.assume(_tokenIn != _fuzz.tokenOut);
+
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getSpotPrice(_tokenIn, _fuzz.tokenOut);
+  }
+
+  function test_Revert_NotBoundTokenOut(
+    address _tokenOut,
+    GetSpotPrice_FuzzScenario memory _fuzz
+  ) public happyPath(_fuzz) {
+    vm.assume(_tokenOut != _fuzz.tokenIn);
+    vm.assume(_tokenOut != _fuzz.tokenOut);
+
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getSpotPrice(_fuzz.tokenIn, _tokenOut);
+  }
+
+  function test_Returns_SpotPrice(GetSpotPrice_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    uint256 _expectedSpotPrice = calcSpotPrice(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
+    );
+    uint256 _spotPrice = bPool.getSpotPrice(_fuzz.tokenIn, _fuzz.tokenOut);
+    assertEq(_spotPrice, _expectedSpotPrice);
+  }
+
+  function test_Revert_Reentrancy(GetSpotPrice_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getSpotPrice(_fuzz.tokenIn, _fuzz.tokenOut);
+  }
 }
 
 contract BPool_Unit_GetSpotPriceSansFee is BasePoolTest {
-  function test_Revert_NotBoundTokenIn() private view {}
+  struct GetSpotPriceSansFee_FuzzScenario {
+    address tokenIn;
+    address tokenOut;
+    uint256 tokenInBalance;
+    uint256 tokenInDenorm;
+    uint256 tokenOutBalance;
+    uint256 tokenOutDenorm;
+  }
 
-  function test_Revert_NotBoundTokenOut() private view {}
+  function _setValues(GetSpotPriceSansFee_FuzzScenario memory _fuzz) internal {
+    _setRecord(
+      _fuzz.tokenIn, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm, balance: _fuzz.tokenInBalance})
+    );
+    _setRecord(
+      _fuzz.tokenOut,
+      BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm, balance: _fuzz.tokenOutBalance})
+    );
+    _setSwapFee(0);
+  }
 
-  function test_Returns_SpotPrice() private view {}
+  function _assumeHappyPath(GetSpotPriceSansFee_FuzzScenario memory _fuzz) internal pure {
+    vm.assume(_fuzz.tokenIn != _fuzz.tokenOut);
+    _assumeCalcSpotPrice(_fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, 0);
+  }
 
-  function test_Revert_Reentrancy() private view {}
+  modifier happyPath(GetSpotPriceSansFee_FuzzScenario memory _fuzz) {
+    _assumeHappyPath(_fuzz);
+    _setValues(_fuzz);
+    _;
+  }
+
+  function test_Revert_NotBoundTokenIn(
+    address _tokenIn,
+    GetSpotPriceSansFee_FuzzScenario memory _fuzz
+  ) public happyPath(_fuzz) {
+    vm.assume(_tokenIn != _fuzz.tokenIn);
+    vm.assume(_tokenIn != _fuzz.tokenOut);
+
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getSpotPriceSansFee(_tokenIn, _fuzz.tokenOut);
+  }
+
+  function test_Revert_NotBoundTokenOut(
+    address _tokenOut,
+    GetSpotPriceSansFee_FuzzScenario memory _fuzz
+  ) public happyPath(_fuzz) {
+    vm.assume(_tokenOut != _fuzz.tokenIn);
+    vm.assume(_tokenOut != _fuzz.tokenOut);
+
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.getSpotPriceSansFee(_fuzz.tokenIn, _tokenOut);
+  }
+
+  function test_Returns_SpotPrice(GetSpotPriceSansFee_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    uint256 _expectedSpotPrice =
+      calcSpotPrice(_fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, 0);
+    uint256 _spotPrice = bPool.getSpotPriceSansFee(_fuzz.tokenIn, _fuzz.tokenOut);
+    assertEq(_spotPrice, _expectedSpotPrice);
+  }
+
+  function test_Revert_Reentrancy(GetSpotPriceSansFee_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.getSpotPriceSansFee(_fuzz.tokenIn, _fuzz.tokenOut);
+  }
 }
 
 contract BPool_Unit_JoinPool is BasePoolTest {
