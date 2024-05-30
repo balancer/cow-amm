@@ -73,6 +73,12 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     vm.mockCall(_token, abi.encodeWithSelector(IERC20(_token).transferFrom.selector), abi.encode(true));
   }
 
+  function _mockBalanceOf(address _token, address _account, uint256 _balance) internal {
+    vm.mockCall(
+      _token, abi.encodeWithSelector(IERC20(_token).balanceOf.selector, address(_account)), abi.encode(_balance)
+    );
+  }
+
   function _setTokens(address[] memory _tokens) internal {
     bPool.set__tokens(_tokens);
   }
@@ -803,13 +809,50 @@ contract BPool_Unit_Unbind is BasePoolTest {
 }
 
 contract BPool_Unit_Gulp is BasePoolTest {
-  function test_Revert_NotBound() private view {}
+  struct Gulp_FuzzScenario {
+    address token;
+    uint256 balance;
+  }
 
-  function test_Revert_Reentrancy() private view {}
+  modifier happyPath(Gulp_FuzzScenario memory _fuzz) {
+    vm.assume(_fuzz.token != VM_ADDRESS);
+    vm.assume(_fuzz.token != 0x000000000000000000636F6e736F6c652e6c6f67);
+    _mockBalanceOf(_fuzz.token, address(bPool), _fuzz.balance);
+    _setRecord(_fuzz.token, BPool.Record({bound: true, index: 0, denorm: 0, balance: _fuzz.balance}));
+    _;
+  }
 
-  function test_Set_Balance() private view {}
+  function test_Revert_NotBound(address _token, Gulp_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    vm.assume(_token != _fuzz.token);
 
-  function test_Emit_LogCall() private view {}
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.gulp(_token);
+  }
+
+  function test_Revert_Reentrancy(Gulp_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.gulp(_fuzz.token);
+  }
+
+  function test_Set_Balance(Gulp_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    bPool.gulp(_fuzz.token);
+
+    assertEq(bPool.getBalance(_fuzz.token), _fuzz.balance);
+  }
+
+  function test_Emit_LogCall(Gulp_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    vm.expectEmit();
+    bytes memory _data = abi.encodeWithSelector(BPool.gulp.selector, _fuzz.token);
+    emit BPool.LOG_CALL(BPool.gulp.selector, address(this), _data);
+
+    bPool.gulp(_fuzz.token);
+  }
 }
 
 contract BPool_Unit_GetSpotPrice is BasePoolTest {
