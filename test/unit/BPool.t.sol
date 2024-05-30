@@ -40,7 +40,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     _tokensToAdd = new address[](_length);
     for (uint256 i = 0; i < _length; i++) {
       _tokensToAdd[i] = makeAddr(i.toString());
-      _setRecord(_tokensToAdd[i], BPool.Record({bound: true, index: 0, denorm: 0, balance: 0}));
+      _setRecord(_tokensToAdd[i], BPool.Record({bound: true, index: i, denorm: 0, balance: 0}));
     }
     _setTokens(_tokensToAdd);
   }
@@ -883,29 +883,166 @@ contract BPool_Unit_Rebind is BasePoolTest {
 }
 
 contract BPool_Unit_Unbind is BasePoolTest {
-  function test_Revert_NotController() private view {}
+  using LibString for *;
 
-  function test_Revert_NotBound() private view {}
+  struct Unbind_FuzzScenario {
+    uint256 tokenIndex;
+    uint256 balance;
+    uint256 denorm;
+    uint256 previousTokensAmount;
+    uint256 totalWeight;
+    address[] previousTokens;
+  }
 
-  function test_Revert_Finalized() private view {}
+  function _setValues(Unbind_FuzzScenario memory _fuzz) internal {
+    // Create mocks
+    _mockTransfer(_fuzz.previousTokens[_fuzz.tokenIndex]);
 
-  function test_Revert_Reentrancy() private view {}
+    // Set tokens
+    _setRandomTokens(_fuzz.previousTokensAmount);
 
-  function test_Set_TotalWeight() private view {}
+    // Set denorm and balance
+    _setRecord(
+      _fuzz.previousTokens[_fuzz.tokenIndex],
+      BPool.Record({bound: true, index: _fuzz.tokenIndex, denorm: _fuzz.denorm, balance: _fuzz.balance})
+    );
 
-  function test_Set_TokenArray() private view {}
+    // Set finalize
+    _setFinalize(false);
+    // Set totalWeight
+    _setTotalWeight(_fuzz.totalWeight);
+  }
 
-  function test_Set_Index() private view {}
+  function _assumeHappyPath(Unbind_FuzzScenario memory _fuzz) internal {
+    vm.assume(_fuzz.balance >= MIN_BALANCE);
+    vm.assume(_fuzz.totalWeight >= MIN_WEIGHT);
+    vm.assume(_fuzz.totalWeight <= MAX_TOTAL_WEIGHT - MIN_WEIGHT);
+    _fuzz.previousTokensAmount = bound(_fuzz.previousTokensAmount, 1, MAX_BOUND_TOKENS); // The token to unbind will be included inside the array
+    _fuzz.tokenIndex = bound(_fuzz.tokenIndex, 0, _fuzz.previousTokensAmount - 1);
+    _fuzz.denorm = bound(_fuzz.denorm, MIN_WEIGHT, _fuzz.totalWeight);
+    _fuzz.previousTokens = new address[](_fuzz.previousTokensAmount);
+    for (uint256 i = 0; i < _fuzz.previousTokensAmount; i++) {
+      _fuzz.previousTokens[i] = makeAddr(i.toString());
+    }
+  }
 
-  function test_Unset_TokenArray() private view {}
+  modifier happyPath(Unbind_FuzzScenario memory _fuzz) {
+    _assumeHappyPath(_fuzz);
+    _setValues(_fuzz);
+    _;
+  }
 
-  function test_Unset_Record() private view {}
+  function test_Revert_NotController(
+    address _controller,
+    address _caller,
+    Unbind_FuzzScenario memory _fuzz
+  ) public happyPath(_fuzz) {
+    vm.assume(_controller != _caller);
+    bPool.set__controller(_controller);
 
-  function test_Push_UnderlyingBalance() private view {}
+    vm.prank(_caller);
+    vm.expectRevert('ERR_NOT_CONTROLLER');
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+  }
 
-  function test_Push_UnderlyingFee() private view {}
+  function test_Revert_NotBound(address _token, Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    for (uint256 i = 0; i < _fuzz.previousTokensAmount; i++) {
+      vm.assume(_token != _fuzz.previousTokens[i]);
+    }
 
-  function test_Emit_LogCall() private view {}
+    vm.expectRevert('ERR_NOT_BOUND');
+    bPool.unbind(_token);
+  }
+
+  function test_Revert_Finalized(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _setFinalize(true);
+
+    vm.expectRevert('ERR_IS_FINALIZED');
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+  }
+
+  function test_Revert_Reentrancy(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__mutex(), false);
+
+    // Simulate ongoing call to the contract
+    bPool.set__mutex(true);
+
+    vm.expectRevert('ERR_REENTRY');
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+  }
+
+  function test_Set_TotalWeight(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+
+    assertEq(bPool.call__totalWeight(), _fuzz.totalWeight - _fuzz.denorm);
+  }
+
+  function test_Set_TokenArray(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    address _lastTokenBefore = bPool.call__tokens()[bPool.call__tokens().length - 1];
+
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+
+    // Only check if the token is not the last of the array (that item is always poped out)
+    if (_fuzz.tokenIndex != _fuzz.previousTokensAmount - 1) {
+      address _tokenToUnbindAfter = bPool.call__tokens()[_fuzz.tokenIndex];
+      assertEq(_tokenToUnbindAfter, _lastTokenBefore);
+    }
+  }
+
+  function test_Set_Index(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    address _lastTokenBefore = bPool.call__tokens()[bPool.call__tokens().length - 1];
+
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+
+    // Only check if the token is not the last of the array (that item is always poped out)
+    if (_fuzz.tokenIndex != _fuzz.previousTokensAmount - 1) {
+      assertEq(bPool.call__records(_lastTokenBefore).index, _fuzz.tokenIndex);
+    }
+  }
+
+  function test_PopArray_TokenArray(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+
+    assertEq(bPool.call__tokens().length, _fuzz.previousTokensAmount - 1);
+  }
+
+  function test_Set_Record(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+
+    assertEq(bPool.call__records(_fuzz.previousTokens[_fuzz.tokenIndex]).index, 0);
+    assertEq(bPool.call__records(_fuzz.previousTokens[_fuzz.tokenIndex]).bound, false);
+    assertEq(bPool.call__records(_fuzz.previousTokens[_fuzz.tokenIndex]).denorm, 0);
+    assertEq(bPool.call__records(_fuzz.previousTokens[_fuzz.tokenIndex]).balance, 0);
+  }
+
+  function test_Push_UnderlyingBalance(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    address _token = _fuzz.previousTokens[_fuzz.tokenIndex];
+    uint256 _tokenExitFee = bmul(_fuzz.balance, EXIT_FEE);
+    vm.expectCall(
+      address(_token), abi.encodeWithSelector(IERC20.transfer.selector, address(this), _fuzz.balance - _tokenExitFee)
+    );
+
+    bPool.unbind(_token);
+  }
+
+  function test_Push_UnderlyingFee(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    address _token = _fuzz.previousTokens[_fuzz.tokenIndex];
+    uint256 _tokenExitFee = bmul(_fuzz.balance, EXIT_FEE);
+    vm.expectCall(
+      address(_token), abi.encodeWithSelector(IERC20.transfer.selector, bPool.call__factory(), _tokenExitFee)
+    );
+
+    bPool.unbind(_token);
+  }
+
+  function test_Emit_LogCall(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    vm.expectEmit();
+    bytes memory _data = abi.encodeWithSelector(BPool.unbind.selector, _fuzz.previousTokens[_fuzz.tokenIndex]);
+    emit BPool.LOG_CALL(BPool.unbind.selector, address(this), _data);
+
+    bPool.unbind(_fuzz.previousTokens[_fuzz.tokenIndex]);
+  }
 }
 
 contract BPool_Unit_Gulp is BasePoolTest {
