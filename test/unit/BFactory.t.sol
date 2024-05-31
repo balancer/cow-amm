@@ -58,7 +58,7 @@ contract BFactory_Unit_NewBPool is Base {
    */
   function test_Emit_Log(address _randomCaller) public {
     vm.assume(_randomCaller != VM_ADDRESS);
-    vm.expectEmit(true, true, true, true);
+    vm.expectEmit();
     address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
     emit BFactory.LOG_NEW_POOL(_randomCaller, _expectedPoolAddress);
     vm.prank(_randomCaller);
@@ -111,7 +111,7 @@ contract BFactory_Unit_SetBLabs is Base {
    * @notice Test that event is emitted
    */
   function test_Emit_Log(address _addressToSet) public {
-    vm.expectEmit(true, true, true, true);
+    vm.expectEmit();
     emit BFactory.LOG_BLABS(owner, _addressToSet);
     vm.prank(owner);
     bFactory.setBLabs(_addressToSet);
