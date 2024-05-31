@@ -496,12 +496,12 @@ contract BPool is BBronze, BToken, BMath {
   // 'Underlying' token-manipulation functions make external calls but are NOT locked
   // You must `_lock_` or otherwise ensure reentry-safety
 
-  function _pullUnderlying(address erc20, address from, uint256 amount) internal {
+  function _pullUnderlying(address erc20, address from, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
     require(xfer, 'ERR_ERC20_FALSE');
   }
 
-  function _pushUnderlying(address erc20, address to, uint256 amount) internal {
+  function _pushUnderlying(address erc20, address to, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transfer(to, amount);
     require(xfer, 'ERR_ERC20_FALSE');
   }

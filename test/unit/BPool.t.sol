@@ -3492,3 +3492,47 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, _fuzz.maxPoolAmountIn);
   }
 }
+
+contract BPool_Unit__PullUnderlying is BasePoolTest {
+  function test_Call_TransferFrom(address _erc20, address _from, uint256 _amount) public {
+    vm.assume(_erc20 != VM_ADDRESS);
+
+    vm.mockCall(
+      _erc20, abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount), abi.encode(true)
+    );
+
+    vm.expectCall(address(_erc20), abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount));
+    bPool.call__pullUnderlying(_erc20, _from, _amount);
+  }
+
+  function test_Revert_ERC20False(address _erc20, address _from, uint256 _amount) public {
+    vm.assume(_erc20 != VM_ADDRESS);
+
+    vm.mockCall(
+      _erc20, abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount), abi.encode(false)
+    );
+
+    vm.expectRevert('ERR_ERC20_FALSE');
+    bPool.call__pullUnderlying(_erc20, _from, _amount);
+  }
+}
+
+contract BPool_Unit__PushUnderlying is BasePoolTest {
+  function test_Call_Transfer(address _erc20, address _to, uint256 _amount) public {
+    vm.assume(_erc20 != VM_ADDRESS);
+
+    vm.mockCall(_erc20, abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount), abi.encode(true));
+
+    vm.expectCall(address(_erc20), abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount));
+    bPool.call__pushUnderlying(_erc20, _to, _amount);
+  }
+
+  function test_Revert_ERC20False(address _erc20, address _to, uint256 _amount) public {
+    vm.assume(_erc20 != VM_ADDRESS);
+
+    vm.mockCall(_erc20, abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount), abi.encode(false));
+
+    vm.expectRevert('ERR_ERC20_FALSE');
+    bPool.call__pushUnderlying(_erc20, _to, _amount);
+  }
+}
