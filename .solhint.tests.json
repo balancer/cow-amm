@@ -15,11 +15,13 @@
     "named-parameters-function": "off",
     "no-global-import": "off",
     "max-states-count": "off",
-    "private-vars-leading-underscore": ["warn", { "strict": false }],
-    "ordering": "warn",
+    "no-unused-vars": "off",
+    "private-vars-leading-underscore": ["off"],
+    "ordering": "off",
+    "state-visibility": "off",
     "immutable-name-snakecase": "warn",
     "avoid-low-level-calls": "off",
     "one-contract-per-file": "off",
-    "max-line-length": ["warn", 120]
+    "max-line-length": ["warn", 125]
   }
 }

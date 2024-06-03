@@ -2,7 +2,6 @@
 . "$(dirname "$0")/_/husky.sh"
 
 # 1. Build the contracts
-# 2. Stage build output 
-# 2. Lint and stage style improvements 
-# TODO: remember to re-enable linter
-yarn build # && npx lint-staged
+# 2. Stage build output
+# 2. Lint and stage style improvements
+yarn build && npx lint-staged

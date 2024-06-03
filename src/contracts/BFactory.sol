@@ -3,17 +3,20 @@ pragma solidity 0.8.23;
 
 // Builds new BPools, logging their addresses and providing `isBPool(address) -> (bool)`
 
-import './BPool.sol';
+import {BBronze} from './BColor.sol';
+import {BPool} from './BPool.sol';
+import {IERC20} from './BToken.sol';
 
 contract BFactory is BBronze {
+  mapping(address => bool) internal _isBPool;
+  address internal _blabs;
+
   event LOG_NEW_POOL(address indexed caller, address indexed pool);
 
   event LOG_BLABS(address indexed caller, address indexed blabs);
 
-  mapping(address => bool) internal _isBPool;
-
-  function isBPool(address b) external view returns (bool) {
-    return _isBPool[b];
+  constructor() {
+    _blabs = msg.sender;
   }
 
   function newBPool() external returns (BPool) {
@@ -22,16 +25,6 @@ contract BFactory is BBronze {
     emit LOG_NEW_POOL(msg.sender, address(bpool));
     bpool.setController(msg.sender);
     return bpool;
-  }
-
-  address internal _blabs;
-
-  constructor() {
-    _blabs = msg.sender;
-  }
-
-  function getBLabs() external view returns (address) {
-    return _blabs;
   }
 
   function setBLabs(address b) external {
@@ -45,5 +38,13 @@ contract BFactory is BBronze {
     uint256 collected = IERC20(pool).balanceOf(address(this));
     bool xfer = pool.transfer(_blabs, collected);
     require(xfer, 'ERR_ERC20_FAILED');
+  }
+
+  function isBPool(address b) external view returns (bool) {
+    return _isBPool[b];
+  }
+
+  function getBLabs() external view returns (address) {
+    return _blabs;
   }
 }

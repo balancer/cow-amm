@@ -6,7 +6,7 @@ abstract contract BColor {
 }
 
 contract BBronze is BColor {
-  function getColor() external view override returns (bytes32) {
+  function getColor() external pure override returns (bytes32) {
     return bytes32('BRONZE');
   }
 }

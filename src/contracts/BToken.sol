@@ -1,22 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.23;
 
-import './BNum.sol';
-
-// Highly opinionated token implementation
-
-interface IERC20 {
-  event Approval(address indexed src, address indexed dst, uint256 amt);
-  event Transfer(address indexed src, address indexed dst, uint256 amt);
-
-  function totalSupply() external view returns (uint256);
-  function balanceOf(address whom) external view returns (uint256);
-  function allowance(address src, address dst) external view returns (uint256);
-
-  function approve(address dst, uint256 amt) external returns (bool);
-  function transfer(address dst, uint256 amt) external returns (bool);
-  function transferFrom(address src, address dst, uint256 amt) external returns (bool);
-}
+import {BNum} from './BNum.sol';
+import {IERC20} from 'forge-std/interfaces/IERC20.sol';
 
 abstract contract BTokenBase is BNum, IERC20 {
   mapping(address => uint256) internal _balance;
@@ -57,30 +43,6 @@ contract BToken is BTokenBase {
   string internal _symbol = 'BPT';
   uint8 internal _decimals = 18;
 
-  function name() public view returns (string memory) {
-    return _name;
-  }
-
-  function symbol() public view returns (string memory) {
-    return _symbol;
-  }
-
-  function decimals() public view returns (uint8) {
-    return _decimals;
-  }
-
-  function allowance(address src, address dst) external view override returns (uint256) {
-    return _allowance[src][dst];
-  }
-
-  function balanceOf(address whom) external view override returns (uint256) {
-    return _balance[whom];
-  }
-
-  function totalSupply() public view override returns (uint256) {
-    return _totalSupply;
-  }
-
   function approve(address dst, uint256 amt) external override returns (bool) {
     _allowance[msg.sender][dst] = amt;
     emit Approval(msg.sender, dst, amt);
@@ -117,5 +79,29 @@ contract BToken is BTokenBase {
       emit Approval(msg.sender, dst, _allowance[src][msg.sender]);
     }
     return true;
+  }
+
+  function allowance(address src, address dst) external view override returns (uint256) {
+    return _allowance[src][dst];
+  }
+
+  function balanceOf(address whom) external view override returns (uint256) {
+    return _balance[whom];
+  }
+
+  function totalSupply() public view override returns (uint256) {
+    return _totalSupply;
+  }
+
+  function name() public view returns (string memory) {
+    return _name;
+  }
+
+  function symbol() public view returns (string memory) {
+    return _symbol;
+  }
+
+  function decimals() public view returns (uint8) {
+    return _decimals;
   }
 }

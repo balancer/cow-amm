@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.23;
 
-import './BMath.sol';
-import './BToken.sol';
+import {BBronze} from './BColor.sol';
+import {BMath} from './BMath.sol';
+import {BToken, IERC20} from './BToken.sol';
 
 contract BPool is BBronze, BToken, BMath {
   struct Record {
@@ -10,37 +11,6 @@ contract BPool is BBronze, BToken, BMath {
     uint256 index; // internal
     uint256 denorm; // denormalized weight
     uint256 balance;
-  }
-
-  event LOG_SWAP(
-    address indexed caller,
-    address indexed tokenIn,
-    address indexed tokenOut,
-    uint256 tokenAmountIn,
-    uint256 tokenAmountOut
-  );
-
-  event LOG_JOIN(address indexed caller, address indexed tokenIn, uint256 tokenAmountIn);
-
-  event LOG_EXIT(address indexed caller, address indexed tokenOut, uint256 tokenAmountOut);
-
-  event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
-
-  modifier _logs_() {
-    emit LOG_CALL(msg.sig, msg.sender, msg.data);
-    _;
-  }
-
-  modifier _lock_() {
-    require(!_mutex, 'ERR_REENTRY');
-    _mutex = true;
-    _;
-    _mutex = false;
-  }
-
-  modifier _viewlock_() {
-    require(!_mutex, 'ERR_REENTRY');
-    _;
   }
 
   bool internal _mutex;
@@ -58,65 +28,26 @@ contract BPool is BBronze, BToken, BMath {
   mapping(address => Record) internal _records;
   uint256 internal _totalWeight;
 
+  event LOG_SWAP(
+    address indexed caller,
+    address indexed tokenIn,
+    address indexed tokenOut,
+    uint256 tokenAmountIn,
+    uint256 tokenAmountOut
+  );
+
+  event LOG_JOIN(address indexed caller, address indexed tokenIn, uint256 tokenAmountIn);
+
+  event LOG_EXIT(address indexed caller, address indexed tokenOut, uint256 tokenAmountOut);
+
+  event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
+
   constructor() {
     _controller = msg.sender;
     _factory = msg.sender;
     _swapFee = MIN_FEE;
     _publicSwap = false;
     _finalized = false;
-  }
-
-  function isPublicSwap() external view returns (bool) {
-    return _publicSwap;
-  }
-
-  function isFinalized() external view returns (bool) {
-    return _finalized;
-  }
-
-  function isBound(address t) external view returns (bool) {
-    return _records[t].bound;
-  }
-
-  function getNumTokens() external view returns (uint256) {
-    return _tokens.length;
-  }
-
-  function getCurrentTokens() external view _viewlock_ returns (address[] memory tokens) {
-    return _tokens;
-  }
-
-  function getFinalTokens() external view _viewlock_ returns (address[] memory tokens) {
-    require(_finalized, 'ERR_NOT_FINALIZED');
-    return _tokens;
-  }
-
-  function getDenormalizedWeight(address token) external view _viewlock_ returns (uint256) {
-    require(_records[token].bound, 'ERR_NOT_BOUND');
-    return _records[token].denorm;
-  }
-
-  function getTotalDenormalizedWeight() external view _viewlock_ returns (uint256) {
-    return _totalWeight;
-  }
-
-  function getNormalizedWeight(address token) external view _viewlock_ returns (uint256) {
-    require(_records[token].bound, 'ERR_NOT_BOUND');
-    uint256 denorm = _records[token].denorm;
-    return bdiv(denorm, _totalWeight);
-  }
-
-  function getBalance(address token) external view _viewlock_ returns (uint256) {
-    require(_records[token].bound, 'ERR_NOT_BOUND');
-    return _records[token].balance;
-  }
-
-  function getSwapFee() external view _viewlock_ returns (uint256) {
-    return _swapFee;
-  }
-
-  function getController() external view _viewlock_ returns (address) {
-    return _controller;
   }
 
   function setSwapFee(uint256 swapFee) external _logs_ _lock_ {
@@ -202,6 +133,7 @@ contract BPool is BBronze, BToken, BMath {
     }
   }
 
+  // solhint-disable-next-line ordering
   function unbind(address token) external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     require(_records[token].bound, 'ERR_NOT_BOUND');
@@ -492,6 +424,59 @@ contract BPool is BBronze, BToken, BMath {
     return poolAmountIn;
   }
 
+  function isPublicSwap() external view returns (bool) {
+    return _publicSwap;
+  }
+
+  function isFinalized() external view returns (bool) {
+    return _finalized;
+  }
+
+  function isBound(address t) external view returns (bool) {
+    return _records[t].bound;
+  }
+
+  function getNumTokens() external view returns (uint256) {
+    return _tokens.length;
+  }
+
+  function getCurrentTokens() external view _viewlock_ returns (address[] memory tokens) {
+    return _tokens;
+  }
+
+  function getFinalTokens() external view _viewlock_ returns (address[] memory tokens) {
+    require(_finalized, 'ERR_NOT_FINALIZED');
+    return _tokens;
+  }
+
+  function getDenormalizedWeight(address token) external view _viewlock_ returns (uint256) {
+    require(_records[token].bound, 'ERR_NOT_BOUND');
+    return _records[token].denorm;
+  }
+
+  function getTotalDenormalizedWeight() external view _viewlock_ returns (uint256) {
+    return _totalWeight;
+  }
+
+  function getNormalizedWeight(address token) external view _viewlock_ returns (uint256) {
+    require(_records[token].bound, 'ERR_NOT_BOUND');
+    uint256 denorm = _records[token].denorm;
+    return bdiv(denorm, _totalWeight);
+  }
+
+  function getBalance(address token) external view _viewlock_ returns (uint256) {
+    require(_records[token].bound, 'ERR_NOT_BOUND');
+    return _records[token].balance;
+  }
+
+  function getSwapFee() external view _viewlock_ returns (uint256) {
+    return _swapFee;
+  }
+
+  function getController() external view _viewlock_ returns (address) {
+    return _controller;
+  }
+
   // ==
   // 'Underlying' token-manipulation functions make external calls but are NOT locked
   // You must `_lock_` or otherwise ensure reentry-safety
@@ -520,5 +505,22 @@ contract BPool is BBronze, BToken, BMath {
 
   function _burnPoolShare(uint256 amount) internal {
     _burn(amount);
+  }
+
+  modifier _logs_() {
+    emit LOG_CALL(msg.sig, msg.sender, msg.data);
+    _;
+  }
+
+  modifier _lock_() {
+    require(!_mutex, 'ERR_REENTRY');
+    _mutex = true;
+    _;
+    _mutex = false;
+  }
+
+  modifier _viewlock_() {
+    require(!_mutex, 'ERR_REENTRY');
+    _;
   }
 }

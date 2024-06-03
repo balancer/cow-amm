@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.23;
 
-import './BConst.sol';
+import {BConst} from './BConst.sol';
 
+// solhint-disable private-vars-leading-underscore
+// solhint-disable named-return-values
 contract BNum is BConst {
   function btoi(uint256 a) internal pure returns (uint256) {
     unchecked {

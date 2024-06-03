@@ -1068,7 +1068,8 @@ contract BPool_Unit_Unbind is BasePoolTest {
     vm.assume(_fuzz.balance >= MIN_BALANCE);
     vm.assume(_fuzz.totalWeight >= MIN_WEIGHT);
     vm.assume(_fuzz.totalWeight <= MAX_TOTAL_WEIGHT - MIN_WEIGHT);
-    _fuzz.previousTokensAmount = bound(_fuzz.previousTokensAmount, 1, MAX_BOUND_TOKENS); // The token to unbind will be included inside the array
+    // The token to unbind will be included inside the array
+    _fuzz.previousTokensAmount = bound(_fuzz.previousTokensAmount, 1, MAX_BOUND_TOKENS);
     _fuzz.tokenIndex = bound(_fuzz.tokenIndex, 0, _fuzz.previousTokensAmount - 1);
     _fuzz.denorm = bound(_fuzz.denorm, MIN_WEIGHT, _fuzz.totalWeight);
     _fuzz.previousTokens = new address[](_fuzz.previousTokensAmount);
