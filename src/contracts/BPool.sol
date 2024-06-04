@@ -322,12 +322,11 @@ contract BPool is BBronze, BToken, BMath {
 
     Record storage inRecord = _records[tokenIn];
     uint256 tokenInBalance = IERC20(tokenIn).balanceOf(address(this));
+    require(tokenAmountIn <= bmul(tokenInBalance, MAX_IN_RATIO), 'ERR_MAX_IN_RATIO');
 
     poolAmountOut =
       calcPoolOutGivenSingleIn(tokenInBalance, inRecord.denorm, _totalSupply, _totalWeight, tokenAmountIn, _swapFee);
-
     require(poolAmountOut >= minPoolAmountOut, 'ERR_LIMIT_OUT');
-    require(tokenAmountIn <= bmul(tokenInBalance, MAX_IN_RATIO), 'ERR_MAX_IN_RATIO');
 
     emit LOG_JOIN(msg.sender, tokenIn, tokenAmountIn);
 
@@ -404,13 +403,12 @@ contract BPool is BBronze, BToken, BMath {
 
     Record storage outRecord = _records[tokenOut];
     uint256 tokenOutBalance = IERC20(tokenOut).balanceOf(address(this));
+    require(tokenAmountOut <= bmul(tokenOutBalance, MAX_OUT_RATIO), 'ERR_MAX_OUT_RATIO');
 
     poolAmountIn =
       calcPoolInGivenSingleOut(tokenOutBalance, outRecord.denorm, _totalSupply, _totalWeight, tokenAmountOut, _swapFee);
-
     require(poolAmountIn != 0, 'ERR_MATH_APPROX');
     require(poolAmountIn <= maxPoolAmountIn, 'ERR_LIMIT_IN');
-    require(tokenAmountOut <= bmul(tokenOutBalance, MAX_OUT_RATIO), 'ERR_MAX_OUT_RATIO');
 
     uint256 exitFee = bmul(poolAmountIn, EXIT_FEE);
 
