@@ -76,8 +76,7 @@ contract DirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
   }
 }
 
-// TODO: remove `abstract` keyword to make the test runnable
-abstract contract IndirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
+contract IndirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
   function _makeSwap() internal override {
     vm.startPrank(address(pool));
     tokenA.approve(address(swapper), type(uint256).max);
