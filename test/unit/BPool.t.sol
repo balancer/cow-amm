@@ -2854,7 +2854,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     _fuzz.totalWeight = bound(_fuzz.totalWeight, MIN_WEIGHT * TOKENS_AMOUNT, MAX_TOTAL_WEIGHT);
 
     // min
-    _fuzz.totalSupply = bound(_fuzz.totalSupply, INIT_POOL_SUPPLY, type(uint256).max);
+    _fuzz.totalSupply = bound(_fuzz.totalSupply, INIT_POOL_SUPPLY, type(uint256).max / BONE);
 
     // MAX_OUT_RATIO
     vm.assume(_fuzz.tokenOutBalance < type(uint256).max / MAX_OUT_RATIO);
