@@ -61,10 +61,6 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     bPool.set__records(_token, _record);
   }
 
-  function _setPublicSwap(bool _isPublicSwap) internal {
-    bPool.set__publicSwap(_isPublicSwap);
-  }
-
   function _setSwapFee(uint256 _swapFee) internal {
     bPool.set__swapFee(_swapFee);
   }
@@ -258,15 +254,7 @@ contract BPool_Unit_Constructor is BasePoolTest {
     assertEq(_newBPool.call__controller(), _deployer);
     assertEq(_newBPool.call__factory(), _deployer);
     assertEq(_newBPool.call__swapFee(), MIN_FEE);
-    assertEq(_newBPool.call__publicSwap(), false);
     assertEq(_newBPool.call__finalized(), false);
-  }
-}
-
-contract BPool_Unit_IsPublicSwap is BasePoolTest {
-  function test_Returns_IsPublicSwap(bool _isPublicSwap) public {
-    bPool.set__publicSwap(_isPublicSwap);
-    assertEq(bPool.isPublicSwap(), _isPublicSwap);
   }
 }
 
@@ -527,43 +515,6 @@ contract BPool_Unit_SetController is BasePoolTest {
   }
 }
 
-contract BPool_Unit_SetPublicSwap is BasePoolTest {
-  function test_Revert_Finalized(bool _isPublicSwap) public {
-    _setFinalize(true);
-
-    vm.expectRevert('ERR_IS_FINALIZED');
-    bPool.setPublicSwap(_isPublicSwap);
-  }
-
-  function test_Revert_NotController(address _controller, address _caller, bool _isPublicSwap) public {
-    vm.assume(_controller != _caller);
-    bPool.set__controller(_controller);
-
-    vm.expectRevert('ERR_NOT_CONTROLLER');
-    vm.prank(_caller);
-    bPool.setPublicSwap(_isPublicSwap);
-  }
-
-  function test_Revert_Reentrancy(bool _isPublicSwap) public {
-    _expectRevertByReentrancy();
-    bPool.setPublicSwap(_isPublicSwap);
-  }
-
-  function test_Set_PublicSwap(bool _isPublicSwap) public {
-    bPool.setPublicSwap(_isPublicSwap);
-
-    assertEq(bPool.call__publicSwap(), _isPublicSwap);
-  }
-
-  function test_Emit_LogCall(bool _isPublicSwap) public {
-    vm.expectEmit();
-    bytes memory _data = abi.encodeWithSelector(BPool.setPublicSwap.selector, _isPublicSwap);
-    emit BPool.LOG_CALL(BPool.setPublicSwap.selector, address(this), _data);
-
-    bPool.setPublicSwap(_isPublicSwap);
-  }
-}
-
 contract BPool_Unit_Finalize is BasePoolTest {
   modifier happyPath(uint256 _tokensLength) {
     _tokensLength = bound(_tokensLength, MIN_BOUND_TOKENS, MAX_BOUND_TOKENS);
@@ -608,12 +559,6 @@ contract BPool_Unit_Finalize is BasePoolTest {
     bPool.finalize();
 
     assertEq(bPool.call__finalized(), true);
-  }
-
-  function test_Set_PublicSwap(uint256 _tokensLength) public happyPath(_tokensLength) {
-    bPool.finalize();
-
-    assertEq(bPool.call__publicSwap(), true);
   }
 
   function test_Mint_InitPoolSupply(uint256 _tokensLength) public happyPath(_tokensLength) {
@@ -1248,8 +1193,6 @@ contract BPool_Unit_JoinPool is BasePoolTest {
       _mockPoolBalance(tokens[i], _fuzz.balance[i]);
     }
 
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
     // Set totalSupply
@@ -1407,8 +1350,6 @@ contract BPool_Unit_ExitPool is BasePoolTest {
     _setPoolBalance(address(this), _fuzz.poolAmountIn); // give LP tokens to fn caller
     // Set totalSupply
     _setTotalSupply(_fuzz.initPoolSupply - _fuzz.poolAmountIn);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
   }
@@ -1601,8 +1542,6 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
   }
@@ -1687,10 +1626,10 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, _tokenOut, 0, type(uint256).max);
   }
 
-  function test_Revert_NotPublic(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
-    _setPublicSwap(false);
+  function test_Revert_NotFinalized(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _setFinalize(false);
 
-    vm.expectRevert('ERR_SWAP_NOT_PUBLIC');
+    vm.expectRevert('ERR_NOT_FINALIZED');
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1925,8 +1864,6 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
   }
@@ -2022,10 +1959,10 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, _tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
-  function test_Revert_NotPublic(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
-    _setPublicSwap(false);
+  function test_Revert_NotFinalized(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _setFinalize(false);
 
-    vm.expectRevert('ERR_SWAP_NOT_PUBLIC');
+    vm.expectRevert('ERR_NOT_FINALIZED');
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -2255,8 +2192,6 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
     // Set totalSupply
@@ -2429,8 +2364,6 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
     // Set totalSupply
@@ -2658,8 +2591,6 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
     // Set balance
@@ -2902,8 +2833,6 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
 
     // Set swapFee
     _setSwapFee(_fuzz.swapFee);
-    // Set public swap
-    _setPublicSwap(true);
     // Set finalize
     _setFinalize(true);
     // Set balance

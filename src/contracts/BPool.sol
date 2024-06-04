@@ -16,7 +16,6 @@ contract BPool is BBronze, BToken, BMath {
 
   address internal _factory; // BFactory address to push token exitFee to
   address internal _controller; // has CONTROL role
-  bool internal _publicSwap; // true if PUBLIC can call SWAP functions
 
   // `setSwapFee` and `finalize` require CONTROL
   // `finalize` sets `PUBLIC can SWAP`, `PUBLIC can JOIN`
@@ -45,7 +44,6 @@ contract BPool is BBronze, BToken, BMath {
     _controller = msg.sender;
     _factory = msg.sender;
     _swapFee = MIN_FEE;
-    _publicSwap = false;
     _finalized = false;
   }
 
@@ -62,19 +60,12 @@ contract BPool is BBronze, BToken, BMath {
     _controller = manager;
   }
 
-  function setPublicSwap(bool public_) external _logs_ _lock_ {
-    require(!_finalized, 'ERR_IS_FINALIZED');
-    require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
-    _publicSwap = public_;
-  }
-
   function finalize() external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     require(!_finalized, 'ERR_IS_FINALIZED');
     require(_tokens.length >= MIN_BOUND_TOKENS, 'ERR_MIN_TOKENS');
 
     _finalized = true;
-    _publicSwap = true;
 
     _mintPoolShare(INIT_POOL_SUPPLY);
     _pushPoolShare(msg.sender, INIT_POOL_SUPPLY);
@@ -235,7 +226,7 @@ contract BPool is BBronze, BToken, BMath {
   ) external _logs_ _lock_ returns (uint256 tokenAmountOut, uint256 spotPriceAfter) {
     require(_records[tokenIn].bound, 'ERR_NOT_BOUND');
     require(_records[tokenOut].bound, 'ERR_NOT_BOUND');
-    require(_publicSwap, 'ERR_SWAP_NOT_PUBLIC');
+    require(_finalized, 'ERR_NOT_FINALIZED');
 
     Record storage inRecord = _records[address(tokenIn)];
     Record storage outRecord = _records[address(tokenOut)];
@@ -278,7 +269,7 @@ contract BPool is BBronze, BToken, BMath {
   ) external _logs_ _lock_ returns (uint256 tokenAmountIn, uint256 spotPriceAfter) {
     require(_records[tokenIn].bound, 'ERR_NOT_BOUND');
     require(_records[tokenOut].bound, 'ERR_NOT_BOUND');
-    require(_publicSwap, 'ERR_SWAP_NOT_PUBLIC');
+    require(_finalized, 'ERR_NOT_FINALIZED');
 
     Record storage inRecord = _records[address(tokenIn)];
     Record storage outRecord = _records[address(tokenOut)];
@@ -420,10 +411,6 @@ contract BPool is BBronze, BToken, BMath {
     _pushUnderlying(tokenOut, msg.sender, tokenAmountOut);
 
     return poolAmountIn;
-  }
-
-  function isPublicSwap() external view returns (bool) {
-    return _publicSwap;
   }
 
   function isFinalized() external view returns (bool) {
