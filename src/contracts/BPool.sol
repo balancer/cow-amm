@@ -4,14 +4,9 @@ pragma solidity 0.8.23;
 import {BBronze} from './BColor.sol';
 import {BMath} from './BMath.sol';
 import {BToken, IERC20} from './BToken.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
 
-contract BPool is BBronze, BToken, BMath {
-  struct Record {
-    bool bound; // is token bound to pool
-    uint256 index; // internal
-    uint256 denorm; // denormalized weight
-  }
-
+contract BPool is BBronze, BToken, BMath, IBPool {
   bool internal _mutex;
 
   address internal _factory; // BFactory address to push token exitFee to
@@ -25,20 +20,6 @@ contract BPool is BBronze, BToken, BMath {
   address[] internal _tokens;
   mapping(address => Record) internal _records;
   uint256 internal _totalWeight;
-
-  event LOG_SWAP(
-    address indexed caller,
-    address indexed tokenIn,
-    address indexed tokenOut,
-    uint256 tokenAmountIn,
-    uint256 tokenAmountOut
-  );
-
-  event LOG_JOIN(address indexed caller, address indexed tokenIn, uint256 tokenAmountIn);
-
-  event LOG_EXIT(address indexed caller, address indexed tokenOut, uint256 tokenAmountOut);
-
-  event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
 
   modifier _logs_() {
     emit LOG_CALL(msg.sig, msg.sender, msg.data);

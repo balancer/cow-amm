@@ -3,14 +3,14 @@ pragma solidity 0.8.23;
 import {Test} from 'forge-std/Test.sol';
 
 import {BFactory} from 'contracts/BFactory.sol';
-import {BPool} from 'contracts/BPool.sol';
 import {IERC20} from 'contracts/BToken.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
 
 import {GasSnapshot} from 'forge-gas-snapshot/GasSnapshot.sol';
 
 abstract contract PoolSwapIntegrationTest is Test, GasSnapshot {
   BFactory public factory;
-  BPool public pool;
+  IBPool public pool;
 
   IERC20 public tokenA;
   IERC20 public tokenB;

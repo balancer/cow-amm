@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {BPool} from 'contracts/BPool.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
 import {MockBPool} from 'test/smock/MockBPool.sol';
 
 import {BConst} from 'contracts/BConst.sol';
@@ -31,7 +32,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   function _setRandomTokens(uint256 _length) internal returns (address[] memory _tokensToAdd) {
     _tokensToAdd = _getDeterministicTokenArray(_length);
     for (uint256 i = 0; i < _length; i++) {
-      _setRecord(_tokensToAdd[i], BPool.Record({bound: true, index: i, denorm: 0}));
+      _setRecord(_tokensToAdd[i], IBPool.Record({bound: true, index: i, denorm: 0}));
     }
     _setTokens(_tokensToAdd);
   }
@@ -54,7 +55,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     bPool.set__tokens(_tokens);
   }
 
-  function _setRecord(address _token, BPool.Record memory _record) internal {
+  function _setRecord(address _token, IBPool.Record memory _record) internal {
     bPool.set__records(_token, _record);
   }
 
@@ -264,7 +265,7 @@ contract BPool_Unit_IsFinalized is BasePoolTest {
 
 contract BPool_Unit_IsBound is BasePoolTest {
   function test_Returns_IsBound(address _token, bool _isBound) public {
-    _setRecord(_token, BPool.Record({bound: _isBound, index: 0, denorm: 0}));
+    _setRecord(_token, IBPool.Record({bound: _isBound, index: 0, denorm: 0}));
     assertEq(bPool.isBound(_token), _isBound);
   }
 }
@@ -322,7 +323,7 @@ contract BPool_Unit_GetFinalTokens is BasePoolTest {
 
 contract BPool_Unit_GetDenormalizedWeight is BasePoolTest {
   function test_Returns_DenormalizedWeight(address _token, uint256 _weight) public {
-    bPool.set__records(_token, BPool.Record({bound: true, index: 0, denorm: _weight}));
+    bPool.set__records(_token, IBPool.Record({bound: true, index: 0, denorm: _weight}));
 
     assertEq(bPool.getDenormalizedWeight(_token), _weight);
   }
@@ -356,7 +357,7 @@ contract BPool_Unit_GetNormalizedWeight is BasePoolTest {
     _weight = bound(_weight, MIN_WEIGHT, MAX_WEIGHT);
     _totalWeight = bound(_totalWeight, MIN_WEIGHT, MAX_TOTAL_WEIGHT);
     vm.assume(_weight < _totalWeight);
-    _setRecord(_token, BPool.Record({bound: true, index: 0, denorm: _weight}));
+    _setRecord(_token, IBPool.Record({bound: true, index: 0, denorm: _weight}));
     _setTotalWeight(_totalWeight);
 
     assertEq(bPool.getNormalizedWeight(_token), bdiv(_weight, _totalWeight));
@@ -377,7 +378,7 @@ contract BPool_Unit_GetBalance is BasePoolTest {
   function test_Returns_Balance(address _token, uint256 _balance) public {
     assumeNotForgeAddress(_token);
 
-    bPool.set__records(_token, BPool.Record({bound: true, index: 0, denorm: 0}));
+    bPool.set__records(_token, IBPool.Record({bound: true, index: 0, denorm: 0}));
     _mockPoolBalance(_token, _balance);
 
     assertEq(bPool.getBalance(_token), _balance);
@@ -474,7 +475,7 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
   function test_Emit_LogCall(uint256 _fee) public happyPath(_fee) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.setSwapFee.selector, _fee);
-    emit BPool.LOG_CALL(BPool.setSwapFee.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.setSwapFee.selector, address(this), _data);
 
     bPool.setSwapFee(_fee);
   }
@@ -504,7 +505,7 @@ contract BPool_Unit_SetController is BasePoolTest {
   function test_Emit_LogCall(address _controller) public {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.setController.selector, _controller);
-    emit BPool.LOG_CALL(BPool.setController.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.setController.selector, address(this), _data);
 
     bPool.setController(_controller);
   }
@@ -571,7 +572,7 @@ contract BPool_Unit_Finalize is BasePoolTest {
   function test_Emit_LogCall(uint256 _tokensLength) public happyPath(_tokensLength) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.finalize.selector);
-    emit BPool.LOG_CALL(BPool.finalize.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.finalize.selector, address(this), _data);
 
     bPool.finalize();
   }
@@ -635,7 +636,7 @@ contract BPool_Unit_Bind is BasePoolTest {
   }
 
   function test_Revert_IsBound(Bind_FuzzScenario memory _fuzz, address _token) public happyPath(_fuzz) {
-    _setRecord(_token, BPool.Record({bound: true, index: 0, denorm: 0}));
+    _setRecord(_token, IBPool.Record({bound: true, index: 0, denorm: 0}));
 
     vm.expectRevert('ERR_IS_BOUND');
     bPool.bind(_token, _fuzz.balance, _fuzz.denorm);
@@ -675,7 +676,7 @@ contract BPool_Unit_Bind is BasePoolTest {
   function test_Emit_LogCall(Bind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.bind.selector, _fuzz.token, _fuzz.balance, _fuzz.denorm);
-    emit BPool.LOG_CALL(BPool.bind.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.bind.selector, address(this), _data);
 
     bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
   }
@@ -754,7 +755,7 @@ contract BPool_Unit_Unbind is BasePoolTest {
     _setRandomTokens(_fuzz.previousTokensAmount);
 
     // Set denorm and balance
-    _setRecord(_fuzz.token, BPool.Record({bound: true, index: _fuzz.tokenIndex, denorm: _fuzz.denorm}));
+    _setRecord(_fuzz.token, IBPool.Record({bound: true, index: _fuzz.tokenIndex, denorm: _fuzz.denorm}));
     _mockPoolBalance(_fuzz.token, _fuzz.balance);
 
     // Set finalize
@@ -794,7 +795,7 @@ contract BPool_Unit_Unbind is BasePoolTest {
   }
 
   function test_Revert_NotBound(Unbind_FuzzScenario memory _fuzz, address _token) public happyPath(_fuzz) {
-    _setRecord(_token, BPool.Record({bound: false, index: _fuzz.tokenIndex, denorm: _fuzz.denorm}));
+    _setRecord(_token, IBPool.Record({bound: false, index: _fuzz.tokenIndex, denorm: _fuzz.denorm}));
 
     vm.expectRevert('ERR_NOT_BOUND');
     bPool.unbind(_token);
@@ -864,7 +865,7 @@ contract BPool_Unit_Unbind is BasePoolTest {
   function test_Emit_LogCall(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.unbind.selector, _fuzz.token);
-    emit BPool.LOG_CALL(BPool.unbind.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.unbind.selector, address(this), _data);
 
     bPool.unbind(_fuzz.token);
   }
@@ -882,9 +883,9 @@ contract BPool_Unit_GetSpotPrice is BasePoolTest {
   }
 
   function _setValues(GetSpotPrice_FuzzScenario memory _fuzz) internal {
-    _setRecord(_fuzz.tokenIn, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
+    _setRecord(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
     _mockPoolBalance(_fuzz.tokenIn, _fuzz.tokenInBalance);
-    _setRecord(_fuzz.tokenOut, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
+    _setRecord(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
     _mockPoolBalance(_fuzz.tokenOut, _fuzz.tokenOutBalance);
     _setSwapFee(_fuzz.swapFee);
   }
@@ -951,9 +952,9 @@ contract BPool_Unit_GetSpotPriceSansFee is BasePoolTest {
   }
 
   function _setValues(GetSpotPriceSansFee_FuzzScenario memory _fuzz) internal {
-    _setRecord(_fuzz.tokenIn, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
+    _setRecord(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
     _mockPoolBalance(_fuzz.tokenIn, _fuzz.tokenInBalance);
-    _setRecord(_fuzz.tokenOut, BPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
+    _setRecord(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
     _mockPoolBalance(_fuzz.tokenOut, _fuzz.tokenOutBalance);
     _setSwapFee(0);
   }
@@ -1027,7 +1028,7 @@ contract BPool_Unit_JoinPool is BasePoolTest {
     for (uint256 i = 0; i < tokens.length; i++) {
       _setRecord(
         tokens[i],
-        BPool.Record({
+        IBPool.Record({
           bound: true,
           index: 0, // NOTE: irrelevant for this method
           denorm: 0 // NOTE: irrelevant for this method
@@ -1115,7 +1116,7 @@ contract BPool_Unit_JoinPool is BasePoolTest {
       uint256 _bal = _fuzz.balance[i];
       uint256 _tokenAmountIn = bmul(_ratio, _bal);
       vm.expectEmit();
-      emit BPool.LOG_JOIN(address(this), tokens[i], _tokenAmountIn);
+      emit IBPool.LOG_JOIN(address(this), tokens[i], _tokenAmountIn);
     }
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
@@ -1154,7 +1155,7 @@ contract BPool_Unit_JoinPool is BasePoolTest {
   function test_Emit_LogCall(JoinPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.joinPool.selector, _fuzz.poolAmountOut, _maxArray(tokens.length));
-    emit BPool.LOG_CALL(BPool.joinPool.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.joinPool.selector, address(this), _data);
 
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
@@ -1180,7 +1181,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
     for (uint256 i = 0; i < tokens.length; i++) {
       _setRecord(
         tokens[i],
-        BPool.Record({
+        IBPool.Record({
           bound: true,
           index: 0, // NOTE: irrelevant for this method
           denorm: 0 // NOTE: irrelevant for this method
@@ -1312,7 +1313,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
       uint256 _bal = _fuzz.balance[i];
       uint256 _tokenAmountOut = bmul(_ratio, _bal);
       vm.expectEmit();
-      emit BPool.LOG_EXIT(address(this), tokens[i], _tokenAmountOut);
+      emit IBPool.LOG_EXIT(address(this), tokens[i], _tokenAmountOut);
     }
     bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
   }
@@ -1335,7 +1336,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   function test_Emit_LogCall(ExitPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.exitPool.selector, _fuzz.poolAmountIn, _zeroArray(tokens.length));
-    emit BPool.LOG_CALL(BPool.exitPool.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.exitPool.selector, address(this), _data);
 
     bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
   }
@@ -1365,7 +1366,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     // Set balances
     _setRecord(
       tokenIn,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenInDenorm
@@ -1375,7 +1376,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
 
     _setRecord(
       tokenOut,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenOutDenorm
@@ -1602,7 +1603,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     );
 
     vm.expectEmit();
-    emit BPool.LOG_SWAP(address(this), tokenIn, tokenOut, _fuzz.tokenAmountIn, _tokenAmountOut);
+    emit IBPool.LOG_SWAP(address(this), tokenIn, tokenOut, _fuzz.tokenAmountIn, _tokenAmountOut);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1657,7 +1658,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     bytes memory _data = abi.encodeWithSelector(
       BPool.swapExactAmountIn.selector, tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max
     );
-    emit BPool.LOG_CALL(BPool.swapExactAmountIn.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.swapExactAmountIn.selector, address(this), _data);
 
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
@@ -1687,7 +1688,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     // Set balances
     _setRecord(
       tokenIn,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenInDenorm
@@ -1697,7 +1698,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
 
     _setRecord(
       tokenOut,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenOutDenorm
@@ -1941,7 +1942,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     );
 
     vm.expectEmit();
-    emit BPool.LOG_SWAP(address(this), tokenIn, tokenOut, _tokenAmountIn, _fuzz.tokenAmountOut);
+    emit IBPool.LOG_SWAP(address(this), tokenIn, tokenOut, _tokenAmountIn, _fuzz.tokenAmountOut);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -1998,7 +1999,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     bytes memory _data = abi.encodeWithSelector(
       BPool.swapExactAmountOut.selector, tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max
     );
-    emit BPool.LOG_CALL(BPool.swapExactAmountOut.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.swapExactAmountOut.selector, address(this), _data);
 
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
@@ -2025,7 +2026,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
     // Set balances
     _setRecord(
       tokenIn,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenInDenorm
@@ -2125,7 +2126,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
 
   function test_Emit_LogJoin(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
-    emit BPool.LOG_JOIN(address(this), tokenIn, _fuzz.tokenAmountIn);
+    emit IBPool.LOG_JOIN(address(this), tokenIn, _fuzz.tokenAmountIn);
 
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
   }
@@ -2170,7 +2171,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
   function test_Emit_LogCall(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.joinswapExternAmountIn.selector, tokenIn, _fuzz.tokenAmountIn, 0);
-    emit BPool.LOG_CALL(BPool.joinswapExternAmountIn.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.joinswapExternAmountIn.selector, address(this), _data);
 
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
   }
@@ -2197,7 +2198,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
     // Set balances
     _setRecord(
       tokenIn,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenInDenorm
@@ -2343,7 +2344,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
     );
 
     vm.expectEmit();
-    emit BPool.LOG_JOIN(address(this), tokenIn, _tokenAmountIn);
+    emit IBPool.LOG_JOIN(address(this), tokenIn, _tokenAmountIn);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
@@ -2397,7 +2398,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
     vm.expectEmit();
     bytes memory _data =
       abi.encodeWithSelector(BPool.joinswapPoolAmountOut.selector, tokenIn, _fuzz.poolAmountOut, type(uint256).max);
-    emit BPool.LOG_CALL(BPool.joinswapPoolAmountOut.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.joinswapPoolAmountOut.selector, address(this), _data);
 
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
@@ -2424,7 +2425,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
     // Set balances
     _setRecord(
       tokenOut,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenOutDenorm
@@ -2575,7 +2576,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
     );
 
     vm.expectEmit();
-    emit BPool.LOG_EXIT(address(this), tokenOut, _tokenAmountOut);
+    emit IBPool.LOG_EXIT(address(this), tokenOut, _tokenAmountOut);
 
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
   }
@@ -2639,7 +2640,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
   function test_Emit_LogCall(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.exitswapPoolAmountIn.selector, tokenOut, _fuzz.poolAmountIn, 0);
-    emit BPool.LOG_CALL(BPool.exitswapPoolAmountIn.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.exitswapPoolAmountIn.selector, address(this), _data);
 
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
   }
@@ -2666,7 +2667,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     // Set balances
     _setRecord(
       tokenOut,
-      BPool.Record({
+      IBPool.Record({
         bound: true,
         index: 0, // NOTE: irrelevant for this method
         denorm: _fuzz.tokenOutDenorm
@@ -2798,7 +2799,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
 
   function test_Emit_LogExit(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     vm.expectEmit();
-    emit BPool.LOG_EXIT(address(this), tokenOut, _fuzz.tokenAmountOut);
+    emit IBPool.LOG_EXIT(address(this), tokenOut, _fuzz.tokenAmountOut);
 
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
@@ -2881,7 +2882,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     vm.expectEmit();
     bytes memory _data =
       abi.encodeWithSelector(BPool.exitswapExternAmountOut.selector, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
-    emit BPool.LOG_CALL(BPool.exitswapExternAmountOut.selector, address(this), _data);
+    emit IBPool.LOG_CALL(BPool.exitswapExternAmountOut.selector, address(this), _data);
 
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
