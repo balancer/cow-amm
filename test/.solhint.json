@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "max-states-count": "off",
+    "named-parameters-function": "off",
+    "no-unused-vars": "off",
+    "one-contract-per-file": "off",
+    "ordering": "off",
+    "private-vars-leading-underscore": ["off"],
+    "state-visibility": "off",
+    "style-guide-casing": ["warn", { "ignorePublicFunctions": true,"ignoreStructs": true,  "ignoreExternalFunctions": true  , "ignoreContracts": true} ]
+  }
+}
