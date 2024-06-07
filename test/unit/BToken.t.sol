@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.25;
 
 import {IERC20Errors} from '@openzeppelin/contracts/interfaces/draft-IERC6093.sol';
 import {Test} from 'forge-std/Test.sol';
