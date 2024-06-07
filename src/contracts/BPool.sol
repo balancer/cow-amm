@@ -2,31 +2,39 @@
 pragma solidity 0.8.25;
 
 import {BMath} from './BMath.sol';
-
 import {BToken} from './BToken.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
+/**
+ * @title BPool
+ * @notice Pool contract that holds tokens, allows to swap, add and remove liquidity.
+ */
 contract BPool is BToken, BMath, IBPool {
+  /// @dev True if a call to the contract is in progress, False otherwise
   bool internal _mutex;
-
-  address internal _factory; // BFactory address to push token exitFee to
-  address internal _controller; // has CONTROL role
-
-  // `setSwapFee` and `finalize` require CONTROL
-  // `finalize` sets `PUBLIC can SWAP`, `PUBLIC can JOIN`
+  /// @dev BFactory address to push token exitFee to
+  address internal _factory;
+  /// @dev Has CONTROL role
+  address internal _controller;
+  /// @dev Fee for swapping
   uint256 internal _swapFee;
+  /// @dev Status of the pool. True if finalized, False otherwise
   bool internal _finalized;
-
+  /// @dev Array of bound tokens
   address[] internal _tokens;
+  /// @dev Metadata for each bound token
   mapping(address => Record) internal _records;
+  /// @dev Sum of all token weights
   uint256 internal _totalWeight;
 
+  /// @dev Logs the call data
   modifier _logs_() {
     emit LOG_CALL(msg.sig, msg.sender, msg.data);
     _;
   }
 
+  /// @dev Prevents reentrancy in non-view functions
   modifier _lock_() {
     require(!_mutex, 'ERR_REENTRY');
     _mutex = true;
@@ -34,6 +42,7 @@ contract BPool is BToken, BMath, IBPool {
     _mutex = false;
   }
 
+  /// @dev Prevents reentrancy in view functions
   modifier _viewlock_() {
     require(!_mutex, 'ERR_REENTRY');
     _;
@@ -46,6 +55,7 @@ contract BPool is BToken, BMath, IBPool {
     _finalized = false;
   }
 
+  /// @inheritdoc IBPool
   function setSwapFee(uint256 swapFee) external _logs_ _lock_ {
     require(!_finalized, 'ERR_IS_FINALIZED');
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
@@ -54,11 +64,13 @@ contract BPool is BToken, BMath, IBPool {
     _swapFee = swapFee;
   }
 
+  /// @inheritdoc IBPool
   function setController(address manager) external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     _controller = manager;
   }
 
+  /// @inheritdoc IBPool
   function finalize() external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     require(!_finalized, 'ERR_IS_FINALIZED');
@@ -70,6 +82,7 @@ contract BPool is BToken, BMath, IBPool {
     _pushPoolShare(msg.sender, INIT_POOL_SUPPLY);
   }
 
+  /// @inheritdoc IBPool
   function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     require(!_records[token].bound, 'ERR_IS_BOUND');
@@ -90,6 +103,7 @@ contract BPool is BToken, BMath, IBPool {
     _pullUnderlying(token, msg.sender, balance);
   }
 
+  /// @inheritdoc IBPool
   function unbind(address token) external _logs_ _lock_ {
     require(msg.sender == _controller, 'ERR_NOT_CONTROLLER');
     require(_records[token].bound, 'ERR_NOT_BOUND');
@@ -109,6 +123,7 @@ contract BPool is BToken, BMath, IBPool {
     _pushUnderlying(token, msg.sender, IERC20(token).balanceOf(address(this)));
   }
 
+  /// @inheritdoc IBPool
   function joinPool(uint256 poolAmountOut, uint256[] calldata maxAmountsIn) external _logs_ _lock_ {
     require(_finalized, 'ERR_NOT_FINALIZED');
 
@@ -129,6 +144,7 @@ contract BPool is BToken, BMath, IBPool {
     _pushPoolShare(msg.sender, poolAmountOut);
   }
 
+  /// @inheritdoc IBPool
   function exitPool(uint256 poolAmountIn, uint256[] calldata minAmountsOut) external _logs_ _lock_ {
     require(_finalized, 'ERR_NOT_FINALIZED');
 
@@ -153,6 +169,7 @@ contract BPool is BToken, BMath, IBPool {
     }
   }
 
+  /// @inheritdoc IBPool
   function swapExactAmountIn(
     address tokenIn,
     uint256 tokenAmountIn,
@@ -196,6 +213,7 @@ contract BPool is BToken, BMath, IBPool {
     return (tokenAmountOut, spotPriceAfter);
   }
 
+  /// @inheritdoc IBPool
   function swapExactAmountOut(
     address tokenIn,
     uint256 maxAmountIn,
@@ -239,6 +257,7 @@ contract BPool is BToken, BMath, IBPool {
     return (tokenAmountIn, spotPriceAfter);
   }
 
+  /// @inheritdoc IBPool
   function joinswapExternAmountIn(
     address tokenIn,
     uint256 tokenAmountIn,
@@ -264,6 +283,7 @@ contract BPool is BToken, BMath, IBPool {
     return poolAmountOut;
   }
 
+  /// @inheritdoc IBPool
   function joinswapPoolAmountOut(
     address tokenIn,
     uint256 poolAmountOut,
@@ -291,6 +311,7 @@ contract BPool is BToken, BMath, IBPool {
     return tokenAmountIn;
   }
 
+  /// @inheritdoc IBPool
   function exitswapPoolAmountIn(
     address tokenOut,
     uint256 poolAmountIn,
@@ -320,6 +341,7 @@ contract BPool is BToken, BMath, IBPool {
     return tokenAmountOut;
   }
 
+  /// @inheritdoc IBPool
   function exitswapExternAmountOut(
     address tokenOut,
     uint256 tokenAmountOut,
@@ -349,6 +371,7 @@ contract BPool is BToken, BMath, IBPool {
     return poolAmountIn;
   }
 
+  /// @inheritdoc IBPool
   function getSpotPrice(address tokenIn, address tokenOut) external view _viewlock_ returns (uint256 spotPrice) {
     require(_records[tokenIn].bound, 'ERR_NOT_BOUND');
     require(_records[tokenOut].bound, 'ERR_NOT_BOUND');
@@ -363,6 +386,7 @@ contract BPool is BToken, BMath, IBPool {
     );
   }
 
+  /// @inheritdoc IBPool
   function getSpotPriceSansFee(address tokenIn, address tokenOut) external view _viewlock_ returns (uint256 spotPrice) {
     require(_records[tokenIn].bound, 'ERR_NOT_BOUND');
     require(_records[tokenOut].bound, 'ERR_NOT_BOUND');
@@ -377,81 +401,118 @@ contract BPool is BToken, BMath, IBPool {
     );
   }
 
+  /// @inheritdoc IBPool
   function isFinalized() external view returns (bool) {
     return _finalized;
   }
 
+  /// @inheritdoc IBPool
   function isBound(address t) external view returns (bool) {
     return _records[t].bound;
   }
 
+  /// @inheritdoc IBPool
   function getNumTokens() external view returns (uint256) {
     return _tokens.length;
   }
 
+  /// @inheritdoc IBPool
   function getCurrentTokens() external view _viewlock_ returns (address[] memory tokens) {
     return _tokens;
   }
 
+  /// @inheritdoc IBPool
   function getFinalTokens() external view _viewlock_ returns (address[] memory tokens) {
     require(_finalized, 'ERR_NOT_FINALIZED');
     return _tokens;
   }
 
+  /// @inheritdoc IBPool
   function getDenormalizedWeight(address token) external view _viewlock_ returns (uint256) {
     require(_records[token].bound, 'ERR_NOT_BOUND');
     return _records[token].denorm;
   }
 
+  /// @inheritdoc IBPool
   function getTotalDenormalizedWeight() external view _viewlock_ returns (uint256) {
     return _totalWeight;
   }
 
+  /// @inheritdoc IBPool
   function getNormalizedWeight(address token) external view _viewlock_ returns (uint256) {
     require(_records[token].bound, 'ERR_NOT_BOUND');
     uint256 denorm = _records[token].denorm;
     return bdiv(denorm, _totalWeight);
   }
 
+  /// @inheritdoc IBPool
   function getBalance(address token) external view _viewlock_ returns (uint256) {
     require(_records[token].bound, 'ERR_NOT_BOUND');
     return IERC20(token).balanceOf(address(this));
   }
 
+  /// @inheritdoc IBPool
   function getSwapFee() external view _viewlock_ returns (uint256) {
     return _swapFee;
   }
 
+  /// @inheritdoc IBPool
   function getController() external view _viewlock_ returns (address) {
     return _controller;
   }
 
-  // ==
-  // 'Underlying' token-manipulation functions make external calls but are NOT locked
-  // You must `_lock_` or otherwise ensure reentry-safety
-
+  /**
+   * @dev Pulls tokens from the sender. Tokens needs to be approved first. Calls are not locked.
+   * @param erc20 address of the token to pull
+   * @param from address to pull the tokens from
+   * @param amount amount of tokens to pull
+   */
   function _pullUnderlying(address erc20, address from, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
     require(xfer, 'ERR_ERC20_FALSE');
   }
 
+  /**
+   * @dev Pushes tokens to the receiver. Calls are not locked.
+   * @param erc20 address of the token to push
+   * @param to address to push the tokens to
+   * @param amount amount of tokens to push
+   */
   function _pushUnderlying(address erc20, address to, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transfer(to, amount);
     require(xfer, 'ERR_ERC20_FALSE');
   }
 
+  /**
+   * @dev Pulls pool tokens from the sender.
+   * @param from address to pull the pool tokens from
+   * @param amount amount of pool tokens to pull
+   */
   function _pullPoolShare(address from, uint256 amount) internal {
     _pull(from, amount);
   }
 
+  /**
+   * @dev Pushes pool tokens to the receiver.
+   * @param to address to push the pool tokens to
+   * @param amount amount of pool tokens to push
+   */
   function _pushPoolShare(address to, uint256 amount) internal {
     _push(to, amount);
   }
 
+  /**
+   * @dev Mints an amount of pool tokens.
+   * @param amount amount of pool tokens to mint
+   */
   function _mintPoolShare(uint256 amount) internal {
     _mint(address(this), amount);
   }
 
+  /**
+   * @dev Burns an amount of pool tokens.
+   * @param amount amount of pool tokens to burn
+   */
   function _burnPoolShare(uint256 amount) internal {
     _burn(address(this), amount);
   }
