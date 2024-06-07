@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.23;
 
-import {BBronze} from './BColor.sol';
-
-contract BConst is BBronze {
+contract BConst {
   uint256 public constant BONE = 10 ** 18;
 
   uint256 public constant MIN_BOUND_TOKENS = 2;
