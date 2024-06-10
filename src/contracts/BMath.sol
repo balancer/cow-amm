@@ -1,21 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.23;
+pragma solidity 0.8.25;
 
-import {BBronze} from './BColor.sol';
 import {BConst} from './BConst.sol';
 import {BNum} from './BNum.sol';
 
-contract BMath is BBronze, BConst, BNum {
+contract BMath is BConst, BNum {
   /**
-   *
-   *    calcSpotPrice
-   *    sP = spotPrice
-   *    bI = tokenBalanceIn                ( bI / wI )         1
-   *    bO = tokenBalanceOut         sP =  -----------  *  ----------
-   *    wI = tokenWeightIn                 ( bO / wO )     ( 1 - sF )
-   *    wO = tokenWeightOut
-   *    sF = swapFee
-   *
+   * @notice Calculate the spot price of a token in terms of another one
+   * @dev The price denomination depends on the decimals of the tokens.
+   * @dev To obtain the price with 18 decimals the next formula should be applied to the result
+   * @dev spotPrice = spotPrice ÷ (10^tokenInDecimals) × (10^tokenOutDecimals)
+   * @param tokenBalanceIn The balance of the input token in the pool
+   * @param tokenWeightIn The weight of the input token in the pool
+   * @param tokenBalanceOut The balance of the output token in the pool
+   * @param tokenWeightOut The weight of the output token in the pool
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * sP = spotPrice
+   * bI = tokenBalanceIn                ( bI / wI )         1
+   * bO = tokenBalanceOut         sP =  -----------  *  ----------
+   * wI = tokenWeightIn                 ( bO / wO )     ( 1 - sF )
+   * wO = tokenWeightOut
+   * sF = swapFee
    */
   function calcSpotPrice(
     uint256 tokenBalanceIn,
@@ -32,16 +38,21 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcOutGivenIn
-   *    aO = tokenAmountOut
-   *    bO = tokenBalanceOut
-   *    bI = tokenBalanceIn              /      /            bI             \    (wI / wO) \
-   *    aI = tokenAmountIn    aO = bO * |  1 - | --------------------------  | ^            |
-   *    wI = tokenWeightIn               \      \ ( bI + ( aI * ( 1 - sF )) /              /
-   *    wO = tokenWeightOut
-   *    sF = swapFee
-   *
+   * @notice Calculate the amount of token out given the amount of token in for a swap
+   * @param tokenBalanceIn The balance of the input token in the pool
+   * @param tokenWeightIn The weight of the input token in the pool
+   * @param tokenBalanceOut The balance of the output token in the pool
+   * @param tokenWeightOut The weight of the output token in the pool
+   * @param tokenAmountIn The amount of the input token
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * aO = tokenAmountOut
+   * bO = tokenBalanceOut
+   * bI = tokenBalanceIn              /      /            bI             \    (wI / wO) \
+   * aI = tokenAmountIn    aO = bO * |  1 - | --------------------------  | ^            |
+   * wI = tokenWeightIn               \      \ ( bI + ( aI * ( 1 - sF )) /              /
+   * wO = tokenWeightOut
+   * sF = swapFee
    */
   function calcOutGivenIn(
     uint256 tokenBalanceIn,
@@ -62,16 +73,21 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcInGivenOut
-   *    aI = tokenAmountIn
-   *    bO = tokenBalanceOut               /  /     bO      \    (wO / wI)      \
-   *    bI = tokenBalanceIn          bI * |  | ------------  | ^            - 1  |
-   *    aO = tokenAmountOut    aI =        \  \ ( bO - aO ) /                   /
-   *    wI = tokenWeightIn           --------------------------------------------
-   *    wO = tokenWeightOut                          ( 1 - sF )
-   *    sF = swapFee
-   *
+   * @notice Calculate the amount of token in given the amount of token out for a swap
+   * @param tokenBalanceIn The balance of the input token in the pool
+   * @param tokenWeightIn The weight of the input token in the pool
+   * @param tokenBalanceOut The balance of the output token in the pool
+   * @param tokenWeightOut The weight of the output token in the pool
+   * @param tokenAmountOut The amount of the output token
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * aI = tokenAmountIn
+   * bO = tokenBalanceOut               /  /     bO      \    (wO / wI)      \
+   * bI = tokenBalanceIn          bI * |  | ------------  | ^            - 1  |
+   * aO = tokenAmountOut    aI =        \  \ ( bO - aO ) /                   /
+   * wI = tokenWeightIn           --------------------------------------------
+   * wO = tokenWeightOut                          ( 1 - sF )
+   * sF = swapFee
    */
   function calcInGivenOut(
     uint256 tokenBalanceIn,
@@ -92,16 +108,22 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcPoolOutGivenSingleIn
-   *    pAo = poolAmountOut         /                                              \
-   *    tAi = tokenAmountIn        ///      /     //    wI \      \\       \     wI \
-   *    wI = tokenWeightIn        //| tAi *| 1 - || 1 - --  | * sF || + tBi \    --  \
-   *    tW = totalWeight     pAo=||  \      \     \\    tW /      //         | ^ tW   | * pS - pS
-   *    tBi = tokenBalanceIn      \\  ------------------------------------- /        /
-   *    pS = poolSupply            \\                    tBi               /        /
-   *    sF = swapFee                \                                              /
-   *
+   * @notice Calculate the amount of pool tokens that should be minted,
+   * given a single token in when joining a pool
+   * @param tokenBalanceIn The balance of the input token in the pool
+   * @param tokenWeightIn The weight of the input token in the pool
+   * @param poolSupply The total supply of the pool tokens
+   * @param totalWeight The total weight of the pool
+   * @param tokenAmountIn The amount of the input token
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * pAo = poolAmountOut         /                                              \
+   * tAi = tokenAmountIn        ///      /     //    wI \      \\       \     wI \
+   * wI = tokenWeightIn        //| tAi *| 1 - || 1 - --  | * sF || + tBi \    --  \
+   * tW = totalWeight     pAo=||  \      \     \\    tW /      //         | ^ tW   | * pS - pS
+   * tBi = tokenBalanceIn      \\  ------------------------------------- /        /
+   * pS = poolSupply            \\                    tBi               /        /
+   * sF = swapFee                \                                              /
    */
   function calcPoolOutGivenSingleIn(
     uint256 tokenBalanceIn,
@@ -130,16 +152,21 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcSingleInGivenPoolOut
-   *    tAi = tokenAmountIn              //(pS + pAo)\     /    1    \\
-   *    pS = poolSupply                 || ---------  | ^ | --------- || * bI - bI
-   *    pAo = poolAmountOut              \\    pS    /     \(wI / tW)//
-   *    bI = balanceIn          tAi =  --------------------------------------------
-   *    wI = weightIn                              /      wI  \
-   *    tW = totalWeight                          |  1 - ----  |  * sF
-   *    sF = swapFee                               \      tW  /
-   *
+   * @notice Given amount of pool tokens out, calculate the amount of tokens in that should be sent
+   * @param tokenBalanceIn The balance of the input token in the pool
+   * @param tokenWeightIn The weight of the input token in the pool
+   * @param poolSupply The current total supply
+   * @param totalWeight The sum of the weight of all tokens in the pool
+   * @param poolAmountOut The expected amount of pool tokens
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * tAi = tokenAmountIn              //(pS + pAo)\     /    1    \\
+   * pS = poolSupply                 || ---------  | ^ | --------- || * bI - bI
+   * pAo = poolAmountOut              \\    pS    /     \(wI / tW)//
+   * bI = balanceIn          tAi =  --------------------------------------------
+   * wI = weightIn                              /      wI  \
+   * tW = totalWeight                          |  1 - ----  |  * sF
+   * sF = swapFee                               \      tW  /
    */
   function calcSingleInGivenPoolOut(
     uint256 tokenBalanceIn,
@@ -167,17 +194,22 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcSingleOutGivenPoolIn
-   *    tAo = tokenAmountOut            /      /                                             \\
-   *    bO = tokenBalanceOut           /      // pS - (pAi * (1 - eF)) \     /    1    \      \\
-   *    pAi = poolAmountIn            | bO - || ----------------------- | ^ | --------- | * b0 ||
-   *    ps = poolSupply                \      \\          pS           /     \(wO / tW)/      //
-   *    wI = tokenWeightIn      tAo =   \      \                                             //
-   *    tW = totalWeight                    /     /      wO \       \
-   *    sF = swapFee                    *  | 1 - |  1 - ---- | * sF  |
-   *    eF = exitFee                        \     \      tW /       /
-   *
+   * @notice Calculate the amount of token out given the amount of pool tokens in
+   * @param tokenBalanceOut The balance of the output token in the pool
+   * @param tokenWeightOut The weight of the output token in the pool
+   * @param poolSupply The total supply of the pool tokens
+   * @param totalWeight The total weight of the pool
+   * @param poolAmountIn The amount of pool tokens
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * tAo = tokenAmountOut            /      /                                             \\
+   * bO = tokenBalanceOut           /      // pS - (pAi * (1 - eF)) \     /    1    \      \\
+   * pAi = poolAmountIn            | bO - || ----------------------- | ^ | --------- | * b0 ||
+   * ps = poolSupply                \      \\          pS           /     \(wO / tW)/      //
+   * wI = tokenWeightIn      tAo =   \      \                                             //
+   * tW = totalWeight                    /     /      wO \       \
+   * sF = swapFee                    *  | 1 - |  1 - ---- | * sF  |
+   * eF = exitFee                        \     \      tW /       /
    */
   function calcSingleOutGivenPoolIn(
     uint256 tokenBalanceOut,
@@ -208,17 +240,22 @@ contract BMath is BBronze, BConst, BNum {
   }
 
   /**
-   *
-   *    calcPoolInGivenSingleOut
-   *    pAi = poolAmountIn               // /               tAo             \\     / wO \     \
-   *    bO = tokenBalanceOut            // | bO - -------------------------- |\   | ---- |     \
-   *    tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (tO / tW)) * sF)/  | ^ \ tW /  * pS |
-   *    ps = poolSupply                 \\ -----------------------------------/                /
-   *    wO = tokenWeightOut  pAi =       \\               bO                 /                /
-   *    tW = totalWeight           -------------------------------------------------------------
-   *    sF = swapFee                                        ( 1 - eF )
-   *    eF = exitFee
-   *
+   * @notice Calculate the amount of pool tokens in given an amount of single token out
+   * @param tokenBalanceOut The balance of the output token in the pool
+   * @param tokenWeightOut The weight of the output token in the pool
+   * @param poolSupply The total supply of the pool tokens
+   * @param totalWeight The total weight of the pool
+   * @param tokenAmountOut The amount of the output token
+   * @param swapFee The swap fee of the pool
+   * @dev Formula:
+   * pAi = poolAmountIn               // /               tAo             \\     / wO \     \
+   * bO = tokenBalanceOut            // | bO - -------------------------- |\   | ---- |     \
+   * tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (tO / tW)) * sF)/  | ^ \ tW /  * pS |
+   * ps = poolSupply                 \\ -----------------------------------/                /
+   * wO = tokenWeightOut  pAi =       \\               bO                 /                /
+   * tW = totalWeight           -------------------------------------------------------------
+   * sF = swapFee                                        ( 1 - eF )
+   * eF = exitFee
    */
   function calcPoolInGivenSingleOut(
     uint256 tokenBalanceOut,

@@ -1,107 +1,53 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.23;
+pragma solidity 0.8.25;
 
-import {BNum} from './BNum.sol';
-import {IERC20} from 'forge-std/interfaces/IERC20.sol';
+import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
-abstract contract BTokenBase is BNum, IERC20 {
-  mapping(address => uint256) internal _balance;
-  mapping(address => mapping(address => uint256)) internal _allowance;
-  uint256 internal _totalSupply;
+contract BToken is ERC20 {
+  constructor() ERC20('Balancer Pool Token', 'BPT') {}
 
-  function _mint(uint256 amt) internal {
-    _balance[address(this)] = badd(_balance[address(this)], amt);
-    _totalSupply = badd(_totalSupply, amt);
-    emit Transfer(address(0), address(this), amt);
-  }
-
-  function _burn(uint256 amt) internal {
-    require(_balance[address(this)] >= amt, 'ERR_INSUFFICIENT_BAL');
-    _balance[address(this)] = bsub(_balance[address(this)], amt);
-    _totalSupply = bsub(_totalSupply, amt);
-    emit Transfer(address(this), address(0), amt);
-  }
-
-  function _move(address src, address dst, uint256 amt) internal {
-    require(_balance[src] >= amt, 'ERR_INSUFFICIENT_BAL');
-    _balance[src] = bsub(_balance[src], amt);
-    _balance[dst] = badd(_balance[dst], amt);
-    emit Transfer(src, dst, amt);
-  }
-
-  function _push(address to, uint256 amt) internal {
-    _move(address(this), to, amt);
-  }
-
-  function _pull(address from, uint256 amt) internal {
-    _move(from, address(this), amt);
-  }
-}
-
-contract BToken is BTokenBase {
-  string internal _name = 'Balancer Pool Token';
-  string internal _symbol = 'BPT';
-  uint8 internal _decimals = 18;
-
-  function approve(address dst, uint256 amt) external override returns (bool) {
-    _allowance[msg.sender][dst] = amt;
-    emit Approval(msg.sender, dst, amt);
-    return true;
-  }
-
+  /**
+   * @notice Increase the allowance of the spender.
+   * @param dst The address which will spend the funds.
+   * @param amt The amount of tokens to increase the allowance by.
+   * @return True if the operation is successful.
+   */
   function increaseApproval(address dst, uint256 amt) external returns (bool) {
-    _allowance[msg.sender][dst] = badd(_allowance[msg.sender][dst], amt);
-    emit Approval(msg.sender, dst, _allowance[msg.sender][dst]);
+    _approve(msg.sender, dst, allowance(msg.sender, dst) + amt);
     return true;
   }
 
+  /**
+   * @notice Decrease the allowance of the spender.
+   * @param dst The address which will spend the funds.
+   * @param amt The amount of tokens to decrease the allowance by.
+   * @return True if the operation is successful.
+   */
   function decreaseApproval(address dst, uint256 amt) external returns (bool) {
-    uint256 oldValue = _allowance[msg.sender][dst];
+    uint256 oldValue = allowance(msg.sender, dst);
     if (amt > oldValue) {
-      _allowance[msg.sender][dst] = 0;
+      _approve(msg.sender, dst, 0);
     } else {
-      _allowance[msg.sender][dst] = bsub(oldValue, amt);
-    }
-    emit Approval(msg.sender, dst, _allowance[msg.sender][dst]);
-    return true;
-  }
-
-  function transfer(address dst, uint256 amt) external override returns (bool) {
-    _move(msg.sender, dst, amt);
-    return true;
-  }
-
-  function transferFrom(address src, address dst, uint256 amt) external override returns (bool) {
-    require(msg.sender == src || amt <= _allowance[src][msg.sender], 'ERR_BTOKEN_BAD_CALLER');
-    _move(src, dst, amt);
-    if (msg.sender != src && _allowance[src][msg.sender] != type(uint256).max) {
-      _allowance[src][msg.sender] = bsub(_allowance[src][msg.sender], amt);
-      emit Approval(msg.sender, dst, _allowance[src][msg.sender]);
+      _approve(msg.sender, dst, oldValue - amt);
     }
     return true;
   }
 
-  function allowance(address src, address dst) external view override returns (uint256) {
-    return _allowance[src][dst];
+  /**
+   * @notice Transfer tokens from one this contract to another.
+   * @param to The address which you want to transfer to.
+   * @param amt The amount of tokens to be transferred.
+   */
+  function _push(address to, uint256 amt) internal virtual {
+    _transfer(address(this), to, amt);
   }
 
-  function balanceOf(address whom) external view override returns (uint256) {
-    return _balance[whom];
-  }
-
-  function totalSupply() public view override returns (uint256) {
-    return _totalSupply;
-  }
-
-  function name() public view returns (string memory) {
-    return _name;
-  }
-
-  function symbol() public view returns (string memory) {
-    return _symbol;
-  }
-
-  function decimals() public view returns (uint8) {
-    return _decimals;
+  /**
+   * @notice Pull tokens from another address to this contract.
+   * @param from The address which you want to transfer from.
+   * @param amt The amount of tokens to be transferred.
+   */
+  function _pull(address from, uint256 amt) internal virtual {
+    _transfer(from, address(this), amt);
   }
 }

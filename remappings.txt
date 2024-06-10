@@ -4,3 +4,4 @@ forge-gas-snapshot/=node_modules/forge-gas-snapshot/src
 solmate/=node_modules/solmate/src
 
 contracts/=src/contracts
+interfaces/=src/interfaces

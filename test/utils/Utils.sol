@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.25;
 
 import {Test} from 'forge-std/Test.sol';
+import {LibString} from 'solmate/utils/LibString.sol';
 
 contract Utils is Test {
+  using LibString for uint256;
+
   uint256 public constant TOKENS_AMOUNT = 3;
 
   address[TOKENS_AMOUNT] public tokens;
+
+  function _getDeterministicTokenArray(uint256 _length) internal returns (address[] memory _tokenArray) {
+    _tokenArray = new address[](_length);
+    for (uint256 i = 0; i < _length; i++) {
+      _tokenArray[i] = makeAddr(i.toString());
+    }
+  }
 
   function _tokensToMemory() internal view returns (address[] memory _tokens) {
     _tokens = new address[](tokens.length);

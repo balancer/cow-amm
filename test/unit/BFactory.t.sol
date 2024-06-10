@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.25;
+
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {BFactory} from 'contracts/BFactory.sol';
 import {BPool} from 'contracts/BPool.sol';
-import {IERC20} from 'contracts/BToken.sol';
 import {Test} from 'forge-std/Test.sol';
+import {IBFactory} from 'interfaces/IBFactory.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
 
 abstract contract Base is Test {
   BFactory public bFactory;
@@ -49,7 +52,7 @@ contract BFactory_Unit_NewBPool is Base {
    * @notice Test that the pool is set on the mapping
    */
   function test_Set_Pool() public {
-    BPool _pool = bFactory.newBPool();
+    IBPool _pool = bFactory.newBPool();
     assertTrue(bFactory.isBPool(address(_pool)));
   }
 
@@ -61,7 +64,7 @@ contract BFactory_Unit_NewBPool is Base {
 
     vm.expectEmit();
     address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
-    emit BFactory.LOG_NEW_POOL(_randomCaller, _expectedPoolAddress);
+    emit IBFactory.LOG_NEW_POOL(_randomCaller, _expectedPoolAddress);
     vm.prank(_randomCaller);
     bFactory.newBPool();
   }
@@ -73,7 +76,7 @@ contract BFactory_Unit_NewBPool is Base {
     assumeNotForgeAddress(_randomCaller);
 
     vm.prank(_randomCaller);
-    BPool _pool = bFactory.newBPool();
+    IBPool _pool = bFactory.newBPool();
     assertEq(_randomCaller, _pool.getController());
   }
 
@@ -82,7 +85,7 @@ contract BFactory_Unit_NewBPool is Base {
    */
   function test_Returns_Pool() public {
     address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
-    BPool _pool = bFactory.newBPool();
+    IBPool _pool = bFactory.newBPool();
     assertEq(_expectedPoolAddress, address(_pool));
   }
 }
@@ -114,7 +117,7 @@ contract BFactory_Unit_SetBLabs is Base {
    */
   function test_Emit_Log(address _addressToSet) public {
     vm.expectEmit();
-    emit BFactory.LOG_BLABS(owner, _addressToSet);
+    emit IBFactory.LOG_BLABS(owner, _addressToSet);
     vm.prank(owner);
     bFactory.setBLabs(_addressToSet);
   }
@@ -137,7 +140,7 @@ contract BFactory_Unit_Collect is Base {
     vm.assume(_randomCaller != owner);
     vm.expectRevert('ERR_NOT_BLABS');
     vm.prank(_randomCaller);
-    bFactory.collect(BPool(address(0)));
+    bFactory.collect(IBPool(address(0)));
   }
 
   /**
@@ -151,7 +154,7 @@ contract BFactory_Unit_Collect is Base {
 
     vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)));
     vm.prank(owner);
-    bFactory.collect(BPool(_lpToken));
+    bFactory.collect(IBPool(_lpToken));
   }
 
   /**
@@ -165,7 +168,7 @@ contract BFactory_Unit_Collect is Base {
 
     vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect));
     vm.prank(owner);
-    bFactory.collect(BPool(_lpToken));
+    bFactory.collect(IBPool(_lpToken));
   }
 
   /**
@@ -179,6 +182,6 @@ contract BFactory_Unit_Collect is Base {
 
     vm.expectRevert('ERR_ERC20_FAILED');
     vm.prank(owner);
-    bFactory.collect(BPool(_lpToken));
+    bFactory.collect(IBPool(_lpToken));
   }
 }
