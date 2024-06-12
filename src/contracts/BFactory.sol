@@ -30,17 +30,23 @@ contract BFactory is IBFactory {
 
   /// @inheritdoc IBFactory
   function setBLabs(address b) external {
-    require(msg.sender == _blabs, 'ERR_NOT_BLABS');
+    if (msg.sender != _blabs) {
+      revert BFactory_NotBLabs();
+    }
     emit LOG_BLABS(msg.sender, b);
     _blabs = b;
   }
 
   /// @inheritdoc IBFactory
   function collect(IBPool pool) external {
-    require(msg.sender == _blabs, 'ERR_NOT_BLABS');
+    if (msg.sender != _blabs) {
+      revert BFactory_NotBLabs();
+    }
     uint256 collected = pool.balanceOf(address(this));
     bool xfer = pool.transfer(_blabs, collected);
-    require(xfer, 'ERR_ERC20_FAILED');
+    if (!xfer) {
+      revert BFactory_ERC20TransferFailed();
+    }
   }
 
   /// @inheritdoc IBFactory

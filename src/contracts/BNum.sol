@@ -6,6 +6,41 @@ import {BConst} from './BConst.sol';
 // solhint-disable private-vars-leading-underscore
 // solhint-disable named-return-values
 contract BNum is BConst {
+  /**
+   * @notice Thrown when an overflow is encountered inside the add function
+   */
+  error BNum_AddOverflow();
+
+  /**
+   * @notice Thrown when an underflow is encountered inside the sub function
+   */
+  error BNum_SubUnderflow();
+
+  /**
+   * @notice Thrown when an overflow is encountered inside the mul function
+   */
+  error BNum_MulOverflow();
+
+  /**
+   * @notice Thrown when attempting to divide by zero
+   */
+  error BNum_DivZero();
+
+  /**
+   * @notice Thrown when an internal error occurs inside div function
+   */
+  error BNum_DivInternal();
+
+  /**
+   * @notice Thrown when the base is too low in the bpow function
+   */
+  error BNum_BPowBaseTooLow();
+
+  /**
+   * @notice Thrown when the base is too high in the bpow function
+   */
+  error BNum_BPowBaseTooHigh();
+
   function btoi(uint256 a) internal pure returns (uint256) {
     unchecked {
       return a / BONE;
@@ -21,7 +56,9 @@ contract BNum is BConst {
   function badd(uint256 a, uint256 b) internal pure returns (uint256) {
     unchecked {
       uint256 c = a + b;
-      require(c >= a, 'ERR_ADD_OVERFLOW');
+      if (c < a) {
+        revert BNum_AddOverflow();
+      }
       return c;
     }
   }
@@ -29,7 +66,9 @@ contract BNum is BConst {
   function bsub(uint256 a, uint256 b) internal pure returns (uint256) {
     unchecked {
       (uint256 c, bool flag) = bsubSign(a, b);
-      require(!flag, 'ERR_SUB_UNDERFLOW');
+      if (flag) {
+        revert BNum_SubUnderflow();
+      }
       return c;
     }
   }
@@ -47,9 +86,13 @@ contract BNum is BConst {
   function bmul(uint256 a, uint256 b) internal pure returns (uint256) {
     unchecked {
       uint256 c0 = a * b;
-      require(a == 0 || c0 / a == b, 'ERR_MUL_OVERFLOW');
+      if (a != 0 && c0 / a != b) {
+        revert BNum_MulOverflow();
+      }
       uint256 c1 = c0 + (BONE / 2);
-      require(c1 >= c0, 'ERR_MUL_OVERFLOW');
+      if (c1 < c0) {
+        revert BNum_MulOverflow();
+      }
       uint256 c2 = c1 / BONE;
       return c2;
     }
@@ -57,11 +100,17 @@ contract BNum is BConst {
 
   function bdiv(uint256 a, uint256 b) internal pure returns (uint256) {
     unchecked {
-      require(b != 0, 'ERR_DIV_ZERO');
+      if (b == 0) {
+        revert BNum_DivZero();
+      }
       uint256 c0 = a * BONE;
-      require(a == 0 || c0 / a == BONE, 'ERR_DIV_INTERNAL'); // bmul overflow
+      if (a != 0 && c0 / a != BONE) {
+        revert BNum_DivInternal(); // bmul overflow
+      }
       uint256 c1 = c0 + (b / 2);
-      require(c1 >= c0, 'ERR_DIV_INTERNAL'); //  badd require
+      if (c1 < c0) {
+        revert BNum_DivInternal(); //  badd require
+      }
       uint256 c2 = c1 / b;
       return c2;
     }
@@ -88,8 +137,12 @@ contract BNum is BConst {
   // of approximation of b^0.w
   function bpow(uint256 base, uint256 exp) internal pure returns (uint256) {
     unchecked {
-      require(base >= MIN_BPOW_BASE, 'ERR_BPOW_BASE_TOO_LOW');
-      require(base <= MAX_BPOW_BASE, 'ERR_BPOW_BASE_TOO_HIGH');
+      if (base < MIN_BPOW_BASE) {
+        revert BNum_BPowBaseTooLow();
+      }
+      if (base > MAX_BPOW_BASE) {
+        revert BNum_BPowBaseTooHigh();
+      }
 
       uint256 whole = bfloor(exp);
       uint256 remain = bsub(exp, whole);

@@ -57,6 +57,156 @@ interface IBPool is IERC20 {
   event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
 
   /**
+   * @notice Thrown when a reentrant call is made
+   */
+  error BPool_Reentrancy();
+
+  /**
+   * @notice Thrown when the pool is finalized
+   */
+  error BPool_PoolIsFinalized();
+
+  /**
+   * @notice Thrown when the caller is not the controller
+   */
+  error BPool_CallerIsNotController();
+
+  /**
+   * @notice Thrown when the pool is not finalized
+   */
+  error BPool_FeeBelowMinimum();
+
+  /**
+   * @notice Thrown when the fee to set is above the maximum
+   */
+  error BPool_FeeAboveMaximum();
+
+  /**
+   * @notice Thrown when the tokens array is below the minimum
+   */
+  error BPool_TokensBelowMinimum();
+
+  /**
+   * @notice Thrown when the token is already bound in the pool
+   */
+  error BPool_TokenAlreadyBound();
+
+  /**
+   * @notice Thrown when the tokens array is above the maximum
+   */
+  error BPool_TokensAboveMaximum();
+
+  /**
+   * @notice Thrown when the weight to set is below the minimum
+   */
+  error BPool_WeightBelowMinimum();
+
+  /**
+   * @notice Thrown when the weight to set is above the maximum
+   */
+  error BPool_WeightAboveMaximum();
+
+  /**
+   * @notice Thrown when the balance to add is below the minimum
+   */
+  error BPool_BalanceBelowMinimum();
+
+  /**
+   * @notice Thrown when the total weight is above the maximum
+   */
+  error BPool_TotalWeightAboveMaximum();
+
+  /**
+   * @notice Thrown when the ratio between the pool token amount and the total supply is zero
+   */
+  error BPool_InvalidPoolRatio();
+
+  /**
+   * @notice Thrown when the calculated token amount in is zero
+   */
+  error BPool_InvalidTokenAmountIn();
+
+  /**
+   * @notice Thrown when the token amount in is above maximum amount in allowed by the caller
+   */
+  error BPool_TokenAmountInAboveMaxAmountIn();
+
+  /**
+   * @notice Thrown when the calculated token amount out is zero
+   */
+  error BPool_InvalidTokenAmountOut();
+
+  /**
+   * @notice Thrown when the token amount out is below minimum amount out allowed by the caller
+   */
+  error BPool_TokenAmountOutBelowMinAmountOut();
+
+  /**
+   * @notice Thrown when the token is not bound in the pool
+   */
+  error BPool_TokenNotBound();
+
+  /**
+   * @notice Thrown when the pool is not finalized
+   */
+  error BPool_PoolNotFinalized();
+
+  /**
+   * @notice Thrown when the token amount in surpasses the maximum in allowed by the pool
+   */
+  error BPool_TokenAmountInAboveMaxIn();
+
+  /**
+   * @notice Thrown when the spot price before the swap is above the max allowed by the caller
+   */
+  error BPool_SpotPriceAboveMaxPrice();
+
+  /**
+   * @notice Thrown when the token amount out is below the minimum out allowed by the caller
+   */
+  error BPool_TokenAmountOutBelowMinOut();
+
+  /**
+   * @notice Thrown when the spot price after the swap is below the spot price before the swap
+   */
+  error BPool_SpotPriceAfterBelowSpotPriceBefore();
+
+  /**
+   * @notice Thrown when the spot price after the swap is above the max allowed by the caller
+   */
+  error BPool_SpotPriceAfterBelowMaxPrice();
+
+  /**
+   * @notice Thrown when the spot price before the swap is above the ratio between the two tokens in the pool
+   */
+  error BPool_SpotPriceBeforeAboveTokenRatio();
+
+  /**
+   * @notice Thrown when the token amount out surpasses the maximum out allowed by the pool
+   */
+  error BPool_TokenAmountOutAboveMaxOut();
+
+  /**
+   * @notice Thrown when the pool token amount out is below the minimum pool token amount out allowed by the caller
+   */
+  error BPool_PoolAmountOutBelowMinPoolAmountOut();
+
+  /**
+   * @notice Thrown when the calculated pool token amount in is zero
+   */
+  error BPool_InvalidPoolAmountIn();
+
+  /**
+   * @notice Thrown when the pool token amount in is above the maximum amount in allowed by the caller
+   */
+  error BPool_PoolAmountInAboveMaxPoolAmountIn();
+
+  /**
+   * @notice Thrown when the ERC20 transfer fails
+   */
+  error BPool_ERC20TransferFailed();
+
+  /**
    * @notice Sets the new swap fee
    * @param swapFee The new swap fee
    */

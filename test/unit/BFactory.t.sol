@@ -107,7 +107,7 @@ contract BFactory_Unit_SetBLabs is Base {
    */
   function test_Revert_NotLabs(address _randomCaller) public {
     vm.assume(_randomCaller != owner);
-    vm.expectRevert('ERR_NOT_BLABS');
+    vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
     vm.prank(_randomCaller);
     bFactory.setBLabs(_randomCaller);
   }
@@ -138,7 +138,7 @@ contract BFactory_Unit_Collect is Base {
    */
   function test_Revert_NotLabs(address _randomCaller) public {
     vm.assume(_randomCaller != owner);
-    vm.expectRevert('ERR_NOT_BLABS');
+    vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
     vm.prank(_randomCaller);
     bFactory.collect(IBPool(address(0)));
   }
@@ -180,7 +180,7 @@ contract BFactory_Unit_Collect is Base {
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(false));
 
-    vm.expectRevert('ERR_ERC20_FAILED');
+    vm.expectRevert(IBFactory.BFactory_ERC20TransferFailed.selector);
     vm.prank(owner);
     bFactory.collect(IBPool(_lpToken));
   }
