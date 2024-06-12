@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
 
-      - name: Create mock files with smock
-        run: yarn smock
-
       - name: Precompile using 0.8.14 and via-ir=false
         run: yarn build
 
@@ -60,9 +57,6 @@ jobs:
 
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
-
-      - name: Create mock files with smock
-        run: yarn smock
 
       - name: Precompile using 0.8.14 and via-ir=false
         run: yarn build

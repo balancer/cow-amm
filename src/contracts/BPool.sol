@@ -52,6 +52,16 @@ contract BPool is BToken, BMath, IBPool {
     _;
   }
 
+  /**
+   * @notice Throws an error if caller is not controller
+   */
+  modifier onlyController() {
+    if (msg.sender != _controller) {
+      revert BPool_CallerIsNotController();
+    }
+    _;
+  }
+
   constructor() {
     _controller = msg.sender;
     _factory = msg.sender;
@@ -60,12 +70,9 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setSwapFee(uint256 swapFee) external _logs_ _lock_ {
+  function setSwapFee(uint256 swapFee) external _logs_ _lock_ onlyController {
     if (_finalized) {
       revert BPool_PoolIsFinalized();
-    }
-    if (msg.sender != _controller) {
-      revert BPool_CallerIsNotController();
     }
     if (swapFee < MIN_FEE) {
       revert BPool_FeeBelowMinimum();
@@ -77,18 +84,12 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setController(address manager) external _logs_ _lock_ {
-    if (msg.sender != _controller) {
-      revert BPool_CallerIsNotController();
-    }
+  function setController(address manager) external _logs_ _lock_ onlyController {
     _controller = manager;
   }
 
   /// @inheritdoc IBPool
-  function finalize() external _logs_ _lock_ {
-    if (msg.sender != _controller) {
-      revert BPool_CallerIsNotController();
-    }
+  function finalize() external _logs_ _lock_ onlyController {
     if (_finalized) {
       revert BPool_PoolIsFinalized();
     }
@@ -100,13 +101,11 @@ contract BPool is BToken, BMath, IBPool {
 
     _mintPoolShare(INIT_POOL_SUPPLY);
     _pushPoolShare(msg.sender, INIT_POOL_SUPPLY);
+    _afterFinalize();
   }
 
   /// @inheritdoc IBPool
-  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ {
-    if (msg.sender != _controller) {
-      revert BPool_CallerIsNotController();
-    }
+  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ onlyController {
     if (_records[token].bound) {
       revert BPool_TokenAlreadyBound();
     }
@@ -140,10 +139,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function unbind(address token) external _logs_ _lock_ {
-    if (msg.sender != _controller) {
-      revert BPool_CallerIsNotController();
-    }
+  function unbind(address token) external _logs_ _lock_ onlyController {
     if (!_records[token].bound) {
       revert BPool_TokenNotBound();
     }
@@ -609,9 +605,9 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @dev Pulls tokens from the sender. Tokens needs to be approved first. Calls are not locked.
-   * @param erc20 address of the token to pull
-   * @param from address to pull the tokens from
-   * @param amount amount of tokens to pull
+   * @param erc20 The address of the token to pull
+   * @param from The address to pull the tokens from
+   * @param amount The amount of tokens to pull
    */
   function _pullUnderlying(address erc20, address from, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
@@ -622,9 +618,9 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @dev Pushes tokens to the receiver. Calls are not locked.
-   * @param erc20 address of the token to push
-   * @param to address to push the tokens to
-   * @param amount amount of tokens to push
+   * @param erc20 The address of the token to push
+   * @param to The address to push the tokens to
+   * @param amount The amount of tokens to push
    */
   function _pushUnderlying(address erc20, address to, uint256 amount) internal virtual {
     bool xfer = IERC20(erc20).transfer(to, amount);
@@ -634,9 +630,16 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /**
+   * @dev Hook for extensions to execute custom logic when a pool is finalized,
+   * e.g. Setting infinite allowance on BCoWPool
+   */
+  // solhint-disable-next-line no-empty-blocks
+  function _afterFinalize() internal virtual {}
+
+  /**
    * @dev Pulls pool tokens from the sender.
-   * @param from address to pull the pool tokens from
-   * @param amount amount of pool tokens to pull
+   * @param from The address to pull the pool tokens from
+   * @param amount The amount of pool tokens to pull
    */
   function _pullPoolShare(address from, uint256 amount) internal {
     _pull(from, amount);
@@ -644,8 +647,8 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @dev Pushes pool tokens to the receiver.
-   * @param to address to push the pool tokens to
-   * @param amount amount of pool tokens to push
+   * @param to The address to push the pool tokens to
+   * @param amount The amount of pool tokens to push
    */
   function _pushPoolShare(address to, uint256 amount) internal {
     _push(to, amount);
@@ -653,7 +656,7 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @dev Mints an amount of pool tokens.
-   * @param amount amount of pool tokens to mint
+   * @param amount The amount of pool tokens to mint
    */
   function _mintPoolShare(uint256 amount) internal {
     _mint(address(this), amount);
@@ -661,7 +664,7 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @dev Burns an amount of pool tokens.
-   * @param amount amount of pool tokens to burn
+   * @param amount The amount of pool tokens to burn
    */
   function _burnPoolShare(uint256 amount) internal {
     _burn(address(this), amount);

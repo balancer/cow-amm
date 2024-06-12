@@ -19,6 +19,3 @@ broadcast/*/*/*
 
 # Out dir
 out
-
-# Smock dir
-test/smock

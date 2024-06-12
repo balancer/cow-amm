@@ -20,7 +20,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   // If the call fails, it means that the function overflowed, then we reject the fuzzed inputs
   Pow public pow = new Pow();
 
-  function setUp() public {
+  function setUp() public virtual {
     bPool = new MockBPool();
 
     // Create fake tokens
@@ -556,6 +556,11 @@ contract BPool_Unit_Finalize is BasePoolTest {
     bPool.finalize();
 
     assertEq(bPool.call__finalized(), true);
+  }
+
+  function test_Call_AfterFinalizeHook(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.expectCall__afterFinalize();
+    bPool.finalize();
   }
 
   function test_Mint_InitPoolSupply(uint256 _tokensLength) public happyPath(_tokensLength) {

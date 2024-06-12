@@ -13,6 +13,7 @@ solc_version = '0.8.25'
 libs = ["node_modules", "lib"]
 optimizer_runs = 50             # TODO: increase for production and add via-ir
 ffi = true
+evm_version = 'cancun'
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
 
 [profile.optimized]
