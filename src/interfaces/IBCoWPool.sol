@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
+import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
+import {ISettlement} from 'interfaces/ISettlement.sol';
 
-interface IBCoWPool is IERC1271 {
+interface IBCoWPool is IERC1271, IBPool {
   /**
-   * Emitted when the manager disables all trades by the AMM. Existing open
+   * @notice Emitted when the manager disables all trades by the AMM. Existing open
    * order will not be tradeable. Note that the AMM could resume trading with
    * different parameters at a later point.
    */
   event TradingDisabled();
 
   /**
-   * Emitted when the manager enables the AMM to trade on CoW Protocol.
+   * @notice Emitted when the manager enables the AMM to trade on CoW Protocol.
    * @param hash The hash of the trading parameters.
    * @param appData Trading has been enabled for this appData.
    */
@@ -67,4 +70,73 @@ interface IBCoWPool is IERC1271 {
    * AMM has not enabled trading.
    */
   error AppDataDoNotMatchHash();
+
+  /**
+   * @notice Once this function is called, it will be possible to trade with
+   * this AMM on CoW Protocol.
+   * @param appData Trading is enabled with the appData specified here.
+   */
+  function enableTrading(bytes32 appData) external;
+
+  /**
+   * @notice Disable any form of trading on CoW Protocol by this AMM.
+   */
+  function disableTrading() external;
+
+  /**
+   * @notice Restricts a specific AMM to being able to trade only the order
+   * with the specified hash.
+   * @dev The commitment is used to enforce that exactly one AMM order is
+   * valid when a CoW Protocol batch is settled.
+   * @param orderHash the order hash that will be enforced by the order
+   * verification function.
+   */
+  function commit(bytes32 orderHash) external;
+
+  /**
+   * @notice The address that can pull funds from the AMM vault to execute an order
+   * @return _vaultRelayer The address of the vault relayer.
+   */
+  // solhint-disable-next-line style-guide-casing
+  function VAULT_RELAYER() external view returns (address _vaultRelayer);
+
+  /**
+   * @notice The domain separator used for hashing CoW Protocol orders.
+   * @return _solutionSettlerDomainSeparator The domain separator.
+   */
+  // solhint-disable-next-line style-guide-casing
+  function SOLUTION_SETTLER_DOMAIN_SEPARATOR() external view returns (bytes32 _solutionSettlerDomainSeparator);
+
+  /**
+   * @notice The address of the CoW Protocol settlement contract. It is the
+   * only address that can set commitments.
+   * @return _solutionSettler The address of the solution settler.
+   */
+  // solhint-disable-next-line style-guide-casing
+  function SOLUTION_SETTLER() external view returns (ISettlement _solutionSettler);
+
+  /**
+   * @notice The hash of the data describing which `GPv2Order.AppData` currently
+   * apply to this AMM. If this parameter is set to `NO_TRADING`, then the AMM
+   * does not accept any order as valid.
+   * If trading is enabled, then this value will be the [`hash`] of the only
+   * admissible [`GPv2Order.AppData`].
+   * @return _appDataHash The hash of the allowed GPv2Order AppData.
+   */
+  function appDataHash() external view returns (bytes32 _appDataHash);
+
+  /**
+   * @notice This function returns the commitment hash that has been set by the
+   * `commit` function. If no commitment has been set, then the value will be
+   * `EMPTY_COMMITMENT`.
+   * @return _commitment The commitment hash.
+   */
+  function commitment() external view returns (bytes32 _commitment);
+
+  /**
+   * @notice This function checks that the input order is admissible for the
+   * constant-product curve for the given trading parameters.
+   * @param order `GPv2Order.Data` of a discrete order to be verified.
+   */
+  function verify(GPv2Order.Data memory order) external view;
 }

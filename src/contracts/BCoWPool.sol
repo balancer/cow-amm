@@ -6,69 +6,28 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 
+import {BCoWConst} from './BCoWConst.sol';
 import {BPool} from './BPool.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
-
 import {ISettlement} from 'interfaces/ISettlement.sol';
-
-/**
- * @dev The value representing the absence of a commitment.
- */
-bytes32 constant EMPTY_COMMITMENT = bytes32(0);
-
-/**
- * @dev The value representing that no trading parameters are currently
- * accepted as valid by this contract, meaning that no trading can occur.
- */
-bytes32 constant NO_TRADING = bytes32(0);
-
-/**
- * @dev The largest possible duration of any AMM order, starting from the
- * current block timestamp.
- */
-uint32 constant MAX_ORDER_DURATION = 5 * 60;
-
-/**
- * @dev The transient storage slot specified in this variable stores the
- * value of the order commitment, that is, the only order hash that can be
- * validated by calling `isValidSignature`.
- * The hash corresponding to the constant `EMPTY_COMMITMENT` has special
- * semantics, discussed in the related documentation.
- * @dev This value is:
- * uint256(keccak256("CoWAMM.ConstantProduct.commitment")) - 1
- */
-uint256 constant COMMITMENT_SLOT = 0x6c3c90245457060f6517787b2c4b8cf500ca889d2304af02043bd5b513e3b593;
 
 /**
  * @title BCoWPool
  * @notice Inherits BPool contract and can trade on CoWSwap Protocol.
  */
-contract BCoWPool is BPool, IERC1271, IBCoWPool {
+contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   using GPv2Order for GPv2Order.Data;
 
-  /**
-   * @notice The address that can pull funds from the AMM vault to execute an order
-   */
+  /// @inheritdoc IBCoWPool
   address public immutable VAULT_RELAYER;
 
-  /**
-   * @notice The domain separator used for hashing CoW Protocol orders.
-   */
+  /// @inheritdoc IBCoWPool
   bytes32 public immutable SOLUTION_SETTLER_DOMAIN_SEPARATOR;
 
-  /**
-   * @notice The address of the CoW Protocol settlement contract. It is the
-   * only address that can set commitments.
-   */
+  /// @inheritdoc IBCoWPool
   ISettlement public immutable SOLUTION_SETTLER;
 
-  /**
-   * The hash of the data describing which `TradingParams` currently apply
-   * to this AMM. If this parameter is set to `NO_TRADING`, then the AMM
-   * does not accept any order as valid.
-   * If trading is enabled, then this value will be the [`hash`] of the only
-   * admissible [`TradingParams`].
-   */
+  /// @inheritdoc IBCoWPool
   bytes32 public appDataHash;
 
   constructor(address _cowSolutionSettler) BPool() {
@@ -77,33 +36,20 @@ contract BCoWPool is BPool, IERC1271, IBCoWPool {
     VAULT_RELAYER = ISettlement(_cowSolutionSettler).vaultRelayer();
   }
 
-  /**
-   * @notice Once this function is called, it will be possible to trade with
-   * this AMM on CoW Protocol.
-   * @param appData Trading is enabled with the appData specified here.
-   */
+  /// @inheritdoc IBCoWPool
   function enableTrading(bytes32 appData) external onlyController {
     bytes32 _appDataHash = keccak256(abi.encode(appData));
     appDataHash = _appDataHash;
     emit TradingEnabled(_appDataHash, appData);
   }
 
-  /**
-   * @notice Disable any form of trading on CoW Protocol by this AMM.
-   */
+  /// @inheritdoc IBCoWPool
   function disableTrading() external onlyController {
     appDataHash = NO_TRADING;
     emit TradingDisabled();
   }
 
-  /**
-   * @notice Restricts a specific AMM to being able to trade only the order
-   * with the specified hash.
-   * @dev The commitment is used to enforce that exactly one AMM order is
-   * valid when a CoW Protocol batch is settled.
-   * @param orderHash the order hash that will be enforced by the order
-   * verification function.
-   */
+  /// @inheritdoc IBCoWPool
   function commit(bytes32 orderHash) external {
     if (msg.sender != address(SOLUTION_SETTLER)) {
       revert CommitOutsideOfSettlement();
@@ -135,17 +81,14 @@ contract BCoWPool is BPool, IERC1271, IBCoWPool {
     return this.isValidSignature.selector;
   }
 
+  /// @inheritdoc IBCoWPool
   function commitment() public view returns (bytes32 value) {
     assembly ("memory-safe") {
       value := tload(COMMITMENT_SLOT)
     }
   }
 
-  /**
-   * @notice This function checks that the input order is admissible for the
-   * constant-product curve for the given trading parameters.
-   * @param order `GPv2Order.Data` of a discrete order to be verified.
-   */
+  /// @inheritdoc IBCoWPool
   function verify(GPv2Order.Data memory order) public view {
     Record memory inRecord = _records[address(order.sellToken)];
     Record memory outRecord = _records[address(order.buyToken)];
