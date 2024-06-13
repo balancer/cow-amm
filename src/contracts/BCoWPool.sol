@@ -124,23 +124,13 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   }
 
   /**
-   * @notice Approves the spender to transfer an unlimited amount of tokens
-   * and reverts if the approval was unsuccessful.
-   * @param token The ERC-20 token to approve.
-   * @param spender The address that can transfer on behalf of this contract.
-   */
-  function _approveUnlimited(IERC20 token, address spender) internal {
-    token.approve(spender, type(uint256).max);
-  }
-
-  /**
    * @inheritdoc BPool
    * @dev Grants infinite approval to the vault relayer for all tokens in the
    * pool after the finalization of the setup.
    */
   function _afterFinalize() internal override {
     for (uint256 i; i < _tokens.length; i++) {
-      _approveUnlimited(IERC20(_tokens[i]), VAULT_RELAYER);
+      IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
     }
   }
 }

@@ -4,6 +4,9 @@ pragma solidity 0.8.25;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {BasePoolTest} from './BPool.t.sol';
+
+import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
+import {IBPool} from 'interfaces/IBPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
 import {MockBPool} from 'test/smock/MockBPool.sol';
@@ -13,11 +16,15 @@ abstract contract BaseCoWPoolTest is BasePoolTest {
   bytes32 public domainSeparator = bytes32(bytes2(0xf00b));
   address public vaultRelayer = makeAddr('vaultRelayer');
 
+  MockBCoWPool bCoWPool;
+
   function setUp() public override {
     super.setUp();
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(domainSeparator));
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(vaultRelayer));
-    bPool = MockBPool(address(new MockBCoWPool(cowSolutionSettler)));
+    bCoWPool = new MockBCoWPool(cowSolutionSettler);
+    bPool = MockBPool(address(bCoWPool));
+    _setRandomTokens(TOKENS_AMOUNT);
   }
 }
 
@@ -48,14 +55,78 @@ contract BCoWPool_Unit_Constructor is BaseCoWPoolTest {
 }
 
 contract BCoWPool_Unit_Finalize is BaseCoWPoolTest {
-  function test_setsApprovals(uint256 _tokensLength) public {
-    _tokensLength = bound(_tokensLength, MIN_BOUND_TOKENS, MAX_BOUND_TOKENS);
-    _setRandomTokens(_tokensLength);
-    address[] memory tokens = _getDeterministicTokenArray(_tokensLength);
-    for (uint256 i = 0; i < bPool.getNumTokens(); i++) {
+  function test_Set_Approvals() public {
+    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
       vm.mockCall(tokens[i], abi.encodePacked(IERC20.approve.selector), abi.encode(true));
       vm.expectCall(tokens[i], abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max)), 1);
     }
-    bPool.finalize();
+    bCoWPool.finalize();
+  }
+}
+
+/// @notice this tests both commit and commitment
+contract BCoWPool_Unit_Commit is BaseCoWPoolTest {
+  function test_Revert_NonSolutionSettler(address sender, bytes32 orderHash) public {
+    vm.assume(sender != cowSolutionSettler);
+    vm.prank(sender);
+    vm.expectRevert(IBCoWPool.CommitOutsideOfSettlement.selector);
+    bCoWPool.commit(orderHash);
+  }
+
+  function test_Set_Commitment(bytes32 orderHash) public {
+    vm.prank(cowSolutionSettler);
+    bCoWPool.commit(orderHash);
+    assertEq(bCoWPool.commitment(), orderHash);
+  }
+}
+
+contract BCoWPool_Unit_DisableTranding is BaseCoWPoolTest {
+  function test_Revert_NonController(address sender) public {
+    // contract is deployed by this contract without any pranks
+    vm.assume(sender != address(this));
+    vm.prank(sender);
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
+    bCoWPool.disableTrading();
+  }
+
+  function test_Clear_AppdataHash(bytes32 appDataHash) public {
+    vm.assume(appDataHash != bytes32(0));
+    bCoWPool.set_appDataHash(appDataHash);
+    bCoWPool.disableTrading();
+    assertEq(bCoWPool.appDataHash(), bytes32(0));
+  }
+
+  function test_Emit_TradingDisabledEvent() public {
+    vm.expectEmit();
+    emit IBCoWPool.TradingDisabled();
+    bCoWPool.disableTrading();
+  }
+
+  function test_Succeed_AlreadyZeroAppdata() public {
+    bCoWPool.set_appDataHash(bytes32(0));
+    bCoWPool.disableTrading();
+  }
+}
+
+contract BCoWPool_Unit_EnableTrading is BaseCoWPoolTest {
+  function test_Revert_NonController(address sender, bytes32 appDataHash) public {
+    // contract is deployed by this contract without any pranks
+    vm.assume(sender != address(this));
+    vm.prank(sender);
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
+    bCoWPool.enableTrading(appDataHash);
+  }
+
+  function test_Set_AppDataHash(bytes32 appData) public {
+    bytes32 appDataHash = keccak256(abi.encode(appData));
+    bCoWPool.enableTrading(appData);
+    assertEq(bCoWPool.appDataHash(), appDataHash);
+  }
+
+  function test_Emit_TradingEnabled(bytes32 appData) public {
+    bytes32 appDataHash = keccak256(abi.encode(appData));
+    vm.expectEmit();
+    emit IBCoWPool.TradingEnabled(appDataHash, appData);
+    bCoWPool.enableTrading(appData);
   }
 }
