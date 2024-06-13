@@ -53,6 +53,10 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
 
   /// @inheritdoc IBCoWPool
   function enableTrading(bytes32 appData) external onlyController {
+    if (!_finalized) {
+      revert BPool_PoolNotFinalized();
+    }
+
     bytes32 _appDataHash = keccak256(abi.encode(appData));
     appDataHash = _appDataHash;
     emit TradingEnabled(_appDataHash, appData);

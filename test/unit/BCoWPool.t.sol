@@ -109,6 +109,11 @@ contract BCoWPool_Unit_DisableTranding is BaseCoWPoolTest {
 }
 
 contract BCoWPool_Unit_EnableTrading is BaseCoWPoolTest {
+  function test_Revert_NotFinalized(bytes32 appDataHash) public {
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
+    bCoWPool.enableTrading(appDataHash);
+  }
+
   function test_Revert_NonController(address sender, bytes32 appDataHash) public {
     // contract is deployed by this contract without any pranks
     vm.assume(sender != address(this));
@@ -118,12 +123,14 @@ contract BCoWPool_Unit_EnableTrading is BaseCoWPoolTest {
   }
 
   function test_Set_AppDataHash(bytes32 appData) public {
+    bCoWPool.set__finalized(true);
     bytes32 appDataHash = keccak256(abi.encode(appData));
     bCoWPool.enableTrading(appData);
     assertEq(bCoWPool.appDataHash(), appDataHash);
   }
 
   function test_Emit_TradingEnabled(bytes32 appData) public {
+    bCoWPool.set__finalized(true);
     bytes32 appDataHash = keccak256(abi.encode(appData));
     vm.expectEmit();
     emit IBCoWPool.TradingEnabled(appDataHash, appData);
