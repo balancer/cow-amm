@@ -20,7 +20,7 @@ contract BFactory is IBFactory {
   }
 
   /// @inheritdoc IBFactory
-  function newBPool() external returns (IBPool _pool) {
+  function newBPool() external virtual returns (IBPool _pool) {
     IBPool bpool = new BPool();
     _isBPool[address(bpool)] = true;
     emit LOG_NEW_POOL(msg.sender, address(bpool));

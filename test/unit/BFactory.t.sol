@@ -10,16 +10,24 @@ import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 abstract contract Base is Test {
-  BFactory public bFactory;
+  IBFactory public bFactory;
   address public owner = makeAddr('owner');
 
-  function setUp() public {
-    vm.prank(owner);
-    bFactory = new BFactory();
+  function _configureBFactory() internal virtual returns (IBFactory);
+
+  function setUp() public virtual {
+    bFactory = _configureBFactory();
   }
 }
 
-contract BFactory_Unit_Constructor is Base {
+abstract contract BFactoryTest is Base {
+  function _configureBFactory() internal override returns (IBFactory) {
+    vm.prank(owner);
+    return new BFactory();
+  }
+}
+
+abstract contract BaseBFactory_Unit_Constructor is Base {
   /**
    * @notice Test that the owner is set correctly
    */
@@ -28,7 +36,10 @@ contract BFactory_Unit_Constructor is Base {
   }
 }
 
-contract BFactory_Unit_IsBPool is Base {
+// solhint-disable-next-line no-empty-blocks
+contract BFactory_Unit_Constructor is BFactoryTest, BaseBFactory_Unit_Constructor {}
+
+contract BFactory_Unit_IsBPool is BFactoryTest {
   /**
    * @notice Test that a valid pool is present on the mapping
    */
@@ -47,7 +58,7 @@ contract BFactory_Unit_IsBPool is Base {
   }
 }
 
-contract BFactory_Unit_NewBPool is Base {
+abstract contract BaseBFactory_Unit_NewBPool is Base {
   /**
    * @notice Test that the pool is set on the mapping
    */
@@ -90,7 +101,10 @@ contract BFactory_Unit_NewBPool is Base {
   }
 }
 
-contract BFactory_Unit_GetBLabs is Base {
+// solhint-disable-next-line no-empty-blocks
+contract BFactory_Unit_NewBPool is BFactoryTest, BaseBFactory_Unit_NewBPool {}
+
+contract BFactory_Unit_GetBLabs is BFactoryTest {
   /**
    * @notice Test that the correct owner is returned
    */
@@ -101,7 +115,7 @@ contract BFactory_Unit_GetBLabs is Base {
   }
 }
 
-contract BFactory_Unit_SetBLabs is Base {
+contract BFactory_Unit_SetBLabs is BFactoryTest {
   /**
    * @notice Test that only the owner can set the BLabs
    */
@@ -132,7 +146,7 @@ contract BFactory_Unit_SetBLabs is Base {
   }
 }
 
-contract BFactory_Unit_Collect is Base {
+contract BFactory_Unit_Collect is BFactoryTest {
   /**
    * @notice Test that only the owner can collect
    */
