@@ -9,8 +9,6 @@
     "private-vars-leading-underscore": ["warn", { "strict": false }],
     "quotes": "off",
     "one-contract-per-file": "warn",
-    "TODO": "REMOVE_TEMPORARY_LINTER_SETTINGS_BELOW",
-    "style-guide-casing": ["warn", { "ignoreEvents": true } ],
-    "custom-errors": "off"
+    "style-guide-casing": ["warn", { "ignoreEvents": true } ]
   }
 }
