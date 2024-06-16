@@ -164,9 +164,9 @@ contract BMath is BConst, BNum {
    * pS = poolSupply                 || ---------  | ^ | --------- || * bI - bI
    * pAo = poolAmountOut              \\    pS    /     \(wI / tW)//
    * bI = balanceIn          tAi =  --------------------------------------------
-   * wI = weightIn                              /      wI  \
-   * tW = totalWeight                          |  1 - ----  |  * sF
-   * sF = swapFee                               \      tW  /
+   * wI = weightIn                              /      wI       \
+   * tW = totalWeight                          |  1 - ---- * sF  |
+   * sF = swapFee                               \      tW       /
    */
   function calcSingleInGivenPoolOut(
     uint256 tokenBalanceIn,
@@ -250,7 +250,7 @@ contract BMath is BConst, BNum {
    * @dev Formula:
    * pAi = poolAmountIn               // /               tAo             \\     / wO \     \
    * bO = tokenBalanceOut            // | bO - -------------------------- |\   | ---- |     \
-   * tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (tO / tW)) * sF)/  | ^ \ tW /  * pS |
+   * tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (w0 / tW)) * sF)/  | ^ \ tW /  * pS |
    * ps = poolSupply                 \\ -----------------------------------/                /
    * wO = tokenWeightOut  pAi =       \\               bO                 /                /
    * tW = totalWeight           -------------------------------------------------------------
