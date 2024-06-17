@@ -1,62 +1,63 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {Test} from 'forge-std/Test.sol';
-
+import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 import {BFactory} from 'contracts/BFactory.sol';
+import {GasSnapshot} from 'forge-gas-snapshot/GasSnapshot.sol';
+import {Test, Vm} from 'forge-std/Test.sol';
+import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
-import {GasSnapshot} from 'forge-gas-snapshot/GasSnapshot.sol';
-
 abstract contract PoolSwapIntegrationTest is Test, GasSnapshot {
-  BFactory public factory;
-  IBPool public pool;
+  address public pool;
+  IBFactory public factory;
 
-  IERC20 public tokenA;
-  IERC20 public tokenB;
+  IERC20 public dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+  IERC20 public weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-  address public lp = address(420);
-  address public swapper = address(69);
+  address public lp = makeAddr('lp');
 
-  function setUp() public {
-    tokenA = IERC20(address(deployMockERC20('TokenA', 'TKA', 18)));
-    tokenB = IERC20(address(deployMockERC20('TokenB', 'TKB', 18)));
+  Vm.Wallet swapper = vm.createWallet('swapper');
 
-    deal(address(tokenA), address(lp), 100e18);
-    deal(address(tokenB), address(lp), 100e18);
+  uint256 public constant HUNDRED_UNITS = 100 ether;
+  uint256 public constant ONE_UNIT = 1 ether;
+  // NOTE: hardcoded from test result
+  uint256 public constant WETH_AMOUNT = 0.096397921069149814e18;
+  uint256 public constant DAI_AMOUNT = 0.5e18;
 
-    deal(address(tokenA), address(swapper), 1e18);
+  function setUp() public virtual {
+    vm.createSelectFork('mainnet', 20_012_063);
 
     factory = new BFactory();
 
+    deal(address(dai), lp, HUNDRED_UNITS);
+    deal(address(weth), lp, HUNDRED_UNITS);
+
+    deal(address(dai), swapper.addr, ONE_UNIT);
+
     vm.startPrank(lp);
-    pool = factory.newBPool();
+    pool = address(factory.newBPool());
 
-    tokenA.approve(address(pool), type(uint256).max);
-    tokenB.approve(address(pool), type(uint256).max);
-
-    pool.bind(address(tokenA), 1e18, 2e18); // 20% weight?
-    pool.bind(address(tokenB), 1e18, 8e18); // 80%
-
-    pool.finalize();
-    vm.stopPrank();
+    dai.approve(pool, type(uint256).max);
+    weth.approve(pool, type(uint256).max);
+    IBPool(pool).bind(address(dai), ONE_UNIT, 2e18); // 20% weight
+    IBPool(pool).bind(address(weth), ONE_UNIT, 8e18); // 80% weight
+    // finalize
+    IBPool(pool).finalize();
   }
 
   function testSimpleSwap() public {
     _makeSwap();
-    assertEq(tokenA.balanceOf(address(swapper)), 0.5e18);
-    // NOTE: hardcoded from test result
-    assertEq(tokenB.balanceOf(address(swapper)), 0.096397921069149814e18);
+    assertEq(dai.balanceOf(swapper.addr), DAI_AMOUNT);
+    assertEq(weth.balanceOf(swapper.addr), WETH_AMOUNT);
 
     vm.startPrank(lp);
 
-    uint256 lpBalance = pool.balanceOf(address(lp));
-    pool.exitPool(lpBalance, new uint256[](2));
+    uint256 lpBalance = IBPool(pool).balanceOf(lp);
+    IBPool(pool).exitPool(lpBalance, new uint256[](2));
 
-    // NOTE: no swap fees involved
-    assertEq(tokenA.balanceOf(address(lp)), 100.5e18); // initial 100 + 0.5 tokenA
-    // NOTE: hardcoded from test result
-    assertEq(tokenB.balanceOf(address(lp)), 99.903602078930850186e18); // initial 100 - ~0.09 tokenB
+    assertEq(dai.balanceOf(lp), HUNDRED_UNITS + DAI_AMOUNT); // initial 100 + 0.5 dai
+    assertEq(weth.balanceOf(lp), HUNDRED_UNITS - WETH_AMOUNT); // initial 100 - ~0.09 weth
   }
 
   function _makeSwap() internal virtual;
@@ -64,29 +65,14 @@ abstract contract PoolSwapIntegrationTest is Test, GasSnapshot {
 
 contract DirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
   function _makeSwap() internal override {
-    vm.startPrank(swapper);
-    tokenA.approve(address(pool), type(uint256).max);
+    vm.startPrank(swapper.addr);
+    dai.approve(pool, type(uint256).max);
 
-    // swap 0.5 tokenA for tokenB
+    // swap 0.5 dai for weth
     snapStart('swapExactAmountIn');
-    pool.swapExactAmountIn(address(tokenA), 0.5e18, address(tokenB), 0, type(uint256).max);
+    IBPool(pool).swapExactAmountIn(address(dai), DAI_AMOUNT, address(weth), 0, type(uint256).max);
     snapEnd();
 
-    vm.stopPrank();
-  }
-}
-
-contract IndirectPoolSwapIntegrationTest is PoolSwapIntegrationTest {
-  function _makeSwap() internal override {
-    vm.startPrank(address(pool));
-    tokenA.approve(address(swapper), type(uint256).max);
-    tokenB.approve(address(swapper), type(uint256).max);
-    vm.stopPrank();
-
-    vm.startPrank(swapper);
-    // swap 0.5 tokenA for tokenB
-    tokenA.transfer(address(pool), 0.5e18);
-    tokenB.transferFrom(address(pool), address(swapper), 0.096397921069149814e18);
     vm.stopPrank();
   }
 }

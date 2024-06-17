@@ -113,8 +113,8 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
 
   /// @inheritdoc IBCoWPool
   function verify(GPv2Order.Data memory order) public view virtual {
-    Record memory inRecord = _records[address(order.sellToken)];
-    Record memory outRecord = _records[address(order.buyToken)];
+    Record memory inRecord = _records[address(order.buyToken)];
+    Record memory outRecord = _records[address(order.sellToken)];
 
     if (!inRecord.bound || !inRecord.bound) {
       revert BPool_TokenNotBound();
@@ -133,15 +133,15 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
     }
 
     uint256 tokenAmountOut = calcOutGivenIn({
-      tokenBalanceIn: order.sellToken.balanceOf(address(this)),
+      tokenBalanceIn: order.buyToken.balanceOf(address(this)),
       tokenWeightIn: inRecord.denorm,
-      tokenBalanceOut: order.buyToken.balanceOf(address(this)),
+      tokenBalanceOut: order.sellToken.balanceOf(address(this)),
       tokenWeightOut: outRecord.denorm,
-      tokenAmountIn: order.sellAmount,
+      tokenAmountIn: order.buyAmount,
       swapFee: 0
     });
 
-    if (tokenAmountOut < order.buyAmount) {
+    if (tokenAmountOut < order.sellAmount) {
       revert BPool_TokenAmountOutBelowMinOut();
     }
   }
