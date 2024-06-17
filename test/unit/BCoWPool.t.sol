@@ -2,22 +2,23 @@
 pragma solidity 0.8.25;
 
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
-
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 
-import {BasePoolTest} from './BPool.t.sol';
+import {BasePoolTest, SwapExactAmountInUtils} from './BPool.t.sol';
 
+import {BCoWConst} from 'contracts/BCoWConst.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
 import {MockBPool} from 'test/smock/MockBPool.sol';
 
-abstract contract BaseCoWPoolTest is BasePoolTest {
+abstract contract BaseCoWPoolTest is BasePoolTest, BCoWConst {
   address public cowSolutionSettler = makeAddr('cowSolutionSettler');
   bytes32 public domainSeparator = bytes32(bytes2(0xf00b));
   address public vaultRelayer = makeAddr('vaultRelayer');
+  GPv2Order.Data correctOrder;
 
   MockBCoWPool bCoWPool;
 
@@ -28,6 +29,20 @@ abstract contract BaseCoWPoolTest is BasePoolTest {
     bCoWPool = new MockBCoWPool(cowSolutionSettler);
     bPool = MockBPool(address(bCoWPool));
     _setRandomTokens(TOKENS_AMOUNT);
+    correctOrder = GPv2Order.Data({
+      sellToken: IERC20(tokens[1]),
+      buyToken: IERC20(tokens[0]),
+      receiver: address(0),
+      sellAmount: 0,
+      buyAmount: 0,
+      validTo: uint32(block.timestamp + 1 minutes),
+      appData: bytes32(0),
+      feeAmount: 0,
+      kind: GPv2Order.KIND_SELL,
+      partiallyFillable: false,
+      sellTokenBalance: GPv2Order.BALANCE_ERC20,
+      buyTokenBalance: GPv2Order.BALANCE_ERC20
+    });
   }
 }
 
@@ -138,6 +153,126 @@ contract BCoWPool_Unit_EnableTrading is BaseCoWPoolTest {
     vm.expectEmit();
     emit IBCoWPool.TradingEnabled(appDataHash, appData);
     bCoWPool.enableTrading(appData);
+  }
+}
+
+contract BCoWPool_Unit_Verify is BaseCoWPoolTest, SwapExactAmountInUtils {
+  function setUp() public virtual override(BaseCoWPoolTest, BasePoolTest) {
+    BaseCoWPoolTest.setUp();
+  }
+
+  function _assumeHappyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) internal pure override {
+    // safe bound assumptions
+    _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
+    _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
+    // LP fee when swapping via CoW will always be zero
+    _fuzz.swapFee = 0;
+
+    // min - max - calcSpotPrice (spotPriceBefore)
+    _fuzz.tokenInBalance = bound(_fuzz.tokenInBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenInDenorm);
+    _fuzz.tokenOutBalance = bound(_fuzz.tokenOutBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenOutDenorm);
+
+    // MAX_IN_RATIO
+    vm.assume(_fuzz.tokenAmountIn <= bmul(_fuzz.tokenInBalance, MAX_IN_RATIO));
+
+    _assumeCalcOutGivenIn(_fuzz.tokenInBalance, _fuzz.tokenAmountIn, _fuzz.swapFee);
+    uint256 _tokenAmountOut = calcOutGivenIn(
+      _fuzz.tokenInBalance,
+      _fuzz.tokenInDenorm,
+      _fuzz.tokenOutBalance,
+      _fuzz.tokenOutDenorm,
+      _fuzz.tokenAmountIn,
+      _fuzz.swapFee
+    );
+    vm.assume(_tokenAmountOut > BONE);
+  }
+
+  modifier assumeNotBoundToken(address _token) {
+    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
+      vm.assume(tokens[i] != _token);
+    }
+    _;
+  }
+
+  function test_Revert_NonBoundBuyToken(address _otherToken) public assumeNotBoundToken(_otherToken) {
+    GPv2Order.Data memory order = correctOrder;
+    order.buyToken = IERC20(_otherToken);
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_NonBoundSellToken(address _otherToken) public assumeNotBoundToken(_otherToken) {
+    GPv2Order.Data memory order = correctOrder;
+    order.sellToken = IERC20(_otherToken);
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_LargeDurationOrder(uint256 _timeOffset) public {
+    _timeOffset = bound(_timeOffset, MAX_ORDER_DURATION, type(uint32).max - block.timestamp);
+    GPv2Order.Data memory order = correctOrder;
+    order.validTo = uint32(block.timestamp + _timeOffset);
+    vm.expectRevert(IBCoWPool.BCoWPool_OrderValidityTooLong.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_NonZeroFee(uint256 _fee) public {
+    _fee = bound(_fee, 1, type(uint256).max);
+    GPv2Order.Data memory order = correctOrder;
+    order.feeAmount = _fee;
+    vm.expectRevert(IBCoWPool.BCoWPool_FeeMustBeZero.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_InvalidOrderKind(bytes32 _orderKind) public {
+    vm.assume(_orderKind != GPv2Order.KIND_SELL);
+    GPv2Order.Data memory order = correctOrder;
+    order.kind = _orderKind;
+    vm.expectRevert(IBCoWPool.BCoWPool_InvalidOperation.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_InvalidBuyBalanceKind(bytes32 _balanceKind) public {
+    vm.assume(_balanceKind != GPv2Order.BALANCE_ERC20);
+    GPv2Order.Data memory order = correctOrder;
+    order.buyTokenBalance = _balanceKind;
+    vm.expectRevert(IBCoWPool.BCoWPool_InvalidBalanceMarker.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_InvalidSellBalanceKind(bytes32 _balanceKind) public {
+    vm.assume(_balanceKind != GPv2Order.BALANCE_ERC20);
+    GPv2Order.Data memory order = correctOrder;
+    order.sellTokenBalance = _balanceKind;
+    vm.expectRevert(IBCoWPool.BCoWPool_InvalidBalanceMarker.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_InsufficientReturn(
+    SwapExactAmountIn_FuzzScenario memory _fuzz,
+    uint256 _offset
+  ) public happyPath(_fuzz) {
+    uint256 _tokenAmountOut = calcOutGivenIn(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.tokenAmountIn, 0
+    );
+    _offset = bound(_offset, 1, _tokenAmountOut);
+    GPv2Order.Data memory order = correctOrder;
+    order.buyAmount = _fuzz.tokenAmountIn;
+    order.sellAmount = _tokenAmountOut + _offset;
+
+    vm.expectRevert(IBPool.BPool_TokenAmountOutBelowMinOut.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Success_HappyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    uint256 _tokenAmountOut = calcOutGivenIn(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.tokenAmountIn, 0
+    );
+    GPv2Order.Data memory order = correctOrder;
+    order.buyAmount = _fuzz.tokenAmountIn;
+    order.sellAmount = _tokenAmountOut;
+
+    bCoWPool.verify(order);
   }
 }
 
