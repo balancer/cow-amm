@@ -48,7 +48,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
       buyToken: weth,
       receiver: GPv2Order.RECEIVER_SAME_AS_OWNER,
       sellAmount: DAI_AMOUNT,
-      buyAmount: WETH_AMOUNT,
+      buyAmount: WETH_OUT_AMOUNT,
       validTo: latestValidTimestamp,
       appData: APP_DATA,
       feeAmount: 0,
@@ -68,7 +68,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
       sellToken: weth,
       buyToken: dai,
       receiver: GPv2Order.RECEIVER_SAME_AS_OWNER,
-      sellAmount: WETH_AMOUNT,
+      sellAmount: WETH_OUT_AMOUNT,
       buyAmount: DAI_AMOUNT,
       validTo: latestValidTimestamp,
       appData: APP_DATA,
@@ -88,7 +88,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
     uint256[] memory clearingPrices = new uint256[](2);
     // TODO: we can use more accurate clearing prices here
     clearingPrices[0] = DAI_AMOUNT;
-    clearingPrices[1] = WETH_AMOUNT;
+    clearingPrices[1] = WETH_OUT_AMOUNT;
 
     GPv2Trade.Data[] memory trades = new GPv2Trade.Data[](2);
 
@@ -154,7 +154,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
       buyToken: dai,
       receiver: GPv2Order.RECEIVER_SAME_AS_OWNER,
       sellAmount: WETH_AMOUNT_INVERSE,
-      buyAmount: DAI_AMOUNT_INVERSE,
+      buyAmount: DAI_OUT_AMOUNT_INVERSE,
       validTo: latestValidTimestamp,
       appData: APP_DATA,
       feeAmount: 0,
@@ -174,7 +174,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
       sellToken: dai,
       buyToken: weth,
       receiver: GPv2Order.RECEIVER_SAME_AS_OWNER,
-      sellAmount: DAI_AMOUNT_INVERSE,
+      sellAmount: DAI_OUT_AMOUNT_INVERSE,
       buyAmount: WETH_AMOUNT_INVERSE,
       validTo: latestValidTimestamp,
       appData: APP_DATA,
@@ -194,7 +194,7 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
     uint256[] memory clearingPrices = new uint256[](2);
     // TODO: we can use more accurate clearing prices here
     clearingPrices[0] = WETH_AMOUNT_INVERSE;
-    clearingPrices[1] = DAI_AMOUNT_INVERSE;
+    clearingPrices[1] = DAI_OUT_AMOUNT_INVERSE;
 
     GPv2Trade.Data[] memory trades = new GPv2Trade.Data[](2);
 

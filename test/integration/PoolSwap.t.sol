@@ -20,65 +20,82 @@ abstract contract PoolSwapIntegrationTest is Test, GasSnapshot {
   Vm.Wallet swapper = vm.createWallet('swapper');
   Vm.Wallet swapperInverse = vm.createWallet('swapperInverse');
 
-  uint256 public constant HUNDRED_UNITS = 100 ether;
+  /**
+   * For the simplicity of this test, a 1000 DAI:1 ETH reference quote is used.
+   * A weight distribution of 80% DAI and 20% ETH is used.
+   * To achieve the reference quote, the pool should have 4000 DAI and 1 ETH.
+   *
+   * On the one swap, 100 DAI is swapped for ~0.1 ETH.
+   * On the inverse swap, 0.1 ETH is swapped for ~100 DAI.
+   */
+
+  // unit amounts
+  uint256 public constant ONE_TENTH_UNIT = 0.1 ether;
   uint256 public constant ONE_UNIT = 1 ether;
+  uint256 public constant HUNDRED_UNITS = 100 ether;
+  uint256 public constant FOUR_THOUSAND_UNITS = 4000 ether;
 
-  // NOTE: hardcoded from test result
-  uint256 public constant WETH_AMOUNT = 0.096397921069149814e18;
-  uint256 public constant DAI_AMOUNT = 0.5e18;
+  // pool amounts
+  uint256 public constant DAI_LP_AMOUNT = FOUR_THOUSAND_UNITS;
+  uint256 public constant WETH_LP_AMOUNT = ONE_UNIT;
 
-  uint256 public constant WETH_AMOUNT_INVERSE = 0.1e18;
-  // NOTE: hardcoded from test result
-  uint256 public constant DAI_AMOUNT_INVERSE = 0.316986296266343639e18;
+  // swap amounts IN
+  uint256 public constant DAI_AMOUNT = HUNDRED_UNITS;
+  uint256 public constant WETH_AMOUNT_INVERSE = ONE_TENTH_UNIT;
+
+  // swap amounts OUT
+  // NOTE: amounts OUT are hardcoded from test result
+  uint256 public constant WETH_OUT_AMOUNT = 94_049_266_814_811_022; // 0.094 ETH
+  uint256 public constant DAI_OUT_AMOUNT_INVERSE = 94_183_552_501_642_552_000; // 94.1 DAI
 
   function setUp() public virtual {
     vm.createSelectFork('mainnet', 20_012_063);
 
     factory = _deployFactory();
 
-    deal(address(dai), lp, HUNDRED_UNITS);
-    deal(address(weth), lp, HUNDRED_UNITS);
+    deal(address(dai), lp, DAI_LP_AMOUNT);
+    deal(address(weth), lp, WETH_LP_AMOUNT);
 
-    deal(address(dai), swapper.addr, ONE_UNIT);
-    deal(address(weth), swapperInverse.addr, ONE_UNIT);
+    deal(address(dai), swapper.addr, DAI_AMOUNT);
+    deal(address(weth), swapperInverse.addr, WETH_AMOUNT_INVERSE);
 
     vm.startPrank(lp);
     pool = factory.newBPool();
 
     dai.approve(address(pool), type(uint256).max);
     weth.approve(address(pool), type(uint256).max);
-    pool.bind(address(dai), ONE_UNIT, 2e18); // 20% weight
-    pool.bind(address(weth), ONE_UNIT, 8e18); // 80% weight
+    pool.bind(address(dai), DAI_LP_AMOUNT, 8e18); // 80% weight
+    pool.bind(address(weth), WETH_LP_AMOUNT, 2e18); // 20% weight
     // finalize
     pool.finalize();
   }
 
   function testSimpleSwap() public {
     _makeSwap();
-    assertEq(dai.balanceOf(swapper.addr), ONE_UNIT - DAI_AMOUNT);
-    assertEq(weth.balanceOf(swapper.addr), WETH_AMOUNT);
+    assertEq(dai.balanceOf(swapper.addr), 0);
+    assertEq(weth.balanceOf(swapper.addr), WETH_OUT_AMOUNT);
 
     vm.startPrank(lp);
 
     uint256 lpBalance = pool.balanceOf(lp);
     pool.exitPool(lpBalance, new uint256[](2));
 
-    assertEq(dai.balanceOf(lp), HUNDRED_UNITS + DAI_AMOUNT); // initial 100 + 0.5 dai
-    assertEq(weth.balanceOf(lp), HUNDRED_UNITS - WETH_AMOUNT); // initial 100 - ~0.09 weth
+    assertEq(dai.balanceOf(lp), DAI_LP_AMOUNT + DAI_AMOUNT); // initial 4k + 100 dai
+    assertEq(weth.balanceOf(lp), WETH_LP_AMOUNT - WETH_OUT_AMOUNT); // initial 1 - ~0.09 weth
   }
 
   function testSimpleSwapInverse() public {
     _makeSwapInverse();
-    assertEq(dai.balanceOf(swapperInverse.addr), DAI_AMOUNT_INVERSE);
-    assertEq(weth.balanceOf(swapperInverse.addr), ONE_UNIT - WETH_AMOUNT_INVERSE);
+    assertEq(dai.balanceOf(swapperInverse.addr), DAI_OUT_AMOUNT_INVERSE);
+    assertEq(weth.balanceOf(swapperInverse.addr), 0);
 
     vm.startPrank(lp);
 
     uint256 lpBalance = pool.balanceOf(address(lp));
     pool.exitPool(lpBalance, new uint256[](2));
 
-    assertEq(dai.balanceOf(address(lp)), HUNDRED_UNITS - DAI_AMOUNT_INVERSE); // initial 100 - ~0.5 dai
-    assertEq(weth.balanceOf(address(lp)), HUNDRED_UNITS + WETH_AMOUNT_INVERSE); // initial 100 + 0.1 tokenB
+    assertEq(dai.balanceOf(address(lp)), DAI_LP_AMOUNT - DAI_OUT_AMOUNT_INVERSE); // initial 4k - ~100 dai
+    assertEq(weth.balanceOf(address(lp)), WETH_LP_AMOUNT + WETH_AMOUNT_INVERSE); // initial 1 + 0.1 eth
   }
 
   function _deployFactory() internal virtual returns (IBFactory);
