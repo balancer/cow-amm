@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
+
+import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
+import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 
 import {BasePoolTest} from './BPool.t.sol';
 
@@ -18,7 +21,7 @@ abstract contract BaseCoWPoolTest is BasePoolTest {
 
   MockBCoWPool bCoWPool;
 
-  function setUp() public override {
+  function setUp() public virtual override {
     super.setUp();
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(domainSeparator));
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(vaultRelayer));
@@ -135,5 +138,85 @@ contract BCoWPool_Unit_EnableTrading is BaseCoWPoolTest {
     vm.expectEmit();
     emit IBCoWPool.TradingEnabled(appDataHash, appData);
     bCoWPool.enableTrading(appData);
+  }
+}
+
+contract BCoWPool_Unit_IsValidSignature is BaseCoWPoolTest {
+  function setUp() public virtual override {
+    super.setUp();
+    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
+      vm.mockCall(tokens[i], abi.encodePacked(IERC20.approve.selector), abi.encode(true));
+    }
+    bCoWPool.finalize();
+  }
+
+  modifier _withTradingEnabled(bytes32 _appData) {
+    bCoWPool.set_appDataHash(keccak256(abi.encode(_appData)));
+    _;
+  }
+
+  modifier _withValidCommitment(GPv2Order.Data memory _order) {
+    bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
+    bCoWPool.set_commitment(_orderHash);
+    _;
+  }
+
+  function test_Revert_OrderWithWrongAppdata(
+    bytes32 _appData,
+    GPv2Order.Data memory _order
+  ) public _withTradingEnabled(_appData) {
+    vm.assume(_order.appData != _appData);
+    bytes32 _appDataHash = keccak256(abi.encode(_appData));
+    vm.expectRevert(IBCoWPool.AppDataDoNotMatchHash.selector);
+    bCoWPool.isValidSignature(_appDataHash, abi.encode(_order));
+  }
+
+  function test_Revert_OrderSignedWithWrongDomainSeparator(
+    GPv2Order.Data memory _order,
+    bytes32 _differentDomainSeparator
+  ) public _withTradingEnabled(_order.appData) _withValidCommitment(_order) {
+    vm.assume(_differentDomainSeparator != domainSeparator);
+    bytes32 _orderHash = GPv2Order.hash(_order, _differentDomainSeparator);
+    vm.expectRevert(IBCoWPool.OrderDoesNotMatchMessageHash.selector);
+    bCoWPool.isValidSignature(_orderHash, abi.encode(_order));
+  }
+
+  function test_Revert_OrderWithUnrelatedSignature(
+    GPv2Order.Data memory _order,
+    bytes32 _orderHash
+  ) public _withTradingEnabled(_order.appData) {
+    vm.expectRevert(IBCoWPool.OrderDoesNotMatchMessageHash.selector);
+    bCoWPool.isValidSignature(_orderHash, abi.encode(_order));
+  }
+
+  function test_Revert_OrderHashDifferentFromCommitment(
+    GPv2Order.Data memory _order,
+    bytes32 _differentCommitment
+  ) public _withTradingEnabled(_order.appData) {
+    bCoWPool.set_commitment(_differentCommitment);
+    bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
+    vm.expectRevert(IBCoWPool.OrderDoesNotMatchCommitmentHash.selector);
+    bCoWPool.isValidSignature(_orderHash, abi.encode(_order));
+  }
+
+  function test_Call_Verify(GPv2Order.Data memory _order)
+    public
+    _withTradingEnabled(_order.appData)
+    _withValidCommitment(_order)
+  {
+    bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
+    bCoWPool.mock_call_verify(_order);
+    bCoWPool.expectCall_verify(_order);
+    bCoWPool.isValidSignature(_orderHash, abi.encode(_order));
+  }
+
+  function test_Return_MagicValue(GPv2Order.Data memory _order)
+    public
+    _withTradingEnabled(_order.appData)
+    _withValidCommitment(_order)
+  {
+    bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
+    bCoWPool.mock_call_verify(_order);
+    assertEq(bCoWPool.isValidSignature(_orderHash, abi.encode(_order)), IERC1271.isValidSignature.selector);
   }
 }

@@ -3,12 +3,19 @@ pragma solidity ^0.8.0;
 
 import {BCoWPool, BPool, GPv2Order, IBCoWPool, IERC1271, IERC20, ISettlement} from '../../src/contracts/BCoWPool.sol';
 import {BMath, IBPool} from '../../src/contracts/BPool.sol';
+import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBCoWPool is BCoWPool, Test {
   /// MockBCoWPool mock methods
   function set_appDataHash(bytes32 _appDataHash) public {
     appDataHash = _appDataHash;
+  }
+
+  function set_commitment(bytes32 _commitment) public {
+    assembly ("memory-safe") {
+      tstore(COMMITMENT_SLOT, _commitment)
+    }
   }
 
   function mock_call_appDataHash(bytes32 _value) public {
@@ -360,5 +367,18 @@ contract MockBCoWPool is BCoWPool, Test {
 
   function expectCall__pushUnderlying(address erc20, address to, uint256 amount) public {
     vm.expectCall(address(this), abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', erc20, to, amount));
+  }
+  // BCoWPool overrides
+
+  function verify(GPv2Order.Data memory order) public view override {
+    (bool _success, bytes memory _data) =
+      address(this).staticcall(abi.encodeWithSignature('verify(GPv2Order.Data)', order));
+
+    if (_success) return abi.decode(_data, ());
+    else return super.verify(order);
+  }
+
+  function expectCall_verify(GPv2Order.Data memory order) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('verify(GPv2Order.Data)', order));
   }
 }

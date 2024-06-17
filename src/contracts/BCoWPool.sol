@@ -85,9 +85,13 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   function isValidSignature(bytes32 _hash, bytes memory signature) external view returns (bytes4) {
     (GPv2Order.Data memory order) = abi.decode(signature, (GPv2Order.Data));
 
-    if (appDataHash != keccak256(abi.encode(order.appData))) revert AppDataDoNotMatchHash();
+    if (appDataHash != keccak256(abi.encode(order.appData))) {
+      revert AppDataDoNotMatchHash();
+    }
     bytes32 orderHash = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
-    if (orderHash != _hash) revert OrderDoesNotMatchMessageHash();
+    if (orderHash != _hash) {
+      revert OrderDoesNotMatchMessageHash();
+    }
 
     if (orderHash != commitment()) {
       revert OrderDoesNotMatchCommitmentHash();
@@ -108,7 +112,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   }
 
   /// @inheritdoc IBCoWPool
-  function verify(GPv2Order.Data memory order) public view {
+  function verify(GPv2Order.Data memory order) public view virtual {
     Record memory inRecord = _records[address(order.sellToken)];
     Record memory outRecord = _records[address(order.buyToken)];
 
