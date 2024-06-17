@@ -32,7 +32,7 @@ contract BCoWFactory_Unit_Constructor is BaseBFactory_Unit_Constructor, BCoWFact
 
 contract BCoWFactory_Unit_NewBPool is BaseBFactory_Unit_NewBPool, BCoWFactoryTest {
   function test_Set_SolutionSettler(address _settler) public {
-    vm.prank(owner);
+    assumeNotForgeAddress(_settler);
     bFactory = new MockBCoWFactory(_settler);
     vm.mockCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(bytes32(0)));
     vm.mockCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vault relayer')));
