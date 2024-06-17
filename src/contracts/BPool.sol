@@ -55,7 +55,7 @@ contract BPool is BToken, BMath, IBPool {
   /**
    * @notice Throws an error if caller is not controller
    */
-  modifier onlyController() {
+  modifier _controller_() {
     if (msg.sender != _controller) {
       revert BPool_CallerIsNotController();
     }
@@ -70,7 +70,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setSwapFee(uint256 swapFee) external _logs_ _lock_ onlyController {
+  function setSwapFee(uint256 swapFee) external _logs_ _lock_ _controller_ {
     if (_finalized) {
       revert BPool_PoolIsFinalized();
     }
@@ -84,12 +84,12 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setController(address manager) external _logs_ _lock_ onlyController {
+  function setController(address manager) external _logs_ _lock_ _controller_ {
     _controller = manager;
   }
 
   /// @inheritdoc IBPool
-  function finalize() external _logs_ _lock_ onlyController {
+  function finalize() external _logs_ _lock_ _controller_ {
     if (_finalized) {
       revert BPool_PoolIsFinalized();
     }
@@ -105,7 +105,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ onlyController {
+  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ _controller_ {
     if (_records[token].bound) {
       revert BPool_TokenAlreadyBound();
     }
@@ -139,7 +139,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function unbind(address token) external _logs_ _lock_ onlyController {
+  function unbind(address token) external _logs_ _lock_ _controller_ {
     if (!_records[token].bound) {
       revert BPool_TokenNotBound();
     }

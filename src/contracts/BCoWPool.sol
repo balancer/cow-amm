@@ -52,7 +52,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   }
 
   /// @inheritdoc IBCoWPool
-  function enableTrading(bytes32 appData) external onlyController {
+  function enableTrading(bytes32 appData) external _controller_ {
     if (!_finalized) {
       revert BPool_PoolNotFinalized();
     }
@@ -63,7 +63,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   }
 
   /// @inheritdoc IBCoWPool
-  function disableTrading() external onlyController {
+  function disableTrading() external _controller_ {
     appDataHash = NO_TRADING;
     emit TradingDisabled();
   }
