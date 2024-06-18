@@ -32,7 +32,7 @@ abstract contract BaseCoWPoolTest is BasePoolTest, BCoWConst {
     correctOrder = GPv2Order.Data({
       sellToken: IERC20(tokens[1]),
       buyToken: IERC20(tokens[0]),
-      receiver: address(0),
+      receiver: GPv2Order.RECEIVER_SAME_AS_OWNER,
       sellAmount: 0,
       buyAmount: 0,
       validTo: uint32(block.timestamp + 1 minutes),
@@ -205,6 +205,14 @@ contract BCoWPool_Unit_Verify is BaseCoWPoolTest, SwapExactAmountInUtils {
     GPv2Order.Data memory order = correctOrder;
     order.sellToken = IERC20(_otherToken);
     vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
+    bCoWPool.verify(order);
+  }
+
+  function test_Revert_ReceiverIsNotBCoWPool(address _receiver) public {
+    vm.assume(_receiver != GPv2Order.RECEIVER_SAME_AS_OWNER);
+    GPv2Order.Data memory order = correctOrder;
+    order.receiver = _receiver;
+    vm.expectRevert(IBCoWPool.BCoWPool_ReceiverIsNotBCoWPool.selector);
     bCoWPool.verify(order);
   }
 

@@ -72,6 +72,11 @@ interface IBCoWPool is IERC1271, IBPool {
   error AppDataDoNotMatchHash();
 
   /**
+   * @notice Thrown when the receiver of the order is not the bCoWPool itself.
+   */
+  error BCoWPool_ReceiverIsNotBCoWPool();
+
+  /**
    * @notice Once this function is called, it will be possible to trade with
    * this AMM on CoW Protocol.
    * @param appData Trading is enabled with the appData specified here.

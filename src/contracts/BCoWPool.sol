@@ -119,6 +119,9 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
     if (!inRecord.bound || !outRecord.bound) {
       revert BPool_TokenNotBound();
     }
+    if (order.receiver != GPv2Order.RECEIVER_SAME_AS_OWNER) {
+      revert BCoWPool_ReceiverIsNotBCoWPool();
+    }
     if (order.validTo >= block.timestamp + MAX_ORDER_DURATION) {
       revert BCoWPool_OrderValidityTooLong();
     }
