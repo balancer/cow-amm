@@ -43,29 +43,13 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   ISettlement public immutable SOLUTION_SETTLER;
 
   /// @inheritdoc IBCoWPool
-  bytes32 public appDataHash;
+  bytes32 public immutable APP_DATA;
 
-  constructor(address _cowSolutionSettler) BPool() {
+  constructor(address _cowSolutionSettler, bytes32 _appData) BPool() {
     SOLUTION_SETTLER = ISettlement(_cowSolutionSettler);
     SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(_cowSolutionSettler).domainSeparator();
     VAULT_RELAYER = ISettlement(_cowSolutionSettler).vaultRelayer();
-  }
-
-  /// @inheritdoc IBCoWPool
-  function enableTrading(bytes32 appData) external _controller_ {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
-
-    bytes32 _appDataHash = keccak256(abi.encode(appData));
-    appDataHash = _appDataHash;
-    emit TradingEnabled(_appDataHash, appData);
-  }
-
-  /// @inheritdoc IBCoWPool
-  function disableTrading() external _controller_ {
-    appDataHash = NO_TRADING;
-    emit TradingDisabled();
+    APP_DATA = _appData;
   }
 
   /// @inheritdoc IBCoWPool
@@ -85,9 +69,10 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   function isValidSignature(bytes32 _hash, bytes memory signature) external view returns (bytes4) {
     (GPv2Order.Data memory order) = abi.decode(signature, (GPv2Order.Data));
 
-    if (appDataHash != keccak256(abi.encode(order.appData))) {
-      revert AppDataDoNotMatchHash();
+    if (order.appData != APP_DATA) {
+      revert AppDataDoesNotMatch();
     }
+
     bytes32 orderHash = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
     if (orderHash != _hash) {
       revert OrderDoesNotMatchMessageHash();

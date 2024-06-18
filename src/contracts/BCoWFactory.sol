@@ -13,9 +13,11 @@ import {IBPool} from 'interfaces/IBPool.sol';
  */
 contract BCoWFactory is BFactory {
   address public immutable SOLUTION_SETTLER;
+  bytes32 public immutable APP_DATA;
 
-  constructor(address _solutionSettler) BFactory() {
+  constructor(address _solutionSettler, bytes32 _appData) BFactory() {
     SOLUTION_SETTLER = _solutionSettler;
+    APP_DATA = _appData;
   }
 
   /**
@@ -24,7 +26,7 @@ contract BCoWFactory is BFactory {
    * to minimize required changes to existing tooling
    */
   function newBPool() external override returns (IBPool _pool) {
-    IBPool bpool = new BCoWPool(SOLUTION_SETTLER);
+    IBPool bpool = new BCoWPool(SOLUTION_SETTLER, APP_DATA);
     _isBPool[address(bpool)] = true;
     emit LOG_NEW_POOL(msg.sender, address(bpool));
     bpool.setController(msg.sender);

@@ -9,13 +9,6 @@ contract BCoWConst {
   bytes32 public constant EMPTY_COMMITMENT = bytes32(0);
 
   /**
-   * @notice The value representing that no trading parameters are currently
-   * accepted as valid by this contract, meaning that no trading can occur.
-   * @return _noTrading The value representing no trading.
-   */
-  bytes32 public constant NO_TRADING = bytes32(0);
-
-  /**
    * @notice The largest possible duration of any AMM order, starting from the
    * current block timestamp.
    * @return _maxOrderDuration The maximum order duration.
