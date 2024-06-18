@@ -132,8 +132,13 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
       revert BCoWPool_InvalidBalanceMarker();
     }
 
+    uint256 buyTokenBalance = order.buyToken.balanceOf(address(this));
+    if (order.buyAmount > bmul(buyTokenBalance, MAX_IN_RATIO)) {
+      revert BPool_TokenAmountInAboveMaxIn();
+    }
+
     uint256 tokenAmountOut = calcOutGivenIn({
-      tokenBalanceIn: order.buyToken.balanceOf(address(this)),
+      tokenBalanceIn: buyTokenBalance,
       tokenWeightIn: inRecord.denorm,
       tokenBalanceOut: order.sellToken.balanceOf(address(this)),
       tokenWeightOut: outRecord.denorm,

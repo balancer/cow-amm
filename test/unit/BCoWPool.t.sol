@@ -248,6 +248,19 @@ contract BCoWPool_Unit_Verify is BaseCoWPoolTest, SwapExactAmountInUtils {
     bCoWPool.verify(order);
   }
 
+  function test_Revert_TokenAmountInAboveMaxIn(
+    SwapExactAmountIn_FuzzScenario memory _fuzz,
+    uint256 _offset
+  ) public happyPath(_fuzz) {
+    _offset = bound(_offset, 1, type(uint256).max - _fuzz.tokenInBalance);
+    uint256 _tokenAmountIn = bmul(_fuzz.tokenInBalance, MAX_IN_RATIO) + _offset;
+    GPv2Order.Data memory order = correctOrder;
+    order.buyAmount = _tokenAmountIn;
+
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
+    bCoWPool.verify(order);
+  }
+
   function test_Revert_InsufficientReturn(
     SwapExactAmountIn_FuzzScenario memory _fuzz,
     uint256 _offset
