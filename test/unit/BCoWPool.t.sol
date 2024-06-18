@@ -12,7 +12,7 @@ import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
-import {MockBPool} from 'test/smock/MockBPool.sol';
+import {MockBPool} from 'test/manual-smock/MockBPool.sol';
 
 abstract contract BaseCoWPoolTest is BasePoolTest, BCoWConst {
   address public cowSolutionSettler = makeAddr('cowSolutionSettler');

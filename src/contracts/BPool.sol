@@ -11,8 +11,6 @@ import {IBPool} from 'interfaces/IBPool.sol';
  * @notice Pool contract that holds tokens, allows to swap, add and remove liquidity.
  */
 contract BPool is BToken, BMath, IBPool {
-  /// @dev True if a call to the contract is in progress, False otherwise
-  bool internal _mutex;
   /// @dev BFactory address to push token exitFee to
   address internal _factory;
   /// @dev Has CONTROL role
@@ -36,17 +34,17 @@ contract BPool is BToken, BMath, IBPool {
 
   /// @dev Prevents reentrancy in non-view functions
   modifier _lock_() {
-    if (_mutex) {
+    if (_getLock() != _MUTEX_FREE) {
       revert BPool_Reentrancy();
     }
-    _mutex = true;
+    _setLock(_MUTEX_TAKEN);
     _;
-    _mutex = false;
+    _setLock(_MUTEX_FREE);
   }
 
   /// @dev Prevents reentrancy in view functions
   modifier _viewlock_() {
-    if (_mutex) {
+    if (_getLock() != _MUTEX_FREE) {
       revert BPool_Reentrancy();
     }
     _;
@@ -604,6 +602,18 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /**
+   * @notice Sets the value of the transient storage slot used for reentrancy locks
+   * @param _value The value of the transient storage slot used for reentrancy locks.
+   * @dev Should be set to _MUTEX_FREE after a call, any other value will
+   * be interpreted as locked
+   */
+  function _setLock(bytes32 _value) internal {
+    assembly ("memory-safe") {
+      tstore(_MUTEX_TRANSIENT_STORAGE_SLOT, _value)
+    }
+  }
+
+  /**
    * @dev Pulls tokens from the sender. Tokens needs to be approved first. Calls are not locked.
    * @param erc20 The address of the token to pull
    * @param from The address to pull the tokens from
@@ -668,5 +678,17 @@ contract BPool is BToken, BMath, IBPool {
    */
   function _burnPoolShare(uint256 amount) internal {
     _burn(address(this), amount);
+  }
+
+  /**
+   * @notice Gets the value of the transient storage slot used for reentrancy locks
+   * @return _value Contents of transient storage slot used for reentrancy locks.
+   * @dev Should only be compared against _MUTEX_FREE for the purposes of
+   * allowing calls
+   */
+  function _getLock() internal view returns (bytes32 _value) {
+    assembly ("memory-safe") {
+      _value := tload(_MUTEX_TRANSIENT_STORAGE_SLOT)
+    }
   }
 }

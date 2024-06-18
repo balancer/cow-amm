@@ -42,14 +42,6 @@ contract MockBCoWPool is BCoWPool, Test {
   }
   /// BPool Mocked methods
 
-  function set__mutex(bool __mutex) public {
-    _mutex = __mutex;
-  }
-
-  function call__mutex() public view returns (bool) {
-    return _mutex;
-  }
-
   function set__factory(address __factory) public {
     _factory = __factory;
   }

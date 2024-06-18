@@ -5,12 +5,16 @@ import {BMath, BPool, BToken, IBPool, IERC20} from '../../src/contracts/BPool.so
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBPool is BPool, Test {
-  function set__mutex(bool __mutex) public {
-    _mutex = __mutex;
+  function call__setLock(bytes32 _value) public {
+    assembly ("memory-safe") {
+      tstore(_MUTEX_TRANSIENT_STORAGE_SLOT, _value)
+    }
   }
 
-  function call__mutex() public view returns (bool) {
-    return _mutex;
+  function call__getLock() public view returns (bytes32 _value) {
+    assembly ("memory-safe") {
+      _value := tload(_MUTEX_TRANSIENT_STORAGE_SLOT)
+    }
   }
 
   function set__factory(address __factory) public {

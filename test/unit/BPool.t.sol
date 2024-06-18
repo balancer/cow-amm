@@ -5,7 +5,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {BPool} from 'contracts/BPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-import {MockBPool} from 'test/smock/MockBPool.sol';
+import {MockBPool} from 'test/manual-smock/MockBPool.sol';
 
 import {BConst} from 'contracts/BConst.sol';
 import {BMath} from 'contracts/BMath.sol';
@@ -82,10 +82,10 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
 
   function _expectRevertByReentrancy() internal {
     // Assert that the contract is accessible
-    assertEq(bPool.call__mutex(), false);
+    assertEq(bPool.call__getLock(), _MUTEX_FREE);
 
     // Simulate ongoing call to the contract
-    bPool.set__mutex(true);
+    bPool.call__setLock(_MUTEX_TAKEN);
 
     vm.expectRevert(IBPool.BPool_Reentrancy.selector);
   }
