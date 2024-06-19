@@ -4,6 +4,10 @@ pragma solidity 0.8.25;
 import {BConst} from './BConst.sol';
 import {BNum} from './BNum.sol';
 
+/**
+ * @title BMath
+ * @notice Includes functions for calculating the BPool related math.
+ */
 contract BMath is BConst, BNum {
   /**
    * @notice Calculate the spot price of a token in terms of another one

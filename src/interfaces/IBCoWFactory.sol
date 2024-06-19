@@ -19,4 +19,20 @@ interface IBCoWFactory is IBFactory {
    * @notice Emits the COWAMMPoolCreated event if the caller is a bCoWPool, to be indexed by off-chain agents
    */
   function logBCoWPool() external;
+
+  /**
+   * @notice The address of the CoW Protocol settlement contract. It is the
+   * only address that can set commitments.
+   * @return _solutionSettler The address of the solution settler.
+   */
+  // solhint-disable-next-line style-guide-casing
+  function SOLUTION_SETTLER() external view returns (address _solutionSettler);
+
+  /**
+   * @notice The identifier describing which `GPv2Order.AppData` currently
+   * apply to this AMM.
+   * @return _appData The 32 bytes identifier of the allowed GPv2Order AppData.
+   */
+  // solhint-disable-next-line style-guide-casing
+  function APP_DATA() external view returns (bytes32 _appData);
 }

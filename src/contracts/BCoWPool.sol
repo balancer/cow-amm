@@ -28,7 +28,8 @@ import {ISettlement} from 'interfaces/ISettlement.sol';
 
 /**
  * @title BCoWPool
- * @notice Inherits BPool contract and can trade on CoWSwap Protocol.
+ * @notice Pool contract that holds tokens, allows to swap, add and remove liquidity.
+ * @dev Inherits BPool contract functionalities, and can trade on CoW Swap Protocol.
  */
 contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   using GPv2Order for GPv2Order.Data;

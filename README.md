@@ -4,10 +4,6 @@
 
 Balancer is based on an N-dimensional invariant surface which is a generalization of the constant product formula described by Vitalik Buterin and proven viable by the popular Uniswap dapp.
 
-## Documentation
-
-The full documentation can be found at `TODO BAL-98`.
-
 ## Development
 
 Most users will want to consume the ABI definitions for BPool, BCoWPool, BFactory and BCoWFactory.
@@ -47,3 +43,12 @@ yarn test    # run the tests
 
 ## Features on BCoWFactory
 - Added a `logBCoWPool` to log the finalization of BCoWPool contracts, to be called by a child pool
+
+## Creating a Pool
+- Create a new pool by calling `IBFactory.newBPool()`
+- Give ERC20 allowance to the pool by calling `IERC20.approve(pool, amount)`
+- Bind tokens one by one by calling `IBPool.bind(token, amount, weight)`
+  - The amount represents the initial balance of the token in the pool (pulled from the caller's balance)
+  - The weight represents the intended distribution of value between the tokens in the pool
+- Modify the pool's swap fee by calling `IBPool.setSwapFee(fee)`
+- Finalize the pool by calling `IBPool.finalize()`

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
+/**
+ * @title BCoWConst
+ * @notice Constants used in the scope of the BCoWPool contract.
+ */
 contract BCoWConst {
   /**
    * @notice The value representing the absence of a commitment.

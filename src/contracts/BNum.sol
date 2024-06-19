@@ -3,6 +3,11 @@ pragma solidity 0.8.25;
 
 import {BConst} from './BConst.sol';
 
+/**
+ * @title BNum
+ * @notice Includes functions for arithmetic operations with fixed-point numbers.
+ * @dev The arithmetic operations are implemented with a precision of BONE.
+ */
 // solhint-disable private-vars-leading-underscore
 // solhint-disable named-return-values
 contract BNum is BConst {
