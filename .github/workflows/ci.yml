@@ -65,7 +65,7 @@ jobs:
         run: yarn test:integration
 
   lint:
-    name: Lint Commit Messages
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -89,4 +89,8 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
 
-      - run: yarn lint:check
+      - name: Run forge-fmt && solhint
+        run: yarn lint:check
+
+      - name: Run natspec-smells
+        run: yarn lint:natspec 2>&1 >/dev/null | grep 'No issues found'

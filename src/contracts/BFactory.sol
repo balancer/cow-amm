@@ -62,6 +62,7 @@ contract BFactory is IBFactory {
   /**
    * @notice Deploys a new BPool.
    * @dev Internal function to allow overriding in derived contracts.
+   * @return _pool The deployed BPool
    */
   function _newBPool() internal virtual returns (IBPool _pool) {
     return new BPool();

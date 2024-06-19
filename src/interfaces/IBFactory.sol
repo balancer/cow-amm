@@ -30,9 +30,9 @@ interface IBFactory {
 
   /**
    * @notice Creates a new BPool, assigning the caller as the pool controller
-   * @return pool The new BPool
+   * @return _pool The new BPool
    */
-  function newBPool() external returns (IBPool pool);
+  function newBPool() external returns (IBPool _pool);
 
   /**
    * @notice Sets the BLabs address in the factory

@@ -32,6 +32,7 @@ contract BCoWFactory is BFactory, IBCoWFactory {
 
   /**
    * @dev Deploys a BCoWPool instead of a regular BPool.
+   * @return _pool The deployed BCoWPool
    */
   function _newBPool() internal virtual override returns (IBPool _pool) {
     return new BCoWPool(SOLUTION_SETTLER, APP_DATA);

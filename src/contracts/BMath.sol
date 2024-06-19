@@ -19,6 +19,7 @@ contract BMath is BConst, BNum {
    * @param tokenBalanceOut The balance of the output token in the pool
    * @param tokenWeightOut The weight of the output token in the pool
    * @param swapFee The swap fee of the pool
+   * @return spotPrice The spot price of a token in terms of another one
    * @dev Formula:
    * sP = spotPrice
    * bI = tokenBalanceIn                ( bI / wI )         1
@@ -49,6 +50,7 @@ contract BMath is BConst, BNum {
    * @param tokenWeightOut The weight of the output token in the pool
    * @param tokenAmountIn The amount of the input token
    * @param swapFee The swap fee of the pool
+   * @return tokenAmountOut The amount of token out given the amount of token in for a swap
    * @dev Formula:
    * aO = tokenAmountOut
    * bO = tokenBalanceOut
@@ -84,6 +86,7 @@ contract BMath is BConst, BNum {
    * @param tokenWeightOut The weight of the output token in the pool
    * @param tokenAmountOut The amount of the output token
    * @param swapFee The swap fee of the pool
+   * @return tokenAmountIn The amount of token in given the amount of token out for a swap
    * @dev Formula:
    * aI = tokenAmountIn
    * bO = tokenBalanceOut               /  /     bO      \    (wO / wI)      \
@@ -120,6 +123,7 @@ contract BMath is BConst, BNum {
    * @param totalWeight The total weight of the pool
    * @param tokenAmountIn The amount of the input token
    * @param swapFee The swap fee of the pool
+   * @return poolAmountOut The amount of balancer pool tokens that will be minted
    * @dev Formula:
    * pAo = poolAmountOut         /                                              \
    * tAi = tokenAmountIn        ///      /     //    wI \      \\       \     wI \
@@ -163,6 +167,7 @@ contract BMath is BConst, BNum {
    * @param totalWeight The sum of the weight of all tokens in the pool
    * @param poolAmountOut The expected amount of pool tokens
    * @param swapFee The swap fee of the pool
+   * @return tokenAmountIn The amount of token in requred to mint poolAmountIn token pools
    * @dev Formula:
    * tAi = tokenAmountIn              //(pS + pAo)\     /    1    \\
    * pS = poolSupply                 || ---------  | ^ | --------- || * bI - bI
@@ -205,6 +210,8 @@ contract BMath is BConst, BNum {
    * @param totalWeight The total weight of the pool
    * @param poolAmountIn The amount of pool tokens
    * @param swapFee The swap fee of the pool
+   * @return tokenAmountOut The amount of underlying token out from burning
+   * poolAmountIn pool tokens
    * @dev Formula:
    * tAo = tokenAmountOut            /      /                                             \\
    * bO = tokenBalanceOut           /      // pS - (pAi * (1 - eF)) \     /    1    \      \\
@@ -251,6 +258,8 @@ contract BMath is BConst, BNum {
    * @param totalWeight The total weight of the pool
    * @param tokenAmountOut The amount of the output token
    * @param swapFee The swap fee of the pool
+   * @return poolAmountIn The amount of pool tokens to burn in order to receive
+   * `tokeAmountOut` underlying tokens
    * @dev Formula:
    * pAi = poolAmountIn               // /               tAo             \\     / wO \     \
    * bO = tokenBalanceOut            // | bO - -------------------------- |\   | ---- |     \
