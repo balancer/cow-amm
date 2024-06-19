@@ -44,3 +44,6 @@ yarn test    # run the tests
 - Implements a `commit` method to avoid multiple swaps from conflicting with each other
 - Allows the controller to allow only one `GPv2Order.appData` at a time
 - Validates the `GPv2Order` requirements before allowing the swap
+
+## Features on BCoWFactory
+- Added a `logBCoWPool` to log the finalization of BCoWPool contracts, to be called by a child pool

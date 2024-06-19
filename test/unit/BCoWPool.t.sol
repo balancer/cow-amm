@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import {BasePoolTest, SwapExactAmountInUtils} from './BPool.t.sol';
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
-
-import {BasePoolTest, SwapExactAmountInUtils} from './BPool.t.sol';
-
 import {BCoWConst} from 'contracts/BCoWConst.sol';
+import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
@@ -80,11 +79,38 @@ contract BCoWPool_Unit_Constructor is BaseCoWPoolTest {
 }
 
 contract BCoWPool_Unit_Finalize is BaseCoWPoolTest {
-  function test_Set_Approvals() public {
+  function setUp() public virtual override {
+    super.setUp();
+
     for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
       vm.mockCall(tokens[i], abi.encodePacked(IERC20.approve.selector), abi.encode(true));
+    }
+
+    vm.mockCall(
+      address(bCoWPool.call__factory()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), abi.encode()
+    );
+  }
+
+  function test_Set_Approvals() public {
+    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
       vm.expectCall(tokens[i], abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max)), 1);
     }
+    bCoWPool.finalize();
+  }
+
+  function test_Log_IfRevert() public {
+    vm.mockCallRevert(
+      address(bCoWPool.call__factory()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), abi.encode()
+    );
+
+    vm.expectEmit(address(bCoWPool));
+    emit IBCoWFactory.COWAMMPoolCreated(address(bCoWPool));
+
+    bCoWPool.finalize();
+  }
+
+  function test_Call_LogBCoWPool() public {
+    vm.expectCall(address(bCoWPool.call__factory()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), 1);
     bCoWPool.finalize();
   }
 }
@@ -252,6 +278,9 @@ contract BCoWPool_Unit_IsValidSignature is BaseCoWPoolTest {
     for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
       vm.mockCall(tokens[i], abi.encodePacked(IERC20.approve.selector), abi.encode(true));
     }
+    vm.mockCall(
+      address(bCoWPool.call__factory()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), abi.encode()
+    );
     bCoWPool.finalize();
   }
 

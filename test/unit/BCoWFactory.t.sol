@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {Base, BaseBFactory_Unit_Constructor, BaseBFactory_Unit_NewBPool} from './BFactory.t.sol';
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
-import {MockBCoWFactory} from 'test/smock/MockBCoWFactory.sol';
+import {MockBCoWFactory} from 'test/manual-smock/MockBCoWFactory.sol';
 
 abstract contract BCoWFactoryTest is Base {
   address public solutionSettler = makeAddr('solutionSettler');
@@ -50,5 +49,27 @@ contract BCoWFactory_Unit_NewBPool is BaseBFactory_Unit_NewBPool, BCoWFactoryTes
     bFactory = new MockBCoWFactory(solutionSettler, _appData);
     IBCoWPool bCoWPool = IBCoWPool(address(bFactory.newBPool()));
     assertEq(bCoWPool.APP_DATA(), _appData);
+  }
+}
+
+contract BCoWPoolFactory_Unit_LogBCoWPool is BCoWFactoryTest {
+  function test_Revert_NotValidBCoWPool(address _pool) public {
+    bFactory = new MockBCoWFactory(solutionSettler, appData);
+    MockBCoWFactory(address(bFactory)).set__isBPool(address(_pool), false);
+
+    vm.expectRevert(IBCoWFactory.BCoWFactory_NotValidBCoWPool.selector);
+
+    vm.prank(_pool);
+    IBCoWFactory(address(bFactory)).logBCoWPool();
+  }
+
+  function test_Emit_COWAMMPoolCreated(address _pool) public {
+    bFactory = new MockBCoWFactory(solutionSettler, appData);
+    MockBCoWFactory(address(bFactory)).set__isBPool(address(_pool), true);
+    vm.expectEmit(address(bFactory));
+    emit IBCoWFactory.COWAMMPoolCreated(_pool);
+
+    vm.prank(_pool);
+    IBCoWFactory(address(bFactory)).logBCoWPool();
   }
 }

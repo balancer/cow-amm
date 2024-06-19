@@ -16,13 +16,13 @@ https://defi.sucks
 
 */
 
+import {BCoWConst} from './BCoWConst.sol';
+import {BPool} from './BPool.sol';
+import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
-
-import {BCoWConst} from './BCoWConst.sol';
-import {BPool} from './BPool.sol';
+import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 
@@ -142,11 +142,20 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   /**
    * @inheritdoc BPool
    * @dev Grants infinite approval to the vault relayer for all tokens in the
-   * pool after the finalization of the setup.
+   * pool after the finalization of the setup. Also emits COWAMMPoolCreated() event.
    */
   function _afterFinalize() internal override {
     for (uint256 i; i < _tokens.length; i++) {
       IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
+    }
+
+    // Make the factory emit the event, to be easily indexed by off-chain agents
+    // If this pool was not deployed using a bCoWFactory, this will revert and catch
+    // And the event will be emitted by this contract instead
+    // solhint-disable-next-line no-empty-blocks
+    try IBCoWFactory(_factory).logBCoWPool() {}
+    catch {
+      emit IBCoWFactory.COWAMMPoolCreated(address(this));
     }
   }
 }
