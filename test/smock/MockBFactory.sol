@@ -42,4 +42,23 @@ contract MockBFactory is BFactory, Test {
   function mock_call_getBLabs(address _returnParam0) public {
     vm.mockCall(address(this), abi.encodeWithSignature('getBLabs()'), abi.encode(_returnParam0));
   }
+
+  function mock_call__newBPool(IBPool _pool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(_pool));
+  }
+
+  function _newBPool() internal override returns (IBPool _pool) {
+    (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
+
+    if (_success) return abi.decode(_data, (IBPool));
+    else return super._newBPool();
+  }
+
+  function call__newBPool() public returns (IBPool _pool) {
+    return _newBPool();
+  }
+
+  function expectCall__newBPool() public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_newBPool()'));
+  }
 }

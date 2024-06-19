@@ -21,6 +21,14 @@ abstract contract BCoWFactoryTest is Base {
     vm.prank(owner);
     return new MockBCoWFactory(solutionSettler, appData);
   }
+
+  function _bPoolBytecode() internal virtual override returns (bytes memory _bytecode) {
+    vm.skip(true);
+
+    // NOTE: "runtimeCode" is not available for contracts containing immutable variables.
+    // return type(BCoWPool).runtimeCode;
+    return _bytecode;
+  }
 }
 
 contract BCoWFactory_Unit_Constructor is BaseBFactory_Unit_Constructor, BCoWFactoryTest {

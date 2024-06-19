@@ -20,8 +20,8 @@ contract BFactory is IBFactory {
   }
 
   /// @inheritdoc IBFactory
-  function newBPool() external virtual returns (IBPool _pool) {
-    IBPool bpool = new BPool();
+  function newBPool() external returns (IBPool _pool) {
+    IBPool bpool = _newBPool();
     _isBPool[address(bpool)] = true;
     emit LOG_NEW_POOL(msg.sender, address(bpool));
     bpool.setController(msg.sender);
@@ -57,5 +57,13 @@ contract BFactory is IBFactory {
   /// @inheritdoc IBFactory
   function getBLabs() external view returns (address) {
     return _blabs;
+  }
+
+  /**
+   * @notice Deploys a new BPool.
+   * @dev Internal function to allow overriding in derived contracts.
+   */
+  function _newBPool() internal virtual returns (IBPool _pool) {
+    return new BPool();
   }
 }
