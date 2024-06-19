@@ -607,7 +607,7 @@ contract BPool is BToken, BMath, IBPool {
    * @dev Should be set to _MUTEX_FREE after a call, any other value will
    * be interpreted as locked
    */
-  function _setLock(bytes32 _value) internal {
+  function _setLock(bytes32 _value) internal virtual {
     assembly ("memory-safe") {
       tstore(_MUTEX_TRANSIENT_STORAGE_SLOT, _value)
     }
@@ -686,7 +686,7 @@ contract BPool is BToken, BMath, IBPool {
    * @dev Should only be compared against _MUTEX_FREE for the purposes of
    * allowing calls
    */
-  function _getLock() internal view returns (bytes32 _value) {
+  function _getLock() internal view virtual returns (bytes32 _value) {
     assembly ("memory-safe") {
       _value := tload(_MUTEX_TRANSIENT_STORAGE_SLOT)
     }

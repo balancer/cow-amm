@@ -11,7 +11,7 @@ import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
-import {MockBPool} from 'test/manual-smock/MockBPool.sol';
+import {MockBPool} from 'test/smock/MockBPool.sol';
 
 abstract contract BaseCoWPoolTest is BasePoolTest, BCoWConst {
   address public cowSolutionSettler = makeAddr('cowSolutionSettler');
@@ -124,10 +124,30 @@ contract BCoWPool_Unit_Commit is BaseCoWPoolTest {
     bCoWPool.commit(orderHash);
   }
 
+  function test_Revert_CommitmentAlreadySet(bytes32 _existingCommitment, bytes32 _newCommitment) public {
+    vm.assume(_existingCommitment != bytes32(0));
+    bCoWPool.call__setLock(_existingCommitment);
+    vm.prank(cowSolutionSettler);
+    vm.expectRevert(IBCoWPool.BCoWPool_CommitmentAlreadySet.selector);
+    bCoWPool.commit(_newCommitment);
+  }
+
   function test_Set_Commitment(bytes32 orderHash) public {
     vm.prank(cowSolutionSettler);
     bCoWPool.commit(orderHash);
     assertEq(bCoWPool.commitment(), orderHash);
+  }
+
+  function test_Call_SetLock(bytes32 orderHash) public {
+    bCoWPool.expectCall__setLock(orderHash);
+    vm.prank(cowSolutionSettler);
+    bCoWPool.commit(orderHash);
+  }
+
+  function test_Set_ReentrancyLock(bytes32 orderHash) public {
+    vm.prank(cowSolutionSettler);
+    bCoWPool.commit(orderHash);
+    assertEq(bCoWPool.call__getLock(), orderHash);
   }
 }
 
@@ -290,7 +310,7 @@ contract BCoWPool_Unit_IsValidSignature is BaseCoWPoolTest {
 
     // stores the order hash in the transient storage slot
     bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
-    bCoWPool.set_commitment(_orderHash);
+    bCoWPool.call__setLock(_orderHash);
     _;
   }
 
@@ -324,7 +344,7 @@ contract BCoWPool_Unit_IsValidSignature is BaseCoWPoolTest {
     GPv2Order.Data memory _order,
     bytes32 _differentCommitment
   ) public happyPath(_order) {
-    bCoWPool.set_commitment(_differentCommitment);
+    bCoWPool.call__setLock(_differentCommitment);
     bytes32 _orderHash = GPv2Order.hash(_order, domainSeparator);
     vm.expectRevert(IBCoWPool.OrderDoesNotMatchCommitmentHash.selector);
     bCoWPool.isValidSignature(_orderHash, abi.encode(_order));

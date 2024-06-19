@@ -31,6 +31,7 @@ yarn test    # run the tests
 - Deprecated `BColor` and `BBronze` (unused contracts)
 - Deprecated `Migrations` contract (not needed)
 - Added an `_afterFinalize` hook (to be called at the end of the finalize routine)
+- Implemented reentrancy locks using transient storage.
 
 ## Features on BCoWPool (added via inheritance to BPool)
 - Immutably stores CoW Protocol's `SolutionSettler` and `VaultRelayer` addresses at deployment
@@ -38,7 +39,9 @@ yarn test    # run the tests
 - Immutably stores Cow Protocol's `GPv2Order.appData` to be allowed to swap
 - Gives infinite ERC20 approval to the CoW Protocol's `VaultRelayer` contract
 - Implements IERC1271 `isValidSignature` method to allow for validating intentions of swaps
-- Implements a `commit` method to avoid multiple swaps from conflicting with each other
+- Implements a `commit` method to avoid multiple swaps from conflicting with each other.
+  - This is stored in the same transient storage slot as reentrancy locks in order to prevent calls to swap/join functions within a settlement execution or vice versa.
+  - It's an error to override a commitment since that could be used to clear reentrancy locks. Commitments can only be cleared by ending a transaction.
 - Validates the `GPv2Order` requirements before allowing the swap
 
 ## Features on BCoWFactory

@@ -5,7 +5,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {BPool} from 'contracts/BPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-import {MockBPool} from 'test/manual-smock/MockBPool.sol';
+import {MockBPool} from 'test/smock/MockBPool.sol';
 
 import {BConst} from 'contracts/BConst.sol';
 import {BMath} from 'contracts/BMath.sol';
@@ -83,11 +83,17 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   function _expectRevertByReentrancy() internal {
     // Assert that the contract is accessible
     assertEq(bPool.call__getLock(), _MUTEX_FREE);
-
     // Simulate ongoing call to the contract
     bPool.call__setLock(_MUTEX_TAKEN);
 
     vm.expectRevert(IBPool.BPool_Reentrancy.selector);
+  }
+
+  function _expectSetReentrancyLock() internal {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__getLock(), _MUTEX_FREE);
+    // Expect reentrancy lock to be set
+    bPool.expectCall__setLock(_MUTEX_TAKEN);
   }
 
   function _assumeCalcSpotPrice(
@@ -570,12 +576,14 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
   }
 
   function test_Set_SwapFee(uint256 _fee) public happyPath(_fee) {
-    vm.assume(_fee >= MIN_FEE);
-    vm.assume(_fee <= MAX_FEE);
-
     bPool.setSwapFee(_fee);
 
     assertEq(bPool.call__swapFee(), _fee);
+  }
+
+  function test_Set_ReentrancyLock(uint256 _fee) public happyPath(_fee) {
+    _expectSetReentrancyLock();
+    bPool.setSwapFee(_fee);
   }
 
   function test_Emit_LogCall(uint256 _fee) public happyPath(_fee) {
@@ -613,6 +621,11 @@ contract BPool_Unit_SetController is BasePoolTest {
     bytes memory _data = abi.encodeWithSelector(BPool.setController.selector, _controller);
     emit IBPool.LOG_CALL(BPool.setController.selector, address(this), _data);
 
+    bPool.setController(_controller);
+  }
+
+  function test_Set_ReentrancyLock(address _controller) public {
+    _expectSetReentrancyLock();
     bPool.setController(_controller);
   }
 }
@@ -661,6 +674,11 @@ contract BPool_Unit_Finalize is BasePoolTest {
     bPool.finalize();
 
     assertEq(bPool.call__finalized(), true);
+  }
+
+  function test_Set_ReentrancyLock(uint256 _tokensLength) public happyPath(_tokensLength) {
+    _expectSetReentrancyLock();
+    bPool.finalize();
   }
 
   function test_Call_AfterFinalizeHook(uint256 _tokensLength) public happyPath(_tokensLength) {
@@ -767,6 +785,11 @@ contract BPool_Unit_Bind is BasePoolTest {
     }
 
     vm.expectRevert(IBPool.BPool_TokensAboveMaximum.selector);
+    bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
+  }
+
+  function test_Set_ReentrancyLock(Bind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
   }
 
@@ -928,6 +951,11 @@ contract BPool_Unit_Unbind is BasePoolTest {
     bPool.unbind(_fuzz.token);
 
     assertEq(bPool.call__totalWeight(), _fuzz.totalWeight - _fuzz.denorm);
+  }
+
+  function test_Set_ReentrancyLock(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.unbind(_fuzz.token);
   }
 
   function test_Set_TokenArray(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
@@ -1235,6 +1263,11 @@ contract BPool_Unit_JoinPool is BasePoolTest {
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
 
+  function test_Set_ReentrancyLock(JoinPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
+  }
+
   function test_Pull_TokenArrayTokenAmountIn(JoinPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _poolTotal = _fuzz.initPoolSupply;
     uint256 _ratio = bdiv(_fuzz.poolAmountOut, _poolTotal);
@@ -1378,6 +1411,11 @@ contract BPool_Unit_ExitPool is BasePoolTest {
     bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
 
     assertEq(bPool.totalSupply(), _totalSupplyBefore - _pAiAfterExitFee);
+  }
+
+  function test_Set_ReentrancyLock(ExitPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
   }
 
   function test_Revert_InvalidTokenAmountOut(
@@ -1618,6 +1656,11 @@ contract BPool_Unit_SwapExactAmountIn is SwapExactAmountInUtils {
 
     vm.expectEmit();
     emit IBPool.LOG_SWAP(address(this), tokenIn, tokenOut, _fuzz.tokenAmountIn, _tokenAmountOut);
+    bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1964,6 +2007,11 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
+  function test_Set_ReentrancyLock(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
+  }
+
   function test_Pull_TokenAmountIn(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _tokenAmountIn = calcInGivenOut(
       _fuzz.tokenInBalance,
@@ -2149,6 +2197,11 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
     vm.expectEmit();
     emit IBPool.LOG_JOIN(address(this), tokenIn, _fuzz.tokenAmountIn);
 
+    bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
+  }
+
+  function test_Set_ReentrancyLock(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
   }
 
@@ -2366,6 +2419,11 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
 
     vm.expectEmit();
     emit IBPool.LOG_JOIN(address(this), tokenIn, _tokenAmountIn);
+    bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
@@ -2610,6 +2668,11 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
     assertEq(bPool.balanceOf(address(this)), _balanceBefore - _fuzz.poolAmountIn);
   }
 
+  function test_Set_ReentrancyLock(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
+  }
+
   function test_Burn_PoolShare(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _totalSupplyBefore = bPool.totalSupply();
     uint256 _exitFee = bmul(_fuzz.poolAmountIn, EXIT_FEE);
@@ -2825,6 +2888,11 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     vm.expectEmit();
     emit IBPool.LOG_EXIT(address(this), tokenOut, _fuzz.tokenAmountOut);
 
+    bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
