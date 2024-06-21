@@ -20,7 +20,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   // If the call fails, it means that the function overflowed, then we reject the fuzzed inputs
   Pow public pow = new Pow();
 
-  function setUp() public {
+  function setUp() public virtual {
     bPool = new MockBPool();
 
     // Create fake tokens
@@ -82,12 +82,18 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
 
   function _expectRevertByReentrancy() internal {
     // Assert that the contract is accessible
-    assertEq(bPool.call__mutex(), false);
-
+    assertEq(bPool.call__getLock(), _MUTEX_FREE);
     // Simulate ongoing call to the contract
-    bPool.set__mutex(true);
+    bPool.call__setLock(_MUTEX_TAKEN);
 
-    vm.expectRevert('ERR_REENTRY');
+    vm.expectRevert(IBPool.BPool_Reentrancy.selector);
+  }
+
+  function _expectSetReentrancyLock() internal {
+    // Assert that the contract is accessible
+    assertEq(bPool.call__getLock(), _MUTEX_FREE);
+    // Expect reentrancy lock to be set
+    bPool.expectCall__setLock(_MUTEX_TAKEN);
   }
 
   function _assumeCalcSpotPrice(
@@ -245,6 +251,111 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   }
 }
 
+abstract contract SwapExactAmountInUtils is BasePoolTest {
+  address tokenIn;
+  address tokenOut;
+
+  struct SwapExactAmountIn_FuzzScenario {
+    uint256 tokenAmountIn;
+    uint256 tokenInBalance;
+    uint256 tokenInDenorm;
+    uint256 tokenOutBalance;
+    uint256 tokenOutDenorm;
+    uint256 swapFee;
+  }
+
+  function _setValues(SwapExactAmountIn_FuzzScenario memory _fuzz) internal {
+    tokenIn = tokens[0];
+    tokenOut = tokens[1];
+
+    // Create mocks for tokenIn and tokenOut (only use the first 2 tokens)
+    _mockTransferFrom(tokenIn);
+    _mockTransfer(tokenOut);
+
+    // Set balances
+    _setRecord(
+      tokenIn,
+      IBPool.Record({
+        bound: true,
+        index: 0, // NOTE: irrelevant for this method
+        denorm: _fuzz.tokenInDenorm
+      })
+    );
+    _mockPoolBalance(tokenIn, _fuzz.tokenInBalance);
+
+    _setRecord(
+      tokenOut,
+      IBPool.Record({
+        bound: true,
+        index: 0, // NOTE: irrelevant for this method
+        denorm: _fuzz.tokenOutDenorm
+      })
+    );
+    _mockPoolBalance(tokenOut, _fuzz.tokenOutBalance);
+
+    // Set swapFee
+    _setSwapFee(_fuzz.swapFee);
+    // Set finalize
+    _setFinalize(true);
+  }
+
+  function _assumeHappyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) internal view virtual {
+    // safe bound assumptions
+    _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
+    _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
+    _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
+
+    // min - max - calcSpotPrice (spotPriceBefore)
+    _fuzz.tokenInBalance = bound(_fuzz.tokenInBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenInDenorm);
+    _fuzz.tokenOutBalance = bound(_fuzz.tokenOutBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenOutDenorm);
+
+    // max - calcSpotPrice (spotPriceAfter)
+    vm.assume(_fuzz.tokenAmountIn < type(uint256).max - _fuzz.tokenInBalance);
+    vm.assume(_fuzz.tokenInBalance + _fuzz.tokenAmountIn < type(uint256).max / _fuzz.tokenInDenorm);
+
+    // internal calculation for calcSpotPrice (spotPriceBefore)
+    _assumeCalcSpotPrice(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
+    );
+
+    // MAX_IN_RATIO
+    vm.assume(_fuzz.tokenAmountIn <= bmul(_fuzz.tokenInBalance, MAX_IN_RATIO));
+
+    // L338 BPool.sol
+    uint256 _spotPriceBefore = calcSpotPrice(
+      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
+    );
+
+    _assumeCalcOutGivenIn(_fuzz.tokenInBalance, _fuzz.tokenAmountIn, _fuzz.swapFee);
+    uint256 _tokenAmountOut = calcOutGivenIn(
+      _fuzz.tokenInBalance,
+      _fuzz.tokenInDenorm,
+      _fuzz.tokenOutBalance,
+      _fuzz.tokenOutDenorm,
+      _fuzz.tokenAmountIn,
+      _fuzz.swapFee
+    );
+    vm.assume(_tokenAmountOut > BONE);
+
+    // internal calculation for calcSpotPrice (spotPriceAfter)
+    _assumeCalcSpotPrice(
+      _fuzz.tokenInBalance + _fuzz.tokenAmountIn,
+      _fuzz.tokenInDenorm,
+      _fuzz.tokenOutBalance - _tokenAmountOut,
+      _fuzz.tokenOutDenorm,
+      _fuzz.swapFee
+    );
+
+    vm.assume(bmul(_spotPriceBefore, _tokenAmountOut) <= _fuzz.tokenAmountIn);
+  }
+
+  modifier happyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) {
+    _assumeHappyPath(_fuzz);
+    _setValues(_fuzz);
+    _;
+  }
+}
+
 contract BPool_Unit_Constructor is BasePoolTest {
   function test_Deploy(address _deployer) public {
     vm.prank(_deployer);
@@ -317,7 +428,7 @@ contract BPool_Unit_GetFinalTokens is BasePoolTest {
     _setRandomTokens(_length);
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.getFinalTokens();
   }
 }
@@ -335,7 +446,7 @@ contract BPool_Unit_GetDenormalizedWeight is BasePoolTest {
   }
 
   function test_Revert_NotBound(address _token) public {
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getDenormalizedWeight(_token);
   }
 }
@@ -370,7 +481,7 @@ contract BPool_Unit_GetNormalizedWeight is BasePoolTest {
   }
 
   function test_Revert_NotBound(address _token) public {
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getNormalizedWeight(_token);
   }
 }
@@ -391,7 +502,7 @@ contract BPool_Unit_GetBalance is BasePoolTest {
   }
 
   function test_Revert_NotBound(address _token) public {
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getBalance(_token);
   }
 }
@@ -432,7 +543,7 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
   function test_Revert_Finalized(uint256 _fee) public happyPath(_fee) {
     _setFinalize(true);
 
-    vm.expectRevert('ERR_IS_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolIsFinalized.selector);
     bPool.setSwapFee(_fee);
   }
 
@@ -440,7 +551,7 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
     vm.assume(_controller != _caller);
     bPool.set__controller(_controller);
 
-    vm.expectRevert('ERR_NOT_CONTROLLER');
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     vm.prank(_caller);
     bPool.setSwapFee(_fee);
   }
@@ -448,14 +559,14 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
   function test_Revert_MinFee(uint256 _fee) public {
     vm.assume(_fee < MIN_FEE);
 
-    vm.expectRevert('ERR_MIN_FEE');
+    vm.expectRevert(IBPool.BPool_FeeBelowMinimum.selector);
     bPool.setSwapFee(_fee);
   }
 
   function test_Revert_MaxFee(uint256 _fee) public {
     vm.assume(_fee > MAX_FEE);
 
-    vm.expectRevert('ERR_MAX_FEE');
+    vm.expectRevert(IBPool.BPool_FeeAboveMaximum.selector);
     bPool.setSwapFee(_fee);
   }
 
@@ -465,12 +576,14 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
   }
 
   function test_Set_SwapFee(uint256 _fee) public happyPath(_fee) {
-    vm.assume(_fee >= MIN_FEE);
-    vm.assume(_fee <= MAX_FEE);
-
     bPool.setSwapFee(_fee);
 
     assertEq(bPool.call__swapFee(), _fee);
+  }
+
+  function test_Set_ReentrancyLock(uint256 _fee) public happyPath(_fee) {
+    _expectSetReentrancyLock();
+    bPool.setSwapFee(_fee);
   }
 
   function test_Emit_LogCall(uint256 _fee) public happyPath(_fee) {
@@ -487,7 +600,7 @@ contract BPool_Unit_SetController is BasePoolTest {
     vm.assume(_controller != _caller);
     bPool.set__controller(_controller);
 
-    vm.expectRevert('ERR_NOT_CONTROLLER');
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     vm.prank(_caller);
     bPool.setController(_newController);
   }
@@ -510,6 +623,11 @@ contract BPool_Unit_SetController is BasePoolTest {
 
     bPool.setController(_controller);
   }
+
+  function test_Set_ReentrancyLock(address _controller) public {
+    _expectSetReentrancyLock();
+    bPool.setController(_controller);
+  }
 }
 
 contract BPool_Unit_Finalize is BasePoolTest {
@@ -528,14 +646,14 @@ contract BPool_Unit_Finalize is BasePoolTest {
     bPool.set__controller(_controller);
 
     vm.prank(_caller);
-    vm.expectRevert('ERR_NOT_CONTROLLER');
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     bPool.finalize();
   }
 
   function test_Revert_Finalized(uint256 _tokensLength) public happyPath(_tokensLength) {
     _setFinalize(true);
 
-    vm.expectRevert('ERR_IS_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolIsFinalized.selector);
     bPool.finalize();
   }
 
@@ -543,7 +661,7 @@ contract BPool_Unit_Finalize is BasePoolTest {
     _tokensLength = bound(_tokensLength, 0, MIN_BOUND_TOKENS - 1);
     _setRandomTokens(_tokensLength);
 
-    vm.expectRevert('ERR_MIN_TOKENS');
+    vm.expectRevert(IBPool.BPool_TokensBelowMinimum.selector);
     bPool.finalize();
   }
 
@@ -556,6 +674,16 @@ contract BPool_Unit_Finalize is BasePoolTest {
     bPool.finalize();
 
     assertEq(bPool.call__finalized(), true);
+  }
+
+  function test_Set_ReentrancyLock(uint256 _tokensLength) public happyPath(_tokensLength) {
+    _expectSetReentrancyLock();
+    bPool.finalize();
+  }
+
+  function test_Call_AfterFinalizeHook(uint256 _tokensLength) public happyPath(_tokensLength) {
+    bPool.expectCall__afterFinalize();
+    bPool.finalize();
   }
 
   function test_Mint_InitPoolSupply(uint256 _tokensLength) public happyPath(_tokensLength) {
@@ -632,21 +760,21 @@ contract BPool_Unit_Bind is BasePoolTest {
     bPool.set__controller(_controller);
 
     vm.prank(_caller);
-    vm.expectRevert('ERR_NOT_CONTROLLER');
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
   }
 
   function test_Revert_IsBound(Bind_FuzzScenario memory _fuzz, address _token) public happyPath(_fuzz) {
     _setRecord(_token, IBPool.Record({bound: true, index: 0, denorm: 0}));
 
-    vm.expectRevert('ERR_IS_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenAlreadyBound.selector);
     bPool.bind(_token, _fuzz.balance, _fuzz.denorm);
   }
 
   function test_Revert_Finalized(Bind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(true);
 
-    vm.expectRevert('ERR_IS_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolIsFinalized.selector);
     bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
   }
 
@@ -656,7 +784,12 @@ contract BPool_Unit_Bind is BasePoolTest {
       vm.assume(_fuzz.token != _tokens[i]);
     }
 
-    vm.expectRevert('ERR_MAX_TOKENS');
+    vm.expectRevert(IBPool.BPool_TokensAboveMaximum.selector);
+    bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
+  }
+
+  function test_Set_ReentrancyLock(Bind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.bind(_fuzz.token, _fuzz.balance, _fuzz.denorm);
   }
 
@@ -685,21 +818,21 @@ contract BPool_Unit_Bind is BasePoolTest {
   function test_Revert_MinWeight(Bind_FuzzScenario memory _fuzz, uint256 _denorm) public happyPath(_fuzz) {
     vm.assume(_denorm < MIN_WEIGHT);
 
-    vm.expectRevert('ERR_MIN_WEIGHT');
+    vm.expectRevert(IBPool.BPool_WeightBelowMinimum.selector);
     bPool.bind(_fuzz.token, _fuzz.balance, _denorm);
   }
 
   function test_Revert_MaxWeight(Bind_FuzzScenario memory _fuzz, uint256 _denorm) public happyPath(_fuzz) {
     vm.assume(_denorm > MAX_WEIGHT);
 
-    vm.expectRevert('ERR_MAX_WEIGHT');
+    vm.expectRevert(IBPool.BPool_WeightAboveMaximum.selector);
     bPool.bind(_fuzz.token, _fuzz.balance, _denorm);
   }
 
   function test_Revert_MinBalance(Bind_FuzzScenario memory _fuzz, uint256 _balance) public happyPath(_fuzz) {
     vm.assume(_balance < MIN_BALANCE);
 
-    vm.expectRevert('ERR_MIN_BALANCE');
+    vm.expectRevert(IBPool.BPool_BalanceBelowMinimum.selector);
     bPool.bind(_fuzz.token, _balance, _fuzz.denorm);
   }
 
@@ -718,7 +851,7 @@ contract BPool_Unit_Bind is BasePoolTest {
     _denorm = bound(_denorm, MIN_WEIGHT, MAX_WEIGHT);
     _setTotalWeight(MAX_TOTAL_WEIGHT);
 
-    vm.expectRevert('ERR_MAX_TOTAL_WEIGHT');
+    vm.expectRevert(IBPool.BPool_TotalWeightAboveMaximum.selector);
     bPool.bind(_fuzz.token, _fuzz.balance, _denorm);
   }
 
@@ -791,21 +924,21 @@ contract BPool_Unit_Unbind is BasePoolTest {
     bPool.set__controller(_controller);
 
     vm.prank(_caller);
-    vm.expectRevert('ERR_NOT_CONTROLLER');
+    vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     bPool.unbind(_fuzz.token);
   }
 
   function test_Revert_NotBound(Unbind_FuzzScenario memory _fuzz, address _token) public happyPath(_fuzz) {
     _setRecord(_token, IBPool.Record({bound: false, index: _fuzz.tokenIndex, denorm: _fuzz.denorm}));
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.unbind(_token);
   }
 
   function test_Revert_Finalized(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(true);
 
-    vm.expectRevert('ERR_IS_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolIsFinalized.selector);
     bPool.unbind(_fuzz.token);
   }
 
@@ -818,6 +951,11 @@ contract BPool_Unit_Unbind is BasePoolTest {
     bPool.unbind(_fuzz.token);
 
     assertEq(bPool.call__totalWeight(), _fuzz.totalWeight - _fuzz.denorm);
+  }
+
+  function test_Set_ReentrancyLock(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.unbind(_fuzz.token);
   }
 
   function test_Set_TokenArray(Unbind_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
@@ -913,7 +1051,7 @@ contract BPool_Unit_GetSpotPrice is BasePoolTest {
     vm.assume(_tokenIn != _fuzz.tokenIn);
     vm.assume(_tokenIn != _fuzz.tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getSpotPrice(_tokenIn, _fuzz.tokenOut);
   }
 
@@ -924,7 +1062,7 @@ contract BPool_Unit_GetSpotPrice is BasePoolTest {
     vm.assume(_tokenOut != _fuzz.tokenIn);
     vm.assume(_tokenOut != _fuzz.tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getSpotPrice(_fuzz.tokenIn, _tokenOut);
   }
 
@@ -980,7 +1118,7 @@ contract BPool_Unit_GetSpotPriceSansFee is BasePoolTest {
     vm.assume(_tokenIn != _fuzz.tokenIn);
     vm.assume(_tokenIn != _fuzz.tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getSpotPriceSansFee(_tokenIn, _fuzz.tokenOut);
   }
 
@@ -991,7 +1129,7 @@ contract BPool_Unit_GetSpotPriceSansFee is BasePoolTest {
     vm.assume(_tokenOut != _fuzz.tokenIn);
     vm.assume(_tokenOut != _fuzz.tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.getSpotPriceSansFee(_fuzz.tokenIn, _tokenOut);
   }
 
@@ -1066,28 +1204,31 @@ contract BPool_Unit_JoinPool is BasePoolTest {
   function test_Revert_NotFinalized(JoinPool_FuzzScenario memory _fuzz) public {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
 
-  function test_Revert_MathApprox(JoinPool_FuzzScenario memory _fuzz, uint256 _poolAmountOut) public happyPath(_fuzz) {
+  function test_Revert_InvalidPoolRatio(
+    JoinPool_FuzzScenario memory _fuzz,
+    uint256 _poolAmountOut
+  ) public happyPath(_fuzz) {
     _poolAmountOut = bound(_poolAmountOut, 0, (INIT_POOL_SUPPLY / 2 / BONE) - 1); // bdiv rounds up
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidPoolRatio.selector);
     bPool.joinPool(_poolAmountOut, _maxArray(tokens.length));
   }
 
-  function test_Revert_TokenArrayMathApprox(JoinPool_FuzzScenario memory _fuzz, uint256 _tokenIndex) public {
+  function test_Revert_InvalidTokenAmountIn(JoinPool_FuzzScenario memory _fuzz, uint256 _tokenIndex) public {
     _assumeHappyPath(_fuzz);
     _tokenIndex = bound(_tokenIndex, 0, TOKENS_AMOUNT - 1);
     _fuzz.balance[_tokenIndex] = 0;
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidTokenAmountIn.selector);
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
 
-  function test_Revert_TokenArrayLimitIn(
+  function test_Revert_TokenAmountInAboveMaxAmountIn(
     JoinPool_FuzzScenario memory _fuzz,
     uint256 _tokenIndex,
     uint256[TOKENS_AMOUNT] memory _maxAmountsIn
@@ -1100,7 +1241,7 @@ contract BPool_Unit_JoinPool is BasePoolTest {
       _maxAmountsIn[i] = _tokenIndex == i ? _tokenAmountIn - 1 : _tokenAmountIn;
     }
 
-    vm.expectRevert('ERR_LIMIT_IN');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxAmountIn.selector);
     bPool.joinPool(_fuzz.poolAmountOut, _staticToDynamicUintArray(_maxAmountsIn));
   }
 
@@ -1119,6 +1260,11 @@ contract BPool_Unit_JoinPool is BasePoolTest {
       vm.expectEmit();
       emit IBPool.LOG_JOIN(address(this), tokens[i], _tokenAmountIn);
     }
+    bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
+  }
+
+  function test_Set_ReentrancyLock(JoinPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.joinPool(_fuzz.poolAmountOut, _maxArray(tokens.length));
   }
 
@@ -1225,14 +1371,17 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   function test_Revert_NotFinalized(ExitPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
   }
 
-  function test_Revert_MathApprox(ExitPool_FuzzScenario memory _fuzz, uint256 _poolAmountIn) public happyPath(_fuzz) {
+  function test_Revert_InvalidPoolRatio(
+    ExitPool_FuzzScenario memory _fuzz,
+    uint256 _poolAmountIn
+  ) public happyPath(_fuzz) {
     _poolAmountIn = bound(_poolAmountIn, 0, (INIT_POOL_SUPPLY / 2 / BONE) - 1); // bdiv rounds up
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidPoolRatio.selector);
     bPool.exitPool(_poolAmountIn, _zeroArray(tokens.length));
   }
 
@@ -1264,7 +1413,12 @@ contract BPool_Unit_ExitPool is BasePoolTest {
     assertEq(bPool.totalSupply(), _totalSupplyBefore - _pAiAfterExitFee);
   }
 
-  function test_Revert_TokenArrayMathApprox(
+  function test_Set_ReentrancyLock(ExitPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
+  }
+
+  function test_Revert_InvalidTokenAmountOut(
     ExitPool_FuzzScenario memory _fuzz,
     uint256 _tokenIndex
   ) public happyPath(_fuzz) {
@@ -1273,11 +1427,11 @@ contract BPool_Unit_ExitPool is BasePoolTest {
     _fuzz.balance[_tokenIndex] = 0;
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidTokenAmountOut.selector);
     bPool.exitPool(_fuzz.poolAmountIn, _zeroArray(tokens.length));
   }
 
-  function test_Revert_TokenArrayLimitOut(
+  function test_Revert_TokenAmountOutBelowMinAmountOut(
     ExitPool_FuzzScenario memory _fuzz,
     uint256 _tokenIndex,
     uint256[TOKENS_AMOUNT] memory _minAmountsOut
@@ -1296,7 +1450,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
       _minAmountsOut[i] = _tokenIndex == i ? _tokenAmountOut + 1 : _tokenAmountOut;
     }
 
-    vm.expectRevert('ERR_LIMIT_OUT');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutBelowMinAmountOut.selector);
     bPool.exitPool(_fuzz.poolAmountIn, _staticToDynamicUintArray(_minAmountsOut));
   }
 
@@ -1343,110 +1497,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   }
 }
 
-contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
-  address tokenIn;
-  address tokenOut;
-
-  struct SwapExactAmountIn_FuzzScenario {
-    uint256 tokenAmountIn;
-    uint256 tokenInBalance;
-    uint256 tokenInDenorm;
-    uint256 tokenOutBalance;
-    uint256 tokenOutDenorm;
-    uint256 swapFee;
-  }
-
-  function _setValues(SwapExactAmountIn_FuzzScenario memory _fuzz) internal {
-    tokenIn = tokens[0];
-    tokenOut = tokens[1];
-
-    // Create mocks for tokenIn and tokenOut (only use the first 2 tokens)
-    _mockTransferFrom(tokenIn);
-    _mockTransfer(tokenOut);
-
-    // Set balances
-    _setRecord(
-      tokenIn,
-      IBPool.Record({
-        bound: true,
-        index: 0, // NOTE: irrelevant for this method
-        denorm: _fuzz.tokenInDenorm
-      })
-    );
-    _mockPoolBalance(tokenIn, _fuzz.tokenInBalance);
-
-    _setRecord(
-      tokenOut,
-      IBPool.Record({
-        bound: true,
-        index: 0, // NOTE: irrelevant for this method
-        denorm: _fuzz.tokenOutDenorm
-      })
-    );
-    _mockPoolBalance(tokenOut, _fuzz.tokenOutBalance);
-
-    // Set swapFee
-    _setSwapFee(_fuzz.swapFee);
-    // Set finalize
-    _setFinalize(true);
-  }
-
-  function _assumeHappyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) internal pure {
-    // safe bound assumptions
-    _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
-    _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
-    _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
-
-    // min - max - calcSpotPrice (spotPriceBefore)
-    _fuzz.tokenInBalance = bound(_fuzz.tokenInBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenInDenorm);
-    _fuzz.tokenOutBalance = bound(_fuzz.tokenOutBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenOutDenorm);
-
-    // max - calcSpotPrice (spotPriceAfter)
-    vm.assume(_fuzz.tokenAmountIn < type(uint256).max - _fuzz.tokenInBalance);
-    vm.assume(_fuzz.tokenInBalance + _fuzz.tokenAmountIn < type(uint256).max / _fuzz.tokenInDenorm);
-
-    // internal calculation for calcSpotPrice (spotPriceBefore)
-    _assumeCalcSpotPrice(
-      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
-    );
-
-    // MAX_IN_RATIO
-    vm.assume(_fuzz.tokenAmountIn <= bmul(_fuzz.tokenInBalance, MAX_IN_RATIO));
-
-    // L338 BPool.sol
-    uint256 _spotPriceBefore = calcSpotPrice(
-      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
-    );
-
-    _assumeCalcOutGivenIn(_fuzz.tokenInBalance, _fuzz.tokenAmountIn, _fuzz.swapFee);
-    uint256 _tokenAmountOut = calcOutGivenIn(
-      _fuzz.tokenInBalance,
-      _fuzz.tokenInDenorm,
-      _fuzz.tokenOutBalance,
-      _fuzz.tokenOutDenorm,
-      _fuzz.tokenAmountIn,
-      _fuzz.swapFee
-    );
-    vm.assume(_tokenAmountOut > BONE);
-
-    // internal calculation for calcSpotPrice (spotPriceAfter)
-    _assumeCalcSpotPrice(
-      _fuzz.tokenInBalance + _fuzz.tokenAmountIn,
-      _fuzz.tokenInDenorm,
-      _fuzz.tokenOutBalance - _tokenAmountOut,
-      _fuzz.tokenOutDenorm,
-      _fuzz.swapFee
-    );
-
-    vm.assume(bmul(_spotPriceBefore, _tokenAmountOut) <= _fuzz.tokenAmountIn);
-  }
-
-  modifier happyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) {
-    _assumeHappyPath(_fuzz);
-    _setValues(_fuzz);
-    _;
-  }
-
+contract BPool_Unit_SwapExactAmountIn is SwapExactAmountInUtils {
   function test_Revert_NotBoundTokenIn(
     SwapExactAmountIn_FuzzScenario memory _fuzz,
     address _tokenIn
@@ -1455,7 +1506,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     vm.assume(_tokenIn != tokenIn);
     vm.assume(_tokenIn != tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.swapExactAmountIn(_tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1467,25 +1518,25 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     vm.assume(_tokenOut != tokenIn);
     vm.assume(_tokenOut != tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, _tokenOut, 0, type(uint256).max);
   }
 
   function test_Revert_NotFinalized(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
-  function test_Revert_MaxInRatio(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_TokenAmountInAboveMaxIn(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _tokenAmountIn = bmul(_fuzz.tokenInBalance, MAX_IN_RATIO) + 1;
 
-    vm.expectRevert('ERR_MAX_IN_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
     bPool.swapExactAmountIn(tokenIn, _tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
-  function test_Revert_BadLimitPrice(
+  function test_Revert_SpotPriceAboveMaxPrice(
     SwapExactAmountIn_FuzzScenario memory _fuzz,
     uint256 _maxPrice
   ) public happyPath(_fuzz) {
@@ -1495,11 +1546,11 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     vm.assume(_spotPriceBefore > 0);
     _maxPrice = bound(_maxPrice, 0, _spotPriceBefore - 1);
 
-    vm.expectRevert('ERR_BAD_LIMIT_PRICE');
+    vm.expectRevert(IBPool.BPool_SpotPriceAboveMaxPrice.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, _maxPrice);
   }
 
-  function test_Revert_LimitOut(
+  function test_Revert_TokenAmountOutBelowMinOut(
     SwapExactAmountIn_FuzzScenario memory _fuzz,
     uint256 _minAmountOut
   ) public happyPath(_fuzz) {
@@ -1513,7 +1564,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     );
     _minAmountOut = bound(_minAmountOut, _tokenAmountOut + 1, type(uint256).max);
 
-    vm.expectRevert('ERR_LIMIT_OUT');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutBelowMinOut.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, _minAmountOut, type(uint256).max);
   }
 
@@ -1522,12 +1573,12 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
-  function test_Revert_MathApprox() public {
+  function test_Revert_SpotPriceAfterBelowSpotPriceBefore() public {
     vm.skip(true);
     // TODO: this revert might be unreachable. Find a way to test it or remove the revert in the code.
   }
 
-  function test_Revert_LimitPrice(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_SpotPriceAfterBelowMaxPrice(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _tokenAmountOut = calcOutGivenIn(
       _fuzz.tokenInBalance,
       _fuzz.tokenInDenorm,
@@ -1548,11 +1599,11 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
     );
     vm.assume(_spotPriceAfter > _spotPriceBefore);
 
-    vm.expectRevert('ERR_LIMIT_PRICE');
+    vm.expectRevert(IBPool.BPool_SpotPriceAfterBelowMaxPrice.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, _spotPriceBefore);
   }
 
-  function test_Revert_MathApprox2(SwapExactAmountIn_FuzzScenario memory _fuzz) public {
+  function test_Revert_SpotPriceBeforeAboveTokenRatio(SwapExactAmountIn_FuzzScenario memory _fuzz) public {
     // Replicating _assumeHappyPath, but removing irrelevant assumptions and conditioning the revert
     _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
     _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
@@ -1589,7 +1640,7 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
 
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_SpotPriceBeforeAboveTokenRatio.selector);
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1605,6 +1656,11 @@ contract BPool_Unit_SwapExactAmountIn is BasePoolTest {
 
     vm.expectEmit();
     emit IBPool.LOG_SWAP(address(this), tokenIn, tokenOut, _fuzz.tokenAmountIn, _tokenAmountOut);
+    bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.swapExactAmountIn(tokenIn, _fuzz.tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -1789,7 +1845,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     vm.assume(_tokenIn != tokenIn);
     vm.assume(_tokenIn != tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.swapExactAmountOut(_tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -1801,25 +1857,25 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     vm.assume(_tokenOut != tokenIn);
     vm.assume(_tokenOut != tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, _tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
   function test_Revert_NotFinalized(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
-  function test_Revert_MaxOutRatio(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_TokenAmountOutAboveMaxOut(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _tokenAmountOut = bmul(_fuzz.tokenOutBalance, MAX_OUT_RATIO) + 1;
 
-    vm.expectRevert('ERR_MAX_OUT_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutAboveMaxOut.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _tokenAmountOut, type(uint256).max);
   }
 
-  function test_Revert_BadLimitPrice(
+  function test_Revert_SpotPriceAboveMaxPrice(
     SwapExactAmountOut_FuzzScenario memory _fuzz,
     uint256 _maxPrice
   ) public happyPath(_fuzz) {
@@ -1829,11 +1885,11 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     vm.assume(_spotPriceBefore > 0);
     _maxPrice = bound(_maxPrice, 0, _spotPriceBefore - 1);
 
-    vm.expectRevert('ERR_BAD_LIMIT_PRICE');
+    vm.expectRevert(IBPool.BPool_SpotPriceAboveMaxPrice.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, _maxPrice);
   }
 
-  function test_Revert_LimitIn(
+  function test_Revert_TokenAmountInAboveMaxAmountIn(
     SwapExactAmountOut_FuzzScenario memory _fuzz,
     uint256 _maxAmountIn
   ) public happyPath(_fuzz) {
@@ -1847,7 +1903,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     );
     _maxAmountIn = bound(_maxAmountIn, 0, _tokenAmountIn - 1);
 
-    vm.expectRevert('ERR_LIMIT_IN');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxAmountIn.selector);
     bPool.swapExactAmountOut(tokenIn, _maxAmountIn, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -1861,7 +1917,10 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     // TODO: this revert might be unreachable. Find a way to test it or remove the revert in the code.
   }
 
-  function test_Revert_LimitPrice(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_SpotPriceAfterBelowMaxPrice(SwapExactAmountOut_FuzzScenario memory _fuzz)
+    public
+    happyPath(_fuzz)
+  {
     uint256 _tokenAmountIn = calcInGivenOut(
       _fuzz.tokenInBalance,
       _fuzz.tokenInDenorm,
@@ -1882,11 +1941,11 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
     );
     vm.assume(_spotPriceAfter > _spotPriceBefore);
 
-    vm.expectRevert('ERR_LIMIT_PRICE');
+    vm.expectRevert(IBPool.BPool_SpotPriceAfterBelowMaxPrice.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, _spotPriceBefore);
   }
 
-  function test_Revert_MathApprox2(SwapExactAmountOut_FuzzScenario memory _fuzz) public {
+  function test_Revert_SpotPriceBeforeAboveTokenRatio(SwapExactAmountOut_FuzzScenario memory _fuzz) public {
     // Replicating _assumeHappyPath, but removing irrelevant assumptions and conditioning the revert
     _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
     _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
@@ -1929,7 +1988,7 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
 
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_SpotPriceBeforeAboveTokenRatio.selector);
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -1945,6 +2004,11 @@ contract BPool_Unit_SwapExactAmountOut is BasePoolTest {
 
     vm.expectEmit();
     emit IBPool.LOG_SWAP(address(this), tokenIn, tokenOut, _tokenAmountIn, _fuzz.tokenAmountOut);
+    bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(SwapExactAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -2082,7 +2146,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
   function test_Revert_NotFinalized(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
   }
 
@@ -2092,18 +2156,21 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
   ) public happyPath(_fuzz) {
     assumeNotForgeAddress(_tokenIn);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.joinswapExternAmountIn(_tokenIn, _fuzz.tokenAmountIn, 0);
   }
 
-  function test_Revert_MaxInRatio(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_TokenAmountInAboveMaxIn(JoinswapExternAmountIn_FuzzScenario memory _fuzz)
+    public
+    happyPath(_fuzz)
+  {
     uint256 _tokenAmountIn = bmul(_fuzz.tokenInBalance, MAX_IN_RATIO);
 
-    vm.expectRevert('ERR_MAX_IN_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
     bPool.joinswapExternAmountIn(tokenIn, _tokenAmountIn + 1, 0);
   }
 
-  function test_Revert_LimitOut(
+  function test_Revert_PoolAmountOutBelowMinPoolAmountOut(
     JoinswapExternAmountIn_FuzzScenario memory _fuzz,
     uint256 _minPoolAmountOut
   ) public happyPath(_fuzz) {
@@ -2117,7 +2184,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
     );
     _minPoolAmountOut = bound(_minPoolAmountOut, _poolAmountIn + 1, type(uint256).max);
 
-    vm.expectRevert('ERR_LIMIT_OUT');
+    vm.expectRevert(IBPool.BPool_PoolAmountOutBelowMinPoolAmountOut.selector);
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, _minPoolAmountOut);
   }
 
@@ -2130,6 +2197,11 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
     vm.expectEmit();
     emit IBPool.LOG_JOIN(address(this), tokenIn, _fuzz.tokenAmountIn);
 
+    bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
+  }
+
+  function test_Set_ReentrancyLock(JoinswapExternAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.joinswapExternAmountIn(tokenIn, _fuzz.tokenAmountIn, 0);
   }
 
@@ -2264,7 +2336,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
   function test_Revert_NotFinalized(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
@@ -2274,18 +2346,18 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
   ) public happyPath(_fuzz) {
     assumeNotForgeAddress(_tokenIn);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.joinswapPoolAmountOut(_tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
-  function test_Revert_MathApprox(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_InvalidTokenAmountIn(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _fuzz.poolAmountOut = 0;
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidTokenAmountIn.selector);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
-  function test_Revert_LimitIn(
+  function test_Revert_TokenAmountInAboveMaxAmountIn(
     JoinswapPoolAmountOut_FuzzScenario memory _fuzz,
     uint256 _maxAmountIn
   ) public happyPath(_fuzz) {
@@ -2299,11 +2371,11 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
     );
     _maxAmountIn = bound(_maxAmountIn, 0, _tokenAmountIn - 1);
 
-    vm.expectRevert('ERR_LIMIT_IN');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxAmountIn.selector);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, _maxAmountIn);
   }
 
-  function test_Revert_MaxInRatio(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public {
+  function test_Revert_TokenAmountInAboveMaxIn(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public {
     // Replicating _assumeHappyPath, but removing irrelevant assumptions and conditioning the revert
     _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
     _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
@@ -2326,7 +2398,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
 
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MAX_IN_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
@@ -2347,6 +2419,11 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
 
     vm.expectEmit();
     emit IBPool.LOG_JOIN(address(this), tokenIn, _tokenAmountIn);
+    bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(JoinswapPoolAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
@@ -2497,7 +2574,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
   function test_Revert_NotFinalized(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
   }
 
@@ -2507,11 +2584,11 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
   ) public happyPath(_fuzz) {
     assumeNotForgeAddress(_tokenIn);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.exitswapPoolAmountIn(_tokenIn, _fuzz.poolAmountIn, 0);
   }
 
-  function test_Revert_LimitOut(
+  function test_Revert_TokenAmountOutBelowMinAmountOut(
     ExitswapPoolAmountIn_FuzzScenario memory _fuzz,
     uint256 _minAmountOut
   ) public happyPath(_fuzz) {
@@ -2525,11 +2602,11 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
     );
     _minAmountOut = bound(_minAmountOut, _tokenAmountOut + 1, type(uint256).max);
 
-    vm.expectRevert('ERR_LIMIT_OUT');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutBelowMinAmountOut.selector);
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, _minAmountOut);
   }
 
-  function test_Revert_MaxOutRatio(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public {
+  function test_Revert_TokenAmountOutAboveMaxOut(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public {
     // Replicating _assumeHappyPath, but removing irrelevant assumptions and conditioning the revert
     _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
     _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
@@ -2558,7 +2635,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
 
     _setValues(_fuzz);
 
-    vm.expectRevert('ERR_MAX_OUT_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutAboveMaxOut.selector);
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
   }
 
@@ -2589,6 +2666,11 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
     bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
 
     assertEq(bPool.balanceOf(address(this)), _balanceBefore - _fuzz.poolAmountIn);
+  }
+
+  function test_Set_ReentrancyLock(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
+    bPool.exitswapPoolAmountIn(tokenOut, _fuzz.poolAmountIn, 0);
   }
 
   function test_Burn_PoolShare(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
@@ -2748,7 +2830,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
   function test_Revert_NotFinalized(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public {
     _setFinalize(false);
 
-    vm.expectRevert('ERR_NOT_FINALIZED');
+    vm.expectRevert(IBPool.BPool_PoolNotFinalized.selector);
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -2758,25 +2840,28 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
   ) public happyPath(_fuzz) {
     assumeNotForgeAddress(_tokenOut);
 
-    vm.expectRevert('ERR_NOT_BOUND');
+    vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     bPool.exitswapExternAmountOut(_tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
-  function test_Revert_MaxOutRatio(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_TokenAmountOutAboveMaxOut(ExitswapExternAmountOut_FuzzScenario memory _fuzz)
+    public
+    happyPath(_fuzz)
+  {
     uint256 _maxTokenAmountOut = bmul(_fuzz.tokenOutBalance, MAX_OUT_RATIO);
 
-    vm.expectRevert('ERR_MAX_OUT_RATIO');
+    vm.expectRevert(IBPool.BPool_TokenAmountOutAboveMaxOut.selector);
     bPool.exitswapExternAmountOut(tokenOut, _maxTokenAmountOut + 1, type(uint256).max);
   }
 
-  function test_Revert_MathApprox(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+  function test_Revert_InvalidPoolAmountIn(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     _fuzz.tokenAmountOut = 0;
 
-    vm.expectRevert('ERR_MATH_APPROX');
+    vm.expectRevert(IBPool.BPool_InvalidPoolAmountIn.selector);
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
-  function test_Revert_LimitIn(
+  function test_Revert_PoolAmountInAboveMaxPoolAmountIn(
     ExitswapExternAmountOut_FuzzScenario memory _fuzz,
     uint256 _maxPoolAmountIn
   ) public happyPath(_fuzz) {
@@ -2790,7 +2875,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     );
     _maxPoolAmountIn = bound(_maxPoolAmountIn, 0, _poolAmountIn - 1);
 
-    vm.expectRevert('ERR_LIMIT_IN');
+    vm.expectRevert(IBPool.BPool_PoolAmountInAboveMaxPoolAmountIn.selector);
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, _maxPoolAmountIn);
   }
 
@@ -2803,6 +2888,11 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     vm.expectEmit();
     emit IBPool.LOG_EXIT(address(this), tokenOut, _fuzz.tokenAmountOut);
 
+    bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
+  }
+
+  function test_Set_ReentrancyLock(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
+    _expectSetReentrancyLock();
     bPool.exitswapExternAmountOut(tokenOut, _fuzz.tokenAmountOut, type(uint256).max);
   }
 
@@ -2909,7 +2999,7 @@ contract BPool_Unit__PullUnderlying is BasePoolTest {
       _erc20, abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount), abi.encode(false)
     );
 
-    vm.expectRevert('ERR_ERC20_FALSE');
+    vm.expectRevert(IBPool.BPool_ERC20TransferFailed.selector);
     bPool.call__pullUnderlying(_erc20, _from, _amount);
   }
 }
@@ -2929,7 +3019,7 @@ contract BPool_Unit__PushUnderlying is BasePoolTest {
 
     vm.mockCall(_erc20, abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount), abi.encode(false));
 
-    vm.expectRevert('ERR_ERC20_FALSE');
+    vm.expectRevert(IBPool.BPool_ERC20TransferFailed.selector);
     bPool.call__pushUnderlying(_erc20, _to, _amount);
   }
 }

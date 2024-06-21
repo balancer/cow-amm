@@ -3,6 +3,10 @@ pragma solidity 0.8.25;
 
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
+/**
+ * @title BToken
+ * @notice Balancer Pool Token base contract, providing ERC20 functionality.
+ */
 contract BToken is ERC20 {
   constructor() ERC20('Balancer Pool Token', 'BPT') {}
 

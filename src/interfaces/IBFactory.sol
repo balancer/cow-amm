@@ -19,10 +19,20 @@ interface IBFactory {
   event LOG_BLABS(address indexed caller, address indexed bLabs);
 
   /**
-   * @notice Creates a new BPool, assigning the caller as the pool controller
-   * @return pool The new BPool
+   * @notice Thrown when caller is not BLabs address
    */
-  function newBPool() external returns (IBPool pool);
+  error BFactory_NotBLabs();
+
+  /**
+   * @notice Thrown when the ERC20 transfer fails
+   */
+  error BFactory_ERC20TransferFailed();
+
+  /**
+   * @notice Creates a new BPool, assigning the caller as the pool controller
+   * @return _pool The new BPool
+   */
+  function newBPool() external returns (IBPool _pool);
 
   /**
    * @notice Sets the BLabs address in the factory

@@ -16,15 +16,17 @@
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --match-contract Unit",
-    "deploy:mainnet": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
-    "deploy:testnet": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
+    "deploy:bcowfactory:mainnet": "bash -c 'source .env && forge script DeployBCoWFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
+    "deploy:bcowfactory:testnet": "bash -c 'source .env && forge script DeployBCoWFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
+    "deploy:bfactory:mainnet": "bash -c 'source .env && forge script DeployBFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
+    "deploy:bfactory:testnet": "bash -c 'source .env && forge script DeployBFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
     "lint:check": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' && forge fmt --check",
     "lint:fix": "solhint --fix 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' && sort-package-json && forge fmt",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
     "prepare": "husky install",
     "smock": "smock-foundry --contracts src/contracts",
     "test": "forge test -vvv",
-    "test:integration": "forge test --match-contract Integration -vvv",
+    "test:integration": "forge test --match-contract Integration -vvv --isolate",
     "test:local": "FOUNDRY_FUZZ_RUNS=100 forge test -vvv",
     "test:unit": "forge test --match-contract Unit -vvv",
     "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit"
@@ -35,13 +37,15 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
+    "@cowprotocol/contracts": "github:cowprotocol/contracts.git#a10f40788a",
     "@openzeppelin/contracts": "5.0.2",
+    "composable-cow": "github:cowprotocol/composable-cow.git#24d556b",
     "solmate": "github:transmissions11/solmate#c892309"
   },
   "devDependencies": {
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
-    "@defi-wonderland/natspec-smells": "1.1.1",
+    "@defi-wonderland/natspec-smells": "1.1.3",
     "@defi-wonderland/smock-foundry": "1.5.0",
     "forge-gas-snapshot": "github:marktoda/forge-gas-snapshot#9161f7c",
     "forge-std": "github:foundry-rs/forge-std#5475f85",
