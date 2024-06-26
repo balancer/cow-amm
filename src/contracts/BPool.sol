@@ -249,7 +249,7 @@ contract BPool is BToken, BMath, IBPool {
     uint256 tokenOutBalance = IERC20(tokenOut).balanceOf(address(this));
 
     if (tokenAmountIn > bmul(tokenInBalance, MAX_IN_RATIO)) {
-      revert BPool_TokenAmountInAboveMaxIn();
+      revert BPool_TokenAmountInAboveMaxRatio();
     }
 
     uint256 spotPriceBefore =
@@ -364,7 +364,7 @@ contract BPool is BToken, BMath, IBPool {
     Record storage inRecord = _records[tokenIn];
     uint256 tokenInBalance = IERC20(tokenIn).balanceOf(address(this));
     if (tokenAmountIn > bmul(tokenInBalance, MAX_IN_RATIO)) {
-      revert BPool_TokenAmountInAboveMaxIn();
+      revert BPool_TokenAmountInAboveMaxRatio();
     }
 
     poolAmountOut =
@@ -408,7 +408,7 @@ contract BPool is BToken, BMath, IBPool {
       revert BPool_TokenAmountInAboveMaxAmountIn();
     }
     if (tokenAmountIn > bmul(tokenInBalance, MAX_IN_RATIO)) {
-      revert BPool_TokenAmountInAboveMaxIn();
+      revert BPool_TokenAmountInAboveMaxRatio();
     }
 
     emit LOG_JOIN(msg.sender, tokenIn, tokenAmountIn);

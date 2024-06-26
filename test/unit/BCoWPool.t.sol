@@ -253,7 +253,7 @@ contract BCoWPool_Unit_Verify is BaseCoWPoolTest, SwapExactAmountInUtils {
     GPv2Order.Data memory order = correctOrder;
     order.buyAmount = _tokenAmountIn;
 
-    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxRatio.selector);
     bCoWPool.verify(order);
   }
 

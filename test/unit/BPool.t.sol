@@ -1533,7 +1533,7 @@ contract BPool_Unit_SwapExactAmountIn is SwapExactAmountInUtils {
   function test_Revert_TokenAmountInAboveMaxIn(SwapExactAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
     uint256 _tokenAmountIn = bmul(_fuzz.tokenInBalance, MAX_IN_RATIO) + 1;
 
-    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxRatio.selector);
     bPool.swapExactAmountIn(tokenIn, _tokenAmountIn, tokenOut, 0, type(uint256).max);
   }
 
@@ -2167,7 +2167,7 @@ contract BPool_Unit_JoinswapExternAmountIn is BasePoolTest {
   {
     uint256 _tokenAmountIn = bmul(_fuzz.tokenInBalance, MAX_IN_RATIO);
 
-    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxRatio.selector);
     bPool.joinswapExternAmountIn(tokenIn, _tokenAmountIn + 1, 0);
   }
 
@@ -2399,7 +2399,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
 
     _setValues(_fuzz);
 
-    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxIn.selector);
+    vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxRatio.selector);
     bPool.joinswapPoolAmountOut(tokenIn, _fuzz.poolAmountOut, type(uint256).max);
   }
 
