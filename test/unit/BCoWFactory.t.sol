@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Base, BaseBFactory_Unit_Constructor, BaseBFactory_Unit_NewBPool} from './BFactory.t.sol';
+import {
+  Base,
+  BaseBFactory_Internal_NewBPool,
+  BaseBFactory_Unit_Constructor,
+  BaseBFactory_Unit_NewBPool
+} from './BFactory.t.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+import {BCoWPool} from 'contracts/BCoWPool.sol';
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
@@ -23,11 +30,10 @@ abstract contract BCoWFactoryTest is Base {
   }
 
   function _bPoolBytecode() internal virtual override returns (bytes memory _bytecode) {
-    vm.skip(true);
-
     // NOTE: "runtimeCode" is not available for contracts containing immutable variables.
-    // return type(BCoWPool).runtimeCode;
-    return _bytecode;
+    // so we the easiest way to know the bytecode is to deploy it with the same
+    // parameters the factory would
+    return address(new BCoWPool(solutionSettler, appData)).code;
   }
 }
 
@@ -81,3 +87,6 @@ contract BCoWPoolFactory_Unit_LogBCoWPool is BCoWFactoryTest {
     IBCoWFactory(address(bFactory)).logBCoWPool();
   }
 }
+
+// solhint-disable-next-line no-empty-blocks
+contract BCoWFactory_Internal_NewBPool is BaseBFactory_Internal_NewBPool, BCoWFactoryTest {}

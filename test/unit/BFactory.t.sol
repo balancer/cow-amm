@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {BFactory} from 'contracts/BFactory.sol';
 import {BPool} from 'contracts/BPool.sol';
 import {Test} from 'forge-std/Test.sol';
@@ -207,7 +208,24 @@ contract BFactory_Unit_Collect is BFactoryTest {
   }
 
   /**
-   * @notice Test that the function fail if the transfer failed
+   * @notice Do not couple the collect logic to the known BToken
+   * implementation. Some ERC20's do not return a `bool` with to indicate
+   * success and only rely on reverting if there's an error. This test ensures
+   * we support them.
+   */
+  function test_Succeed_TransferNotReturningBoolean(address _lpToken, uint256 _toCollect) public {
+    assumeNotForgeAddress(_lpToken);
+
+    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
+    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode());
+
+    vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect));
+    vm.prank(owner);
+    bFactory.collect(IBPool(_lpToken));
+  }
+
+  /**
+   * @notice Test the function fails if the transfer failed
    */
   function test_Revert_TransferFailed(address _lpToken, uint256 _toCollect) public {
     assumeNotForgeAddress(_lpToken);
@@ -215,16 +233,19 @@ contract BFactory_Unit_Collect is BFactoryTest {
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
     vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(false));
 
-    vm.expectRevert(IBFactory.BFactory_ERC20TransferFailed.selector);
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, _lpToken));
     vm.prank(owner);
     bFactory.collect(IBPool(_lpToken));
   }
 }
 
-contract BFactory_Internal_NewBPool is BFactoryTest {
+abstract contract BaseBFactory_Internal_NewBPool is Base {
   function test_Deploy_NewBPool() public {
     IBPool _pool = MockBFactory(address(bFactory)).call__newBPool();
 
     assertEq(_bPoolBytecode(), address(_pool).code);
   }
 }
+
+// solhint-disable-next-line no-empty-blocks
+contract BFactory_Internal_NewBPool is BFactoryTest, BaseBFactory_Internal_NewBPool {}

@@ -202,11 +202,6 @@ interface IBPool is IERC20 {
   error BPool_PoolAmountInAboveMaxPoolAmountIn();
 
   /**
-   * @notice Thrown when the ERC20 transfer fails
-   */
-  error BPool_ERC20TransferFailed();
-
-  /**
    * @notice Sets the new swap fee
    * @param swapFee The new swap fee
    */

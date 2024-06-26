@@ -15,7 +15,7 @@ yarn build   # build artifacts to `out/`
 yarn test    # run the tests
 ```
 
-## Changes on BPool from (Balancer V1)[https://github.com/balancer/balancer-core]
+## Changes on BPool from [Balancer V1](https://github.com/balancer/balancer-core)
 - Migrated to Foundry project structure
 - Implementation of interfaces with Natspec documentation
 - Replaced `require(cond, 'STRING')` for `if(!cond) revert CustomError()`
@@ -37,7 +37,7 @@ yarn test    # run the tests
 - Immutably stores CoW Protocol's `SolutionSettler` and `VaultRelayer` addresses at deployment
 - Immutably stores Cow Protocol's a Domain Separator at deployment (to avoid replay attacks)
 - Immutably stores Cow Protocol's `GPv2Order.appData` to be allowed to swap
-- Gives infinite ERC20 approval to the CoW Protocol's `VaultRelayer` contract
+- Gives infinite ERC20 approval to the CoW Protocol's `VaultRelayer` contract at finalization time.
 - Implements IERC1271 `isValidSignature` method to allow for validating intentions of swaps
 - Implements a `commit` method to avoid multiple swaps from conflicting with each other.
   - This is stored in the same transient storage slot as reentrancy locks in order to prevent calls to swap/join functions within a settlement execution or vice versa.
@@ -45,10 +45,12 @@ yarn test    # run the tests
 - Validates the `GPv2Order` requirements before allowing the swap
 
 ## Features on BCoWFactory
-- Added a `logBCoWPool` to log the finalization of BCoWPool contracts, to be called by a child pool
+- Added a `logBCoWPool` to log the finalization of BCoWPool contracts, to be called by a child pool.
 
 ## Creating a Pool
-- Create a new pool by calling `IBFactory.newBPool()`
+- Create a new pool by calling the corresponding pool factory:
+  - `IBFactory.newBPool()` for regular Balancer `BPool`s
+  - `IBCoWFactory.newBPool()` for Balancer `BCoWPool`s, compatible with CoW Protocol
 - Give ERC20 allowance to the pool by calling `IERC20.approve(pool, amount)`
 - Bind tokens one by one by calling `IBPool.bind(token, amount, weight)`
   - The amount represents the initial balance of the token in the pool (pulled from the caller's balance)

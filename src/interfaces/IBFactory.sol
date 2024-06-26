@@ -24,11 +24,6 @@ interface IBFactory {
   error BFactory_NotBLabs();
 
   /**
-   * @notice Thrown when the ERC20 transfer fails
-   */
-  error BFactory_ERC20TransferFailed();
-
-  /**
    * @notice Creates a new BPool, assigning the caller as the pool controller
    * @return _pool The new BPool
    */

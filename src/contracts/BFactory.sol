@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {BPool} from './BPool.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
@@ -43,10 +44,7 @@ contract BFactory is IBFactory {
       revert BFactory_NotBLabs();
     }
     uint256 collected = pool.balanceOf(address(this));
-    bool xfer = pool.transfer(_blabs, collected);
-    if (!xfer) {
-      revert BFactory_ERC20TransferFailed();
-    }
+    SafeERC20.safeTransfer(pool, _blabs, collected);
   }
 
   /// @inheritdoc IBFactory

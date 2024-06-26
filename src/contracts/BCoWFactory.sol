@@ -4,7 +4,6 @@ pragma solidity 0.8.25;
 import {BCoWPool} from './BCoWPool.sol';
 import {BFactory} from './BFactory.sol';
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
-import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 /**

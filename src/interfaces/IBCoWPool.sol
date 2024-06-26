@@ -62,14 +62,6 @@ interface IBCoWPool is IERC1271, IBPool {
   error BCoWPool_ReceiverIsNotBCoWPool();
 
   /**
-   * @notice Thrown when trying to set a commitment but there's one already in effect
-   * @dev Commitments can only be cleared naturally by finishing a transaction
-   * @dev Since commitments and reentrancy locks share a storage slot, a
-   * malicious settler could set a zero commitment to clear a reentrancy lock
-   */
-  error BCoWPool_CommitmentAlreadySet();
-
-  /**
    * @notice Restricts a specific AMM to being able to trade only the order
    * with the specified hash.
    * @dev The commitment is used to enforce that exactly one AMM order is
@@ -108,17 +100,6 @@ interface IBCoWPool is IERC1271, IBPool {
    */
   // solhint-disable-next-line style-guide-casing
   function APP_DATA() external view returns (bytes32 _appData);
-
-  /**
-   * @notice This function returns the commitment hash that has been set by the
-   * `commit` function. If no commitment has been set, then the value will be
-   * `EMPTY_COMMITMENT`.
-   * @return _commitment The commitment hash.
-   * @dev since commitments share a transient storage slot with reentrancy
-   * locks, this will return an invalid value while there's a reentrancy lock
-   * active
-   */
-  function commitment() external view returns (bytes32 _commitment);
 
   /**
    * @notice This function checks that the input order is admissible for the

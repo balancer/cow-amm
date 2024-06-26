@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import {BCoWFactory, BCoWPool, BFactory, IBCoWFactory, IBFactory, IBPool} from '../../src/contracts/BCoWFactory.sol';
+import {BCoWFactory, IBPool} from '../../src/contracts/BCoWFactory.sol';
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBCoWFactory is BCoWFactory, Test {

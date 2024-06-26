@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import {BPool} from 'contracts/BPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
@@ -2994,12 +2995,20 @@ contract BPool_Unit__PullUnderlying is BasePoolTest {
 
   function test_Revert_ERC20False(address _erc20, address _from, uint256 _amount) public {
     assumeNotForgeAddress(_erc20);
-
     vm.mockCall(
       _erc20, abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount), abi.encode(false)
     );
 
-    vm.expectRevert(IBPool.BPool_ERC20TransferFailed.selector);
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, _erc20));
+    bPool.call__pullUnderlying(_erc20, _from, _amount);
+  }
+
+  function test_Success_NoReturnValueERC20(address _erc20, address _from, uint256 _amount) public {
+    assumeNotForgeAddress(_erc20);
+    vm.mockCall(
+      _erc20, abi.encodeWithSelector(IERC20.transferFrom.selector, _from, address(bPool), _amount), abi.encode()
+    );
+
     bPool.call__pullUnderlying(_erc20, _from, _amount);
   }
 }
@@ -3016,10 +3025,16 @@ contract BPool_Unit__PushUnderlying is BasePoolTest {
 
   function test_Revert_ERC20False(address _erc20, address _to, uint256 _amount) public {
     assumeNotForgeAddress(_erc20);
-
     vm.mockCall(_erc20, abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount), abi.encode(false));
 
-    vm.expectRevert(IBPool.BPool_ERC20TransferFailed.selector);
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, _erc20));
+    bPool.call__pushUnderlying(_erc20, _to, _amount);
+  }
+
+  function test_Success_NoReturnValueERC20(address _erc20, address _to, uint256 _amount) public {
+    assumeNotForgeAddress(_erc20);
+    vm.mockCall(_erc20, abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount), abi.encode());
+
     bPool.call__pushUnderlying(_erc20, _to, _amount);
   }
 }

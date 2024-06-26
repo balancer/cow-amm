@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 import {BMath} from './BMath.sol';
 import {BToken} from './BToken.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 /**
@@ -11,7 +12,9 @@ import {IBPool} from 'interfaces/IBPool.sol';
  * @notice Pool contract that holds tokens, allows to swap, add and remove liquidity.
  */
 contract BPool is BToken, BMath, IBPool {
+  using SafeERC20 for IERC20;
   /// @dev BFactory address to push token exitFee to
+
   address internal _factory;
   /// @dev Has CONTROL role
   address internal _controller;
@@ -42,7 +45,7 @@ contract BPool is BToken, BMath, IBPool {
     _setLock(_MUTEX_FREE);
   }
 
-  /// @dev Prevents reentrancy in view functions
+  /// @dev Throws an error when the reentrancy mutex is taken. Doesn't modify it.
   modifier _viewlock_() {
     if (_getLock() != _MUTEX_FREE) {
       revert BPool_Reentrancy();
@@ -620,10 +623,7 @@ contract BPool is BToken, BMath, IBPool {
    * @param amount The amount of tokens to pull
    */
   function _pullUnderlying(address erc20, address from, uint256 amount) internal virtual {
-    bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
-    if (!xfer) {
-      revert BPool_ERC20TransferFailed();
-    }
+    IERC20(erc20).safeTransferFrom(from, address(this), amount);
   }
 
   /**
@@ -633,10 +633,7 @@ contract BPool is BToken, BMath, IBPool {
    * @param amount The amount of tokens to push
    */
   function _pushUnderlying(address erc20, address to, uint256 amount) internal virtual {
-    bool xfer = IERC20(erc20).transfer(to, amount);
-    if (!xfer) {
-      revert BPool_ERC20TransferFailed();
-    }
+    IERC20(erc20).safeTransfer(to, amount);
   }
 
   /**
