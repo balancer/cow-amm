@@ -6,7 +6,7 @@ import {BFactory} from 'contracts/BFactory.sol';
 import {GasSnapshot} from 'forge-gas-snapshot/GasSnapshot.sol';
 import {Test} from 'forge-std/Test.sol';
 
-contract DeploymentGasTest is Test, GasSnapshot {
+contract DeploymentIntegrationGasTest is Test, GasSnapshot {
   BFactory public factory;
 
   function setUp() public {

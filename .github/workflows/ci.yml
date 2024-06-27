@@ -64,14 +64,15 @@ jobs:
       - name: Run tests
         run: yarn test:integration
 
+      - name: Ensure gas snapshots were updated
+        run: git diff --exit-code -- .forge-snapshots/
+
   lint:
     name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - uses: wagoid/commitlint-github-action@v5
 
