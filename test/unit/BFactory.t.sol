@@ -1,251 +1,129 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.25;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import {BFactory} from 'contracts/BFactory.sol';
+
 import {BPool} from 'contracts/BPool.sol';
+
 import {Test} from 'forge-std/Test.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-
 import {MockBFactory} from 'test/smock/MockBFactory.sol';
 
-abstract contract Base is Test {
-  IBFactory public bFactory;
-  address public owner = makeAddr('owner');
+contract BFactoryTest is Test {
+  address factoryDeployer = makeAddr('factoryDeployer');
 
-  function _configureBFactory() internal virtual returns (IBFactory);
+  MockBFactory factory;
 
-  function _bPoolBytecode() internal virtual returns (bytes memory);
-
-  function setUp() public virtual {
-    bFactory = _configureBFactory();
-  }
-}
-
-abstract contract BFactoryTest is Base {
-  function _configureBFactory() internal override returns (IBFactory) {
-    vm.prank(owner);
-    return new MockBFactory();
+  function setUp() external {
+    vm.prank(factoryDeployer);
+    factory = new MockBFactory();
   }
 
-  function _bPoolBytecode() internal pure virtual override returns (bytes memory) {
-    return type(BPool).runtimeCode;
-  }
-}
-
-abstract contract BaseBFactory_Unit_Constructor is Base {
-  /**
-   * @notice Test that the owner is set correctly
-   */
-  function test_Deploy() public view {
-    assertEq(owner, bFactory.getBLabs());
-  }
-}
-
-// solhint-disable-next-line no-empty-blocks
-contract BFactory_Unit_Constructor is BFactoryTest, BaseBFactory_Unit_Constructor {}
-
-contract BFactory_Unit_IsBPool is BFactoryTest {
-  /**
-   * @notice Test that a valid pool is present on the mapping
-   */
-  function test_Returns_IsValidPool(address _pool) public {
-    // Writing TRUE (1) to the mapping with the `_pool` key
-    vm.store(address(bFactory), keccak256(abi.encode(_pool, uint256(0))), bytes32(uint256(1)));
-    assertTrue(bFactory.isBPool(address(_pool)));
+  function test_ConstructorWhenCalled(address _blabs) external {
+    vm.prank(_blabs);
+    MockBFactory newFactory = new MockBFactory();
+    // it should set BLabs
+    assertEq(newFactory.getBLabs(), _blabs);
   }
 
-  /**
-   * @notice Test that a invalid pool is not present on the mapping
-   */
-  function test_Returns_IsInvalidPool(address _randomPool) public view {
-    vm.assume(_randomPool != address(0));
-    assertFalse(bFactory.isBPool(_randomPool));
-  }
-}
+  function test_NewBPoolWhenCalled(address _deployer, address _newBPool) external {
+    assumeNotForgeAddress(_newBPool);
+    vm.mockCall(_newBPool, abi.encodePacked(IBPool.setController.selector), abi.encode());
+    factory.mock_call__newBPool(IBPool(_newBPool));
+    // it should call _newBPool
+    factory.expectCall__newBPool();
+    // it should set the controller of the newBPool to the caller
+    vm.expectCall(_newBPool, abi.encodeCall(IBPool.setController, (_deployer)));
+    // it should emit a PoolCreated event
+    vm.expectEmit(address(factory));
+    emit IBFactory.LOG_NEW_POOL(_deployer, _newBPool);
 
-abstract contract BaseBFactory_Unit_NewBPool is Base {
-  /**
-   * @notice Test that the pool is set on the mapping
-   */
-  function test_Set_Pool() public {
-    IBPool _pool = bFactory.newBPool();
-    assertTrue(bFactory.isBPool(address(_pool)));
-  }
+    vm.prank(_deployer);
+    IBPool pool = factory.newBPool();
 
-  /**
-   * @notice Test that event is emitted
-   */
-  function test_Emit_Log(address _randomCaller) public {
-    assumeNotForgeAddress(_randomCaller);
-
-    vm.expectEmit();
-    address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
-    emit IBFactory.LOG_NEW_POOL(_randomCaller, _expectedPoolAddress);
-    vm.prank(_randomCaller);
-    bFactory.newBPool();
+    // it should add the newBPool to the list of pools
+    assertTrue(factory.isBPool(address(_newBPool)));
+    // it should return the address of the new BPool
+    assertEq(address(pool), _newBPool);
   }
 
-  /**
-   * @notice Test that msg.sender is set as the controller
-   */
-  function test_Set_Controller(address _randomCaller) public {
-    assumeNotForgeAddress(_randomCaller);
-
-    vm.prank(_randomCaller);
-    IBPool _pool = bFactory.newBPool();
-    assertEq(_randomCaller, _pool.getController());
+  function test__newBPoolWhenCalled() external {
+    address _futurePool = vm.computeCreateAddress(address(factory), 1);
+    address _newBPool = address(factory.call__newBPool());
+    assertEq(_newBPool, _futurePool);
+    // it should deploy a new BPool
+    assertEq(_newBPool.code, address(new BPool()).code);
   }
 
-  /**
-   * @notice Test that the pool address is returned
-   */
-  function test_Returns_Pool() public {
-    address _expectedPoolAddress = vm.computeCreateAddress(address(bFactory), 1);
-    IBPool _pool = bFactory.newBPool();
-    assertEq(_expectedPoolAddress, address(_pool));
-  }
+  function test_SetBLabsRevertWhen_TheSenderIsNotTheCurrentBLabs(address _caller) external {
+    vm.assume(_caller != factoryDeployer);
 
-  /**
-   * @notice Test that the internal function is called
-   */
-  function test_Call_NewBPool(address _bPool) public {
-    assumeNotForgeAddress(_bPool);
-    MockBFactory(address(bFactory)).mock_call__newBPool(IBPool(_bPool));
-    MockBFactory(address(bFactory)).expectCall__newBPool();
-    vm.mockCall(_bPool, abi.encodeWithSignature('setController(address)'), abi.encode());
-
-    IBPool _pool = bFactory.newBPool();
-
-    assertEq(_bPool, address(_pool));
-  }
-}
-
-// solhint-disable-next-line no-empty-blocks
-contract BFactory_Unit_NewBPool is BFactoryTest, BaseBFactory_Unit_NewBPool {}
-
-contract BFactory_Unit_GetBLabs is BFactoryTest {
-  /**
-   * @notice Test that the correct owner is returned
-   */
-  function test_Set_Owner(address _randomDeployer) public {
-    vm.prank(_randomDeployer);
-    BFactory _bFactory = new BFactory();
-    assertEq(_randomDeployer, _bFactory.getBLabs());
-  }
-}
-
-contract BFactory_Unit_SetBLabs is BFactoryTest {
-  /**
-   * @notice Test that only the owner can set the BLabs
-   */
-  function test_Revert_NotLabs(address _randomCaller) public {
-    vm.assume(_randomCaller != owner);
+    // it should revert
     vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
-    vm.prank(_randomCaller);
-    bFactory.setBLabs(_randomCaller);
+
+    vm.prank(_caller);
+    factory.setBLabs(makeAddr('newBLabs'));
   }
 
-  /**
-   * @notice Test that event is emitted
-   */
-  function test_Emit_Log(address _addressToSet) public {
-    vm.expectEmit();
-    emit IBFactory.LOG_BLABS(owner, _addressToSet);
-    vm.prank(owner);
-    bFactory.setBLabs(_addressToSet);
+  function test_SetBLabsWhenTheSenderIsTheCurrentBLabs(address _newBLabs) external {
+    // it should emit a BLabsSet event
+    vm.expectEmit(address(factory));
+    emit IBFactory.LOG_BLABS(factoryDeployer, _newBLabs);
+
+    vm.prank(factoryDeployer);
+    factory.setBLabs(_newBLabs);
+
+    // it should set the new setBLabs address
+    assertEq(factory.getBLabs(), _newBLabs);
   }
 
-  /**
-   * @notice Test that the BLabs is set correctly
-   */
-  function test_Set_BLabs(address _addressToSet) public {
-    vm.prank(owner);
-    bFactory.setBLabs(_addressToSet);
-    assertEq(_addressToSet, bFactory.getBLabs());
-  }
-}
+  function test_CollectRevertWhen_TheSenderIsNotTheCurrentBLabs(address _caller) external {
+    vm.assume(_caller != factoryDeployer);
 
-contract BFactory_Unit_Collect is BFactoryTest {
-  /**
-   * @notice Test that only the owner can collect
-   */
-  function test_Revert_NotLabs(address _randomCaller) public {
-    vm.assume(_randomCaller != owner);
+    // it should revert
     vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
-    vm.prank(_randomCaller);
-    bFactory.collect(IBPool(address(0)));
+
+    vm.prank(_caller);
+    factory.collect(IBPool(makeAddr('pool')));
   }
 
-  /**
-   * @notice Test that LP token `balanceOf` function is called
-   */
-  function test_Call_BalanceOf(address _lpToken, uint256 _toCollect) public {
-    assumeNotForgeAddress(_lpToken);
-
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(true));
-
-    vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)));
-    vm.prank(owner);
-    bFactory.collect(IBPool(_lpToken));
+  modifier whenTheSenderIsTheCurrentBLabs() {
+    vm.startPrank(factoryDeployer);
+    _;
   }
 
-  /**
-   * @notice Test that LP token `transfer` function is called
-   */
-  function test_Call_Transfer(address _lpToken, uint256 _toCollect) public {
-    assumeNotForgeAddress(_lpToken);
+  function test_CollectWhenTheSenderIsTheCurrentBLabs(uint256 _factoryBTBalance)
+    external
+    whenTheSenderIsTheCurrentBLabs
+  {
+    address _mockPool = makeAddr('pool');
+    vm.mockCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)), abi.encode(_factoryBTBalance));
+    vm.mockCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)), abi.encode(true));
 
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(true));
+    // it should get the pool's btoken balance of the factory
+    vm.expectCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)));
 
-    vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect));
-    vm.prank(owner);
-    bFactory.collect(IBPool(_lpToken));
+    // it should transfer the btoken balance of the factory to BLabs
+    vm.expectCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)));
+
+    factory.collect(IBPool(_mockPool));
   }
 
-  /**
-   * @notice Do not couple the collect logic to the known BToken
-   * implementation. Some ERC20's do not return a `bool` with to indicate
-   * success and only rely on reverting if there's an error. This test ensures
-   * we support them.
-   */
-  function test_Succeed_TransferNotReturningBoolean(address _lpToken, uint256 _toCollect) public {
-    assumeNotForgeAddress(_lpToken);
+  function test_CollectRevertWhen_TheBtokenTransferFails(uint256 _factoryBTBalance)
+    external
+    whenTheSenderIsTheCurrentBLabs
+  {
+    address _mockPool = makeAddr('pool');
+    vm.mockCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)), abi.encode(_factoryBTBalance));
+    vm.expectCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)));
+    vm.mockCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)), abi.encode(false));
+    vm.expectCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)));
 
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode());
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, _mockPool));
 
-    vm.expectCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect));
-    vm.prank(owner);
-    bFactory.collect(IBPool(_lpToken));
-  }
-
-  /**
-   * @notice Test the function fails if the transfer failed
-   */
-  function test_Revert_TransferFailed(address _lpToken, uint256 _toCollect) public {
-    assumeNotForgeAddress(_lpToken);
-
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bFactory)), abi.encode(_toCollect));
-    vm.mockCall(_lpToken, abi.encodeWithSelector(IERC20.transfer.selector, owner, _toCollect), abi.encode(false));
-
-    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, _lpToken));
-    vm.prank(owner);
-    bFactory.collect(IBPool(_lpToken));
+    factory.collect(IBPool(_mockPool));
   }
 }
-
-abstract contract BaseBFactory_Internal_NewBPool is Base {
-  function test_Deploy_NewBPool() public {
-    IBPool _pool = MockBFactory(address(bFactory)).call__newBPool();
-
-    assertEq(_bPoolBytecode(), address(_pool).code);
-  }
-}
-
-// solhint-disable-next-line no-empty-blocks
-contract BFactory_Internal_NewBPool is BFactoryTest, BaseBFactory_Internal_NewBPool {}

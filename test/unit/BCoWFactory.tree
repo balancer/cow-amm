@@ -1,0 +1,17 @@
+BCoWFactoryTest::constructor
+└── when called
+    ├── it should set solution settler
+    ├── it should set app data
+    └── it should set blabs
+
+BCoWFactoryTest::_newBPool
+└── when called
+    ├── it should set BCoWPool solution settler
+    ├── it should set BCoWPool app data
+    └── it should deploy a new BCoWPool
+
+BCoWFactoryTest::logBCowPool
+├── when the sender is not a valid pool
+│   └── it should revert
+└── when the sender is a valid pool
+    └── it should emit a COWAMMPoolCreated event

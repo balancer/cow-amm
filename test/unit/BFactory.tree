@@ -1,0 +1,32 @@
+BFactoryTest::constructor
+└── when called
+    └── it should set the deployer as BLabs
+
+BFactoryTest::newBPool
+└── when called
+    ├── it should call _newBPool
+    ├── it should add the newBPool to the mapping of pools
+    ├── it should return the address of the new BPool
+    ├── it should emit a PoolCreated event
+    └── it should set the controller of the new BPool to the caller
+
+BFactoryTest::_newBPool
+└── when called
+    └── it should deploy a new BPool
+
+BFactoryTest::setBLabs
+├── when the sender is not the current BLabs
+│   └── it should revert
+└── when the sender is the current BLabs
+    ├── it should set the new BLabs address
+    └── it should emit a BLabsSet event
+
+
+BFactoryTest::collect
+├── when the sender is not the current BLabs
+│   └── it should revert
+└── when the sender is the current BLabs
+    ├── it should get the pool's btoken balance of the factory
+    ├── it should transfer the btoken balance of the factory to BLabs
+    └── when the btoken transfer fails
+        └── it should revert
