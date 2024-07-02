@@ -28,6 +28,7 @@
     "test": "forge test -vvv",
     "test:integration": "forge test --match-path 'test/integration/**' -vvv --isolate",
     "test:local": "FOUNDRY_FUZZ_RUNS=100 forge test -vvv",
+    "test:scaffold": "bulloak check --fix test/unit/*.tree && forge fmt",
     "test:unit": "forge test --match-path 'test/unit/**' -vvv",
     "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit"
   },
