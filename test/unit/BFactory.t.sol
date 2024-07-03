@@ -67,15 +67,28 @@ contract BFactoryTest is Test {
     factory.setBLabs(makeAddr('newBLabs'));
   }
 
-  function test_SetBLabsWhenTheSenderIsTheCurrentBLabs(address _newBLabs) external {
+  modifier whenTheSenderIsTheCurrentBLabs() {
+    vm.startPrank(factoryDeployer);
+    _;
+  }
+
+  function test_SetBLabsRevertWhen_TheAddressIsZero() external whenTheSenderIsTheCurrentBLabs {
+    // it should revert
+    vm.expectRevert(IBFactory.BFactory_AddressZero.selector);
+
+    factory.setBLabs(address(0));
+  }
+
+  function test_SetBLabsWhenTheAddressIsNotZero(address _newBLabs) external whenTheSenderIsTheCurrentBLabs {
+    vm.assume(_newBLabs != address(0));
+
     // it should emit a BLabsSet event
     vm.expectEmit(address(factory));
     emit IBFactory.LOG_BLABS(factoryDeployer, _newBLabs);
 
-    vm.prank(factoryDeployer);
     factory.setBLabs(_newBLabs);
 
-    // it should set the new setBLabs address
+    // it should set the new bLabs address
     assertEq(factory.getBLabs(), _newBLabs);
   }
 
@@ -87,11 +100,6 @@ contract BFactoryTest is Test {
 
     vm.prank(_caller);
     factory.collect(IBPool(makeAddr('pool')));
-  }
-
-  modifier whenTheSenderIsTheCurrentBLabs() {
-    vm.startPrank(factoryDeployer);
-    _;
   }
 
   function test_CollectWhenTheSenderIsTheCurrentBLabs(uint256 _factoryBTBalance)

@@ -57,6 +57,11 @@ interface IBPool is IERC20 {
   event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
 
   /**
+   * @notice Thrown when setting a variable to address zero
+   */
+  error BPool_AddressZero();
+
+  /**
    * @notice Thrown when a reentrant call is made
    */
   error BPool_Reentrancy();

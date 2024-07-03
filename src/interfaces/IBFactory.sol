@@ -19,6 +19,11 @@ interface IBFactory {
   event LOG_BLABS(address indexed caller, address indexed bLabs);
 
   /**
+   * @notice Thrown when setting a variable to address zero
+   */
+  error BFactory_AddressZero();
+
+  /**
    * @notice Thrown when caller is not BLabs address
    */
   error BFactory_NotBLabs();

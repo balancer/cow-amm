@@ -611,6 +611,12 @@ contract BPool_Unit_SetController is BasePoolTest {
     bPool.setController(_controller);
   }
 
+  function test_Revert_AddressZero() public {
+    vm.expectRevert(IBPool.BPool_AddressZero.selector);
+
+    bPool.setController(address(0));
+  }
+
   function test_Set_Controller(address _controller) public {
     bPool.setController(_controller);
 

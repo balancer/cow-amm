@@ -18,8 +18,11 @@ BFactoryTest::setBLabs
 ├── when the sender is not the current BLabs
 │   └── it should revert
 └── when the sender is the current BLabs
-    ├── it should set the new BLabs address
-    └── it should emit a BLabsSet event
+    ├── when the address is zero
+    │   └── it should revert
+    └── when the address is not zero
+        ├── it should set the new BLabs address
+        └── it should emit a BLabsSet event
 
 
 BFactoryTest::collect
