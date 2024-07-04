@@ -50,11 +50,14 @@ contract BFactoryTest is Test {
   }
 
   function test__newBPoolWhenCalled() external {
-    address _futurePool = vm.computeCreateAddress(address(factory), 1);
+    vm.prank(address(factory));
+    bytes memory _expectedCode = address(new BPool()).code; // NOTE: uses nonce 1
+    address _futurePool = vm.computeCreateAddress(address(factory), 2);
+
     address _newBPool = address(factory.call__newBPool());
     assertEq(_newBPool, _futurePool);
     // it should deploy a new BPool
-    assertEq(_newBPool.code, address(new BPool()).code);
+    assertEq(_newBPool.code, _expectedCode);
   }
 
   function test_SetBLabsRevertWhen_TheSenderIsNotTheCurrentBLabs(address _caller) external {

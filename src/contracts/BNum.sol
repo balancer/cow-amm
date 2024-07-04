@@ -94,7 +94,8 @@ contract BNum is BConst {
       if (a != 0 && c0 / a != b) {
         revert BNum_MulOverflow();
       }
-      uint256 c1 = c0 + (BONE / 2);
+      // NOTE: using >> 1 instead of / 2
+      uint256 c1 = c0 + (BONE >> 1);
       if (c1 < c0) {
         revert BNum_MulOverflow();
       }
@@ -112,7 +113,8 @@ contract BNum is BConst {
       if (a != 0 && c0 / a != BONE) {
         revert BNum_DivInternal(); // bmul overflow
       }
-      uint256 c1 = c0 + (b / 2);
+      // NOTE: using >> 1 instead of / 2
+      uint256 c1 = c0 + (b >> 1);
       if (c1 < c0) {
         revert BNum_DivInternal(); //  badd require
       }

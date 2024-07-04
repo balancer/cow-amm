@@ -41,7 +41,7 @@ contract BConst {
   uint256 public constant BPOW_PRECISION = BONE / 10 ** 10;
 
   /// @notice The maximum ratio of input tokens vs the current pool balance.
-  uint256 public constant MAX_IN_RATIO = BONE / 2;
+  uint256 public constant MAX_IN_RATIO = BONE >> 1;
   /// @notice The maximum ratio of output tokens vs the current pool balance.
   uint256 public constant MAX_OUT_RATIO = (BONE / 3) + 1 wei;
 

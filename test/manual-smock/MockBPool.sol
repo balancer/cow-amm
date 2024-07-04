@@ -5,12 +5,9 @@ import {BMath, BPool, BToken, IBPool, IERC20, SafeERC20} from '../../src/contrac
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBPool is BPool, Test {
-  function set__factory(address __factory) public {
-    _factory = __factory;
-  }
-
-  function call__factory() public view returns (address) {
-    return _factory;
+  // NOTE: manually added method
+  function call__FACTORY() public view returns (address) {
+    return _FACTORY;
   }
 
   function set__controller(address __controller) public {
