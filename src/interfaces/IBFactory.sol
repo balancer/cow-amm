@@ -7,9 +7,9 @@ interface IBFactory {
   /**
    * @notice Emitted when creating a new pool
    * @param caller The caller of the function that will be set as the controller
-   * @param pool The address of the new pool
+   * @param bPool The address of the new pool
    */
-  event LOG_NEW_POOL(address indexed caller, address indexed pool);
+  event LOG_NEW_POOL(address indexed caller, address indexed bPool);
 
   /**
    * @notice Emitted when setting the BLabs address
@@ -30,21 +30,21 @@ interface IBFactory {
 
   /**
    * @notice Creates a new BPool, assigning the caller as the pool controller
-   * @return _pool The new BPool
+   * @return bPool The new BPool
    */
-  function newBPool() external returns (IBPool _pool);
+  function newBPool() external returns (IBPool bPool);
 
   /**
    * @notice Sets the BLabs address in the factory
-   * @param b The new BLabs address
+   * @param bLabs The new BLabs address
    */
-  function setBLabs(address b) external;
+  function setBLabs(address bLabs) external;
 
   /**
    * @notice Collects the fees of a pool and transfers it to BLabs address
-   * @param pool The address of the pool to collect fees from
+   * @param bPool The address of the pool to collect fees from
    */
-  function collect(IBPool pool) external;
+  function collect(IBPool bPool) external;
 
   /**
    * @notice Checks if an address is a BPool created from this factory

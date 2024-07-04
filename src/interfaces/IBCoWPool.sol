@@ -8,22 +8,22 @@ import {ISettlement} from 'interfaces/ISettlement.sol';
 
 interface IBCoWPool is IERC1271, IBPool {
   /**
-   * @notice thrown when a CoW order has a non-zero fee
+   * @notice Thrown when a CoW order has a non-zero fee
    */
   error BCoWPool_FeeMustBeZero();
 
   /**
-   * @notice thrown when a CoW order is executed after its deadline
+   * @notice Thrown when a CoW order is executed after its deadline
    */
   error BCoWPool_OrderValidityTooLong();
 
   /**
-   * @notice thrown when a CoW order has an unkown type (must be GPv2Order.KIND_SELL)
+   * @notice Thrown when a CoW order has an unknown type (must be GPv2Order.KIND_SELL)
    */
   error BCoWPool_InvalidOperation();
 
   /**
-   * @notice thrown when a CoW order has an invalid balance marker. BCoWPool
+   * @notice Thrown when a CoW order has an invalid balance marker. BCoWPool
    * only supports BALANCE_ERC20, instructing to use the underlying ERC20
    * balance directly instead of balancer's internal accounting
    */
@@ -73,33 +73,33 @@ interface IBCoWPool is IERC1271, IBPool {
 
   /**
    * @notice The address that can pull funds from the AMM vault to execute an order
-   * @return _vaultRelayer The address of the vault relayer.
+   * @return vaultRelayer The address of the vault relayer.
    */
   // solhint-disable-next-line style-guide-casing
-  function VAULT_RELAYER() external view returns (address _vaultRelayer);
+  function VAULT_RELAYER() external view returns (address vaultRelayer);
 
   /**
    * @notice The domain separator used for hashing CoW Protocol orders.
-   * @return _solutionSettlerDomainSeparator The domain separator.
+   * @return solutionSettlerDomainSeparator The domain separator.
    */
   // solhint-disable-next-line style-guide-casing
-  function SOLUTION_SETTLER_DOMAIN_SEPARATOR() external view returns (bytes32 _solutionSettlerDomainSeparator);
+  function SOLUTION_SETTLER_DOMAIN_SEPARATOR() external view returns (bytes32 solutionSettlerDomainSeparator);
 
   /**
    * @notice The address of the CoW Protocol settlement contract. It is the
    * only address that can set commitments.
-   * @return _solutionSettler The address of the solution settler.
+   * @return solutionSettler The address of the solution settler.
    */
   // solhint-disable-next-line style-guide-casing
-  function SOLUTION_SETTLER() external view returns (ISettlement _solutionSettler);
+  function SOLUTION_SETTLER() external view returns (ISettlement solutionSettler);
 
   /**
    * @notice The identifier describing which `GPv2Order.AppData` currently
    * apply to this AMM.
-   * @return _appData The 32 bytes identifier of the allowed GPv2Order AppData.
+   * @return appData The 32 bytes identifier of the allowed GPv2Order AppData.
    */
   // solhint-disable-next-line style-guide-casing
-  function APP_DATA() external view returns (bytes32 _appData);
+  function APP_DATA() external view returns (bytes32 appData);
 
   /**
    * @notice This function checks that the input order is admissible for the

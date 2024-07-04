@@ -7,7 +7,7 @@
     "no-empty-blocks": "error",
     "no-inline-assembly": "off",
     "ordering": "warn",
-    "private-vars-leading-underscore": ["warn", { "strict": false }],
+    "private-vars-leading-underscore": ["warn", { "strict": true }],
     "quotes": "off",
     "one-contract-per-file": "warn",
     "style-guide-casing": ["warn", { "ignoreEvents": true } ]

@@ -13,12 +13,12 @@ contract MockBFactory is BFactory, Test {
     return _isBPool[_key0];
   }
 
-  function set__blabs(address __blabs) public {
-    _blabs = __blabs;
+  function set__bLabs(address __bLabs) public {
+    _bLabs = __bLabs;
   }
 
-  function call__blabs() public view returns (address) {
-    return _blabs;
+  function call__bLabs() public view returns (address) {
+    return _bLabs;
   }
 
   constructor() BFactory() {}

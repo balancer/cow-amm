@@ -357,7 +357,7 @@ contract MockBPool is BPool, Test {
     else return super._getLock();
   }
 
-  function call__getLock() public returns (bytes32 _value) {
+  function call__getLock() public view returns (bytes32 _value) {
     return _getLock();
   }
 

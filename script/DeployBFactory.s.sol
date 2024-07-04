@@ -7,11 +7,11 @@ import {Params} from 'script/Params.s.sol';
 
 contract DeployBFactory is Script, Params {
   function run() public {
-    BFactoryDeploymentParams memory _params = _bFactoryDeploymentParams[block.chainid];
+    BFactoryDeploymentParams memory params = _bFactoryDeploymentParams[block.chainid];
 
     vm.startBroadcast();
     BFactory bFactory = new BFactory();
-    bFactory.setBLabs(_params.bLabs);
+    bFactory.setBLabs(params.bLabs);
     vm.stopBroadcast();
   }
 }

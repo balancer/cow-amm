@@ -635,6 +635,7 @@ contract BPool_Unit_SetController is BasePoolTest {
   }
 
   function test_Set_ReentrancyLock(address _controller) public {
+    vm.assume(_controller != address(0));
     _expectSetReentrancyLock();
     bPool.setController(_controller);
   }
@@ -2590,12 +2591,13 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
 
   function test_Revert_NotBound(
     ExitswapPoolAmountIn_FuzzScenario memory _fuzz,
-    address _tokenIn
+    address _tokenOut
   ) public happyPath(_fuzz) {
-    assumeNotForgeAddress(_tokenIn);
+    vm.assume(_tokenOut != tokenOut);
+    assumeNotForgeAddress(_tokenOut);
 
     vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
-    bPool.exitswapPoolAmountIn(_tokenIn, _fuzz.poolAmountIn, 0);
+    bPool.exitswapPoolAmountIn(_tokenOut, _fuzz.poolAmountIn, 0);
   }
 
   function test_Revert_TokenAmountOutBelowMinAmountOut(
@@ -2848,6 +2850,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     ExitswapExternAmountOut_FuzzScenario memory _fuzz,
     address _tokenOut
   ) public happyPath(_fuzz) {
+    vm.assume(_tokenOut != tokenOut);
     assumeNotForgeAddress(_tokenOut);
 
     vm.expectRevert(IBPool.BPool_TokenNotBound.selector);

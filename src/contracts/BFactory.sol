@@ -14,41 +14,40 @@ contract BFactory is IBFactory {
   /// @dev Mapping indicating whether the address is a BPool.
   mapping(address => bool) internal _isBPool;
   /// @dev bLabs address.
-  address internal _blabs;
+  address internal _bLabs;
 
   constructor() {
-    _blabs = msg.sender;
+    _bLabs = msg.sender;
   }
 
   /// @inheritdoc IBFactory
-  function newBPool() external returns (IBPool _pool) {
-    IBPool bpool = _newBPool();
-    _isBPool[address(bpool)] = true;
-    emit LOG_NEW_POOL(msg.sender, address(bpool));
-    bpool.setController(msg.sender);
-    return bpool;
+  function newBPool() external returns (IBPool bPool) {
+    bPool = _newBPool();
+    _isBPool[address(bPool)] = true;
+    emit LOG_NEW_POOL(msg.sender, address(bPool));
+    bPool.setController(msg.sender);
   }
 
   /// @inheritdoc IBFactory
-  function setBLabs(address b) external {
-    if (b == address(0)) {
+  function setBLabs(address bLabs) external {
+    if (bLabs == address(0)) {
       revert BFactory_AddressZero();
     }
 
-    if (msg.sender != _blabs) {
+    if (msg.sender != _bLabs) {
       revert BFactory_NotBLabs();
     }
-    emit LOG_BLABS(msg.sender, b);
-    _blabs = b;
+    emit LOG_BLABS(msg.sender, bLabs);
+    _bLabs = bLabs;
   }
 
   /// @inheritdoc IBFactory
-  function collect(IBPool pool) external {
-    if (msg.sender != _blabs) {
+  function collect(IBPool bPool) external {
+    if (msg.sender != _bLabs) {
       revert BFactory_NotBLabs();
     }
-    uint256 collected = pool.balanceOf(address(this));
-    SafeERC20.safeTransfer(pool, _blabs, collected);
+    uint256 collected = bPool.balanceOf(address(this));
+    SafeERC20.safeTransfer(bPool, _bLabs, collected);
   }
 
   /// @inheritdoc IBFactory
@@ -58,15 +57,15 @@ contract BFactory is IBFactory {
 
   /// @inheritdoc IBFactory
   function getBLabs() external view returns (address) {
-    return _blabs;
+    return _bLabs;
   }
 
   /**
    * @notice Deploys a new BPool.
    * @dev Internal function to allow overriding in derived contracts.
-   * @return _pool The deployed BPool
+   * @return bPool The deployed BPool
    */
-  function _newBPool() internal virtual returns (IBPool _pool) {
-    return new BPool();
+  function _newBPool() internal virtual returns (IBPool bPool) {
+    bPool = new BPool();
   }
 }

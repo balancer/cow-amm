@@ -46,11 +46,11 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   /// @inheritdoc IBCoWPool
   bytes32 public immutable APP_DATA;
 
-  constructor(address _cowSolutionSettler, bytes32 _appData) BPool() {
-    SOLUTION_SETTLER = ISettlement(_cowSolutionSettler);
-    SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(_cowSolutionSettler).domainSeparator();
-    VAULT_RELAYER = ISettlement(_cowSolutionSettler).vaultRelayer();
-    APP_DATA = _appData;
+  constructor(address cowSolutionSettler, bytes32 appData) BPool() {
+    SOLUTION_SETTLER = ISettlement(cowSolutionSettler);
+    SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(cowSolutionSettler).domainSeparator();
+    VAULT_RELAYER = ISettlement(cowSolutionSettler).vaultRelayer();
+    APP_DATA = appData;
   }
 
   /// @inheritdoc IBCoWPool
@@ -65,19 +65,19 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * @inheritdoc IERC1271
    * @dev this function reverts if the order hash does not match the current commitment
    */
-  function isValidSignature(bytes32 _hash, bytes memory signature) external view returns (bytes4) {
+  function isValidSignature(bytes32 orderHash, bytes memory signature) external view returns (bytes4 magicValue) {
     (GPv2Order.Data memory order) = abi.decode(signature, (GPv2Order.Data));
 
     if (order.appData != APP_DATA) {
       revert AppDataDoesNotMatch();
     }
 
-    bytes32 orderHash = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
-    if (orderHash != _hash) {
+    bytes32 orderHash_ = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
+    if (orderHash_ != orderHash) {
       revert OrderDoesNotMatchMessageHash();
     }
 
-    if (orderHash != _getLock()) {
+    if (orderHash_ != _getLock()) {
       revert OrderDoesNotMatchCommitmentHash();
     }
 
@@ -85,7 +85,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
 
     // A signature is valid according to EIP-1271 if this function returns
     // its selector as the so-called "magic value".
-    return this.isValidSignature.selector;
+    magicValue = this.isValidSignature.selector;
   }
 
   /// @inheritdoc IBCoWPool
@@ -137,8 +137,8 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * pool after the finalization of the setup. Also emits COWAMMPoolCreated() event.
    */
   function _afterFinalize() internal override {
-    uint256 _tokensLength = _tokens.length;
-    for (uint256 i; i < _tokensLength; i++) {
+    uint256 tokensLength = _tokens.length;
+    for (uint256 i; i < tokensLength; i++) {
       IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
     }
 

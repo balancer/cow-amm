@@ -178,8 +178,8 @@ contract BPool is BToken, BMath, IBPool {
       revert BPool_InvalidPoolRatio();
     }
 
-    uint256 _tokensLength = _tokens.length;
-    for (uint256 i = 0; i < _tokensLength; i++) {
+    uint256 tokensLength = _tokens.length;
+    for (uint256 i = 0; i < tokensLength; i++) {
       address t = _tokens[i];
       uint256 bal = IERC20(t).balanceOf(address(this));
       uint256 tokenAmountIn = bmul(ratio, bal);
@@ -214,8 +214,8 @@ contract BPool is BToken, BMath, IBPool {
     _pushPoolShare(_FACTORY, exitFee);
     _burnPoolShare(pAiAfterExitFee);
 
-    uint256 _tokensLength = _tokens.length;
-    for (uint256 i = 0; i < _tokensLength; i++) {
+    uint256 tokensLength = _tokens.length;
+    for (uint256 i = 0; i < tokensLength; i++) {
       address t = _tokens[i];
       uint256 bal = IERC20(t).balanceOf(address(this));
       uint256 tokenAmountOut = bmul(ratio, bal);
@@ -514,13 +514,16 @@ contract BPool is BToken, BMath, IBPool {
     }
     Record storage inRecord = _records[tokenIn];
     Record storage outRecord = _records[tokenOut];
-    return calcSpotPrice(
+
+    spotPrice = calcSpotPrice(
       IERC20(tokenIn).balanceOf(address(this)),
       inRecord.denorm,
       IERC20(tokenOut).balanceOf(address(this)),
       outRecord.denorm,
       _swapFee
     );
+
+    return spotPrice;
   }
 
   /// @inheritdoc IBPool
@@ -533,13 +536,16 @@ contract BPool is BToken, BMath, IBPool {
     }
     Record storage inRecord = _records[tokenIn];
     Record storage outRecord = _records[tokenOut];
-    return calcSpotPrice(
+
+    spotPrice = calcSpotPrice(
       IERC20(tokenIn).balanceOf(address(this)),
       inRecord.denorm,
       IERC20(tokenOut).balanceOf(address(this)),
       outRecord.denorm,
       0
     );
+
+    return spotPrice;
   }
 
   /// @inheritdoc IBPool
@@ -612,34 +618,34 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @notice Sets the value of the transient storage slot used for reentrancy locks
-   * @param _value The value of the transient storage slot used for reentrancy locks.
+   * @param value The value of the transient storage slot used for reentrancy locks.
    * @dev Should be set to _MUTEX_FREE after a call, any other value will
    * be interpreted as locked
    */
-  function _setLock(bytes32 _value) internal virtual {
+  function _setLock(bytes32 value) internal virtual {
     assembly ("memory-safe") {
-      tstore(_MUTEX_TRANSIENT_STORAGE_SLOT, _value)
+      tstore(_MUTEX_TRANSIENT_STORAGE_SLOT, value)
     }
   }
 
   /**
    * @dev Pulls tokens from the sender. Tokens needs to be approved first. Calls are not locked.
-   * @param erc20 The address of the token to pull
+   * @param token The address of the token to pull
    * @param from The address to pull the tokens from
    * @param amount The amount of tokens to pull
    */
-  function _pullUnderlying(address erc20, address from, uint256 amount) internal virtual {
-    IERC20(erc20).safeTransferFrom(from, address(this), amount);
+  function _pullUnderlying(address token, address from, uint256 amount) internal virtual {
+    IERC20(token).safeTransferFrom(from, address(this), amount);
   }
 
   /**
    * @dev Pushes tokens to the receiver. Calls are not locked.
-   * @param erc20 The address of the token to push
+   * @param token The address of the token to push
    * @param to The address to push the tokens to
    * @param amount The amount of tokens to push
    */
-  function _pushUnderlying(address erc20, address to, uint256 amount) internal virtual {
-    IERC20(erc20).safeTransfer(to, amount);
+  function _pushUnderlying(address token, address to, uint256 amount) internal virtual {
+    IERC20(token).safeTransfer(to, amount);
   }
 
   /**
@@ -685,13 +691,13 @@ contract BPool is BToken, BMath, IBPool {
 
   /**
    * @notice Gets the value of the transient storage slot used for reentrancy locks
-   * @return _value Contents of transient storage slot used for reentrancy locks.
+   * @return value Contents of transient storage slot used for reentrancy locks.
    * @dev Should only be compared against _MUTEX_FREE for the purposes of
    * allowing calls
    */
-  function _getLock() internal view virtual returns (bytes32 _value) {
+  function _getLock() internal view virtual returns (bytes32 value) {
     assembly ("memory-safe") {
-      _value := tload(_MUTEX_TRANSIENT_STORAGE_SLOT)
+      value := tload(_MUTEX_TRANSIENT_STORAGE_SLOT)
     }
   }
 }

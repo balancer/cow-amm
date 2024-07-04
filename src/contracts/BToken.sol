@@ -12,27 +12,27 @@ contract BToken is ERC20 {
 
   /**
    * @notice Increase the allowance of the spender.
-   * @param dst The address which will spend the funds.
-   * @param amt The amount of tokens to increase the allowance by.
-   * @return True if the operation is successful.
+   * @param spender The address which will spend the funds.
+   * @param amount The amount of tokens to increase the allowance by.
+   * @return success True if the operation is successful.
    */
-  function increaseApproval(address dst, uint256 amt) external returns (bool) {
-    _approve(msg.sender, dst, allowance(msg.sender, dst) + amt);
+  function increaseApproval(address spender, uint256 amount) external returns (bool success) {
+    _approve(msg.sender, spender, allowance(msg.sender, spender) + amount);
     return true;
   }
 
   /**
    * @notice Decrease the allowance of the spender.
-   * @param dst The address which will spend the funds.
-   * @param amt The amount of tokens to decrease the allowance by.
-   * @return True if the operation is successful.
+   * @param spender The address which will spend the funds.
+   * @param amount The amount of tokens to decrease the allowance by.
+   * @return success True if the operation is successful.
    */
-  function decreaseApproval(address dst, uint256 amt) external returns (bool) {
-    uint256 oldValue = allowance(msg.sender, dst);
-    if (amt > oldValue) {
-      _approve(msg.sender, dst, 0);
+  function decreaseApproval(address spender, uint256 amount) external returns (bool success) {
+    uint256 oldValue = allowance(msg.sender, spender);
+    if (amount > oldValue) {
+      _approve(msg.sender, spender, 0);
     } else {
-      _approve(msg.sender, dst, oldValue - amt);
+      _approve(msg.sender, spender, oldValue - amount);
     }
     return true;
   }
@@ -40,18 +40,18 @@ contract BToken is ERC20 {
   /**
    * @notice Transfer tokens from one this contract to another.
    * @param to The address which you want to transfer to.
-   * @param amt The amount of tokens to be transferred.
+   * @param amount The amount of tokens to be transferred.
    */
-  function _push(address to, uint256 amt) internal virtual {
-    _transfer(address(this), to, amt);
+  function _push(address to, uint256 amount) internal virtual {
+    _transfer(address(this), to, amount);
   }
 
   /**
    * @notice Pull tokens from another address to this contract.
    * @param from The address which you want to transfer from.
-   * @param amt The amount of tokens to be transferred.
+   * @param amount The amount of tokens to be transferred.
    */
-  function _pull(address from, uint256 amt) internal virtual {
-    _transfer(from, address(this), amt);
+  function _pull(address from, uint256 amount) internal virtual {
+    _transfer(from, address(this), amount);
   }
 }
