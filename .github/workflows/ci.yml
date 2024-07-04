@@ -87,11 +87,19 @@ jobs:
           node-version: 18.x
           cache: 'yarn'
 
+      - name: Install bulloak 
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: bulloak
+
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
 
       - name: Run forge-fmt && solhint
         run: yarn lint:check
+
+      - name: Run bulloak check
+        run: yarn lint:bulloak
 
       - name: Run natspec-smells
         run: yarn lint:natspec 2>&1 >/dev/null | grep 'No issues found'

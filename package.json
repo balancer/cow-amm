@@ -20,6 +20,7 @@
     "deploy:bcowfactory:testnet": "bash -c 'source .env && forge script DeployBCoWFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
     "deploy:bfactory:mainnet": "bash -c 'source .env && forge script DeployBFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
     "deploy:bfactory:testnet": "bash -c 'source .env && forge script DeployBFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
+    "lint:bulloak": "find test/unit -name '*.tree' | xargs bulloak check",
     "lint:check": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' && forge fmt --check",
     "lint:fix": "solhint --fix 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' && sort-package-json && forge fmt",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
