@@ -598,6 +598,7 @@ contract BPool_Unit_SetSwapFee is BasePoolTest {
 
 contract BPool_Unit_SetController is BasePoolTest {
   function test_Revert_NotController(address _controller, address _caller, address _newController) public {
+    vm.assume(_newController != address(0));
     vm.assume(_controller != _caller);
     bPool.set__controller(_controller);
 
@@ -618,12 +619,14 @@ contract BPool_Unit_SetController is BasePoolTest {
   }
 
   function test_Set_Controller(address _controller) public {
+    vm.assume(_controller != address(0));
     bPool.setController(_controller);
 
     assertEq(bPool.call__controller(), _controller);
   }
 
   function test_Emit_LogCall(address _controller) public {
+    vm.assume(_controller != address(0));
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(BPool.setController.selector, _controller);
     emit IBPool.LOG_CALL(BPool.setController.selector, address(this), _data);

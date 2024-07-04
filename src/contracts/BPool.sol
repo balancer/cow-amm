@@ -85,12 +85,12 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setController(address manager) external _logs_ _lock_ _controller_ {
-    if (manager == address(0)) {
+  function setController(address newController) external _logs_ _lock_ _controller_ {
+    if (newController == address(0)) {
       revert BPool_AddressZero();
     }
 
-    _controller = manager;
+    _controller = newController;
   }
 
   /// @inheritdoc IBPool
