@@ -1,0 +1,22 @@
+BPool::constructor
+└── when called
+    ├── it sets caller as controller
+    ├── it sets caller as factory
+    ├── it sets swap fee to MIN_FEE
+    └── it does NOT finalize the pool
+
+BPool::isFinalized
+├── when pool is finalized
+│   └── it returns true
+└── when pool is NOT finalized
+    └── it returns false
+
+BPool::isBound
+├── when token is bound
+│   └── it returns true
+└── when token is NOT bound
+    └── it returns false
+
+BPool::getNumTokens
+└── when called
+    └── it returns number of tokens

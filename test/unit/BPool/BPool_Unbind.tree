@@ -1,0 +1,24 @@
+BPool::Unbind
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is NOT controller
+│   └── it should revert
+└── when caller is controller
+    ├── when token is not bound
+    │   └── it should revert
+    ├── when pool is finalized
+    │   └── it should revert
+    └── when token can be unbound
+        ├── when token is last on the tokens array
+        │   ├── it sets the reentrancy lock
+        │   ├── it emits LOG_CALL event
+        │   ├── it calls _pushUnderlying
+        │   ├── it removes the token record
+        │   ├── it decreases the total weight
+        │   ├── it pops from the array
+        │   └── it clears the reentrancy lock
+        └── when token is NOT last on the tokens array
+            ├── it removes the token record
+            ├── it removes the token from the array
+            ├── it keeps other tokens in the array
+            └── it updates records to point to the correct indices

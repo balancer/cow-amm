@@ -1,0 +1,28 @@
+BPool::Bind
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is NOT controller
+│   └── it should revert
+└── when caller is controller
+    ├── when token is already bound
+    │   └── it should revert
+    ├── when pool is finalized
+    │   └── it should revert
+    ├── when MAX_BOUND_TOKENS tokens are already bound
+    │   └── it should revert
+    ├── when token weight is too low
+    │   └── it should revert
+    ├── when token weight is too high
+    │   └── it should revert
+    ├── when too little balance is provided
+    │   └── it should revert
+    ├── when weight sum exceeds MAX_TOTAL_WEIGHT
+    │   └── it should revert
+    └── when token can be bound
+        ├── it sets the reentrancy lock
+        ├── it emits LOG_CALL event
+        ├── it increments _totalWeight
+        ├── it calls _pullUnderlying
+        ├── it adds token to the tokens array
+        ├── it sets the token record
+        └── it clears the reentrancy lock
