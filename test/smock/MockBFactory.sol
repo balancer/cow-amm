@@ -23,16 +23,16 @@ contract MockBFactory is BFactory, Test {
 
   constructor() BFactory() {}
 
-  function mock_call_newBPool(IBPool _pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(_pool));
+  function mock_call_newBPool(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(bPool));
   }
 
-  function mock_call_setBLabs(address b) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('setBLabs(address)', b), abi.encode());
+  function mock_call_setBLabs(address bLabs) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('setBLabs(address)', bLabs), abi.encode());
   }
 
-  function mock_call_collect(IBPool pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', pool), abi.encode());
+  function mock_call_collect(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', bPool), abi.encode());
   }
 
   function mock_call_isBPool(address b, bool _returnParam0) public {
@@ -43,18 +43,18 @@ contract MockBFactory is BFactory, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('getBLabs()'), abi.encode(_returnParam0));
   }
 
-  function mock_call__newBPool(IBPool _pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(_pool));
+  function mock_call__newBPool(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(bPool));
   }
 
-  function _newBPool() internal override returns (IBPool _pool) {
+  function _newBPool() internal override returns (IBPool bPool) {
     (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
 
     if (_success) return abi.decode(_data, (IBPool));
     else return super._newBPool();
   }
 
-  function call__newBPool() public returns (IBPool _pool) {
+  function call__newBPool() public returns (IBPool bPool) {
     return _newBPool();
   }
 

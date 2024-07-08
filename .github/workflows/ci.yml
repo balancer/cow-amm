@@ -101,5 +101,8 @@ jobs:
       - name: Run bulloak check
         run: yarn lint:bulloak
 
+      - name: Ensure auto-generated smocks are up to date
+        run: yarn smock && git diff --exit-code -- test/smock
+
       - name: Run natspec-smells
         run: yarn lint:natspec 2>&1 >/dev/null | grep 'No issues found'
