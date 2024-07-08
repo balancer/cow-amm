@@ -14,6 +14,11 @@ libs = ["node_modules", "lib"]
 optimizer_runs = 500
 evm_version = 'cancun'
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
+# 2018: function can be view, so far only caused by mocks
+# 2394: solc insists on reporting on every transient storage use
+# 5574, 3860: bytecode size limit, so far only caused by test contracts
+ignored_error_codes = [2018, 2394, 5574, 3860]
+deny_warnings = true
 
 [profile.optimized]
 via_ir = true
