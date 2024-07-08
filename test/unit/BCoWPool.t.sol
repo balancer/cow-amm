@@ -203,7 +203,7 @@ contract BCoWPool_Unit_Verify is BaseCoWPoolTest, SwapExactAmountInUtils {
   }
 
   function test_Revert_LargeDurationOrder(uint256 _timeOffset) public {
-    _timeOffset = bound(_timeOffset, MAX_ORDER_DURATION, type(uint32).max - block.timestamp);
+    _timeOffset = bound(_timeOffset, MAX_ORDER_DURATION + 1, type(uint32).max - block.timestamp);
     GPv2Order.Data memory order = correctOrder;
     order.validTo = uint32(block.timestamp + _timeOffset);
     vm.expectRevert(IBCoWPool.BCoWPool_OrderValidityTooLong.selector);
