@@ -53,6 +53,22 @@ contract BPool is BToken, BMath, IBPool {
     _;
   }
 
+  /// @dev Throws an error if pool is not finalized
+  modifier _finalized_() {
+    if (!_finalized) {
+      revert BPool_PoolNotFinalized();
+    }
+    _;
+  }
+
+  /// @dev Throws an error if pool is finalized
+  modifier _notFinalized_() {
+    if (_finalized) {
+      revert BPool_PoolIsFinalized();
+    }
+    _;
+  }
+
   /**
    * @notice Throws an error if caller is not controller
    */
@@ -71,10 +87,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function setSwapFee(uint256 swapFee) external _logs_ _lock_ _controller_ {
-    if (_finalized) {
-      revert BPool_PoolIsFinalized();
-    }
+  function setSwapFee(uint256 swapFee) external _logs_ _lock_ _controller_ _notFinalized_ {
     if (swapFee < MIN_FEE) {
       revert BPool_FeeBelowMinimum();
     }
@@ -94,10 +107,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function finalize() external _logs_ _lock_ _controller_ {
-    if (_finalized) {
-      revert BPool_PoolIsFinalized();
-    }
+  function finalize() external _logs_ _lock_ _controller_ _notFinalized_ {
     if (_tokens.length < MIN_BOUND_TOKENS) {
       revert BPool_TokensBelowMinimum();
     }
@@ -110,18 +120,13 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ _controller_ {
+  function bind(address token, uint256 balance, uint256 denorm) external _logs_ _lock_ _controller_ _notFinalized_ {
     if (_records[token].bound) {
       revert BPool_TokenAlreadyBound();
     }
-    if (_finalized) {
-      revert BPool_PoolIsFinalized();
-    }
-
     if (_tokens.length >= MAX_BOUND_TOKENS) {
       revert BPool_TokensAboveMaximum();
     }
-
     if (denorm < MIN_WEIGHT) {
       revert BPool_WeightBelowMinimum();
     }
@@ -144,12 +149,9 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function unbind(address token) external _logs_ _lock_ _controller_ {
+  function unbind(address token) external _logs_ _lock_ _controller_ _notFinalized_ {
     if (!_records[token].bound) {
       revert BPool_TokenNotBound();
-    }
-    if (_finalized) {
-      revert BPool_PoolIsFinalized();
     }
 
     _totalWeight = bsub(_totalWeight, _records[token].denorm);
@@ -167,11 +169,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function joinPool(uint256 poolAmountOut, uint256[] calldata maxAmountsIn) external _logs_ _lock_ {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
-
+  function joinPool(uint256 poolAmountOut, uint256[] calldata maxAmountsIn) external _logs_ _lock_ _finalized_ {
     uint256 poolTotal = totalSupply();
     uint256 ratio = bdiv(poolAmountOut, poolTotal);
     if (ratio == 0) {
@@ -197,11 +195,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function exitPool(uint256 poolAmountIn, uint256[] calldata minAmountsOut) external _logs_ _lock_ {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
-
+  function exitPool(uint256 poolAmountIn, uint256[] calldata minAmountsOut) external _logs_ _lock_ _finalized_ {
     uint256 poolTotal = totalSupply();
     uint256 exitFee = bmul(poolAmountIn, EXIT_FEE);
     uint256 pAiAfterExitFee = bsub(poolAmountIn, exitFee);
@@ -237,15 +231,12 @@ contract BPool is BToken, BMath, IBPool {
     address tokenOut,
     uint256 minAmountOut,
     uint256 maxPrice
-  ) external _logs_ _lock_ returns (uint256 tokenAmountOut, uint256 spotPriceAfter) {
+  ) external _logs_ _lock_ _finalized_ returns (uint256 tokenAmountOut, uint256 spotPriceAfter) {
     if (!_records[tokenIn].bound) {
       revert BPool_TokenNotBound();
     }
     if (!_records[tokenOut].bound) {
       revert BPool_TokenNotBound();
-    }
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
     }
 
     Record storage inRecord = _records[address(tokenIn)];
@@ -299,15 +290,12 @@ contract BPool is BToken, BMath, IBPool {
     address tokenOut,
     uint256 tokenAmountOut,
     uint256 maxPrice
-  ) external _logs_ _lock_ returns (uint256 tokenAmountIn, uint256 spotPriceAfter) {
+  ) external _logs_ _lock_ _finalized_ returns (uint256 tokenAmountIn, uint256 spotPriceAfter) {
     if (!_records[tokenIn].bound) {
       revert BPool_TokenNotBound();
     }
     if (!_records[tokenOut].bound) {
       revert BPool_TokenNotBound();
-    }
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
     }
 
     Record storage inRecord = _records[address(tokenIn)];
@@ -359,10 +347,7 @@ contract BPool is BToken, BMath, IBPool {
     address tokenIn,
     uint256 tokenAmountIn,
     uint256 minPoolAmountOut
-  ) external _logs_ _lock_ returns (uint256 poolAmountOut) {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
+  ) external _logs_ _lock_ _finalized_ returns (uint256 poolAmountOut) {
     if (!_records[tokenIn].bound) {
       revert BPool_TokenNotBound();
     }
@@ -393,10 +378,7 @@ contract BPool is BToken, BMath, IBPool {
     address tokenIn,
     uint256 poolAmountOut,
     uint256 maxAmountIn
-  ) external _logs_ _lock_ returns (uint256 tokenAmountIn) {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
+  ) external _logs_ _lock_ _finalized_ returns (uint256 tokenAmountIn) {
     if (!_records[tokenIn].bound) {
       revert BPool_TokenNotBound();
     }
@@ -431,10 +413,7 @@ contract BPool is BToken, BMath, IBPool {
     address tokenOut,
     uint256 poolAmountIn,
     uint256 minAmountOut
-  ) external _logs_ _lock_ returns (uint256 tokenAmountOut) {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
+  ) external _logs_ _lock_ _finalized_ returns (uint256 tokenAmountOut) {
     if (!_records[tokenOut].bound) {
       revert BPool_TokenNotBound();
     }
@@ -469,10 +448,7 @@ contract BPool is BToken, BMath, IBPool {
     address tokenOut,
     uint256 tokenAmountOut,
     uint256 maxPoolAmountIn
-  ) external _logs_ _lock_ returns (uint256 poolAmountIn) {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
+  ) external _logs_ _lock_ _finalized_ returns (uint256 poolAmountIn) {
     if (!_records[tokenOut].bound) {
       revert BPool_TokenNotBound();
     }
@@ -569,10 +545,7 @@ contract BPool is BToken, BMath, IBPool {
   }
 
   /// @inheritdoc IBPool
-  function getFinalTokens() external view _viewlock_ returns (address[] memory tokens) {
-    if (!_finalized) {
-      revert BPool_PoolNotFinalized();
-    }
+  function getFinalTokens() external view _viewlock_ _finalized_ returns (address[] memory tokens) {
     return _tokens;
   }
 
