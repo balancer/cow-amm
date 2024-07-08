@@ -7,10 +7,11 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 contract BPoolUnbind is BPoolBase {
-  address public secondToken = makeAddr('secondToken');
+  uint256 public boundTokenAmount = 100e18;
 
   function setUp() public virtual override {
     super.setUp();
+    vm.mockCall(token, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(boundTokenAmount));
     vm.mockCall(secondToken, abi.encodePacked(IERC20.transferFrom.selector), abi.encode());
   }
 
@@ -61,7 +62,7 @@ contract BPoolUnbind is BPoolBase {
     // it sets the reentrancy lock
     bPool.expectCall__setLock(_MUTEX_TAKEN);
     // it calls _pushUnderlying
-    bPool.expectCall__pushUnderlying(token, deployer, tokenBindBalance);
+    bPool.expectCall__pushUnderlying(token, deployer, boundTokenAmount);
 
     // it emits LOG_CALL event
     vm.expectEmit();

@@ -5,6 +5,8 @@ import {BPoolBase} from './BPoolBase.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 contract BPoolBind is BPoolBase {
+  uint256 public tokenBindBalance = 100e18;
+
   function test_RevertWhen_ReentrancyLockIsSet() external {
     bPool.call__setLock(_MUTEX_TAKEN);
     vm.expectRevert(IBPool.BPool_Reentrancy.selector);

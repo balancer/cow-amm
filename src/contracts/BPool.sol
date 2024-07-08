@@ -634,7 +634,7 @@ contract BPool is BToken, BMath, IBPool {
    * @param from The address to pull the pool tokens from
    * @param amount The amount of pool tokens to pull
    */
-  function _pullPoolShare(address from, uint256 amount) internal {
+  function _pullPoolShare(address from, uint256 amount) internal virtual {
     _pull(from, amount);
   }
 
@@ -643,7 +643,7 @@ contract BPool is BToken, BMath, IBPool {
    * @param to The address to push the pool tokens to
    * @param amount The amount of pool tokens to push
    */
-  function _pushPoolShare(address to, uint256 amount) internal {
+  function _pushPoolShare(address to, uint256 amount) internal virtual {
     _push(to, amount);
   }
 
@@ -651,7 +651,7 @@ contract BPool is BToken, BMath, IBPool {
    * @dev Mints an amount of pool tokens.
    * @param amount The amount of pool tokens to mint
    */
-  function _mintPoolShare(uint256 amount) internal {
+  function _mintPoolShare(uint256 amount) internal virtual {
     _mint(address(this), amount);
   }
 
@@ -659,7 +659,7 @@ contract BPool is BToken, BMath, IBPool {
    * @dev Burns an amount of pool tokens.
    * @param amount The amount of pool tokens to burn
    */
-  function _burnPoolShare(uint256 amount) internal {
+  function _burnPoolShare(uint256 amount) internal virtual {
     _burn(address(this), amount);
   }
 
