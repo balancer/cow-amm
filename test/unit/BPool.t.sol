@@ -6,7 +6,7 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {BPool} from 'contracts/BPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-import {MockBPool} from 'test/manual-smock/MockBPool.sol';
+import {MockBPool} from 'test/smock/MockBPool.sol';
 
 import {BConst} from 'contracts/BConst.sol';
 import {BMath} from 'contracts/BMath.sol';
@@ -1066,7 +1066,7 @@ contract BPool_Unit_ExitPool is BasePoolTest {
   }
 
   function test_Push_PoolShare(ExitPool_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
-    address _factoryAddress = bPool.call__FACTORY();
+    address _factoryAddress = bPool.FACTORY();
     uint256 _exitFee = bmul(_fuzz.poolAmountIn, EXIT_FEE);
     uint256 _balanceBefore = bPool.balanceOf(_factoryAddress);
 
@@ -2356,7 +2356,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
   }
 
   function test_Push_PoolShare(ExitswapPoolAmountIn_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
-    address _factoryAddress = bPool.call__FACTORY();
+    address _factoryAddress = bPool.FACTORY();
     uint256 _balanceBefore = bPool.balanceOf(_factoryAddress);
     uint256 _exitFee = bmul(_fuzz.poolAmountIn, EXIT_FEE);
 
@@ -2605,7 +2605,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
   }
 
   function test_Push_PoolShare(ExitswapExternAmountOut_FuzzScenario memory _fuzz) public happyPath(_fuzz) {
-    address _factoryAddress = bPool.call__FACTORY();
+    address _factoryAddress = bPool.FACTORY();
     uint256 _balanceBefore = bPool.balanceOf(_factoryAddress);
     uint256 _poolAmountIn = calcPoolInGivenSingleOut(
       _fuzz.tokenOutBalance,

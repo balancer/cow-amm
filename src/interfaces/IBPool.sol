@@ -424,4 +424,11 @@ interface IBPool is IERC20 {
    * @return controller The controller of the pool
    */
   function getController() external view returns (address controller);
+
+  /**
+   * @notice Gets the BFactory address that deployed the pool
+   * @return factory The address of the factory
+   */
+  // solhint-disable-next-line style-guide-casing
+  function FACTORY() external view returns (address factory);
 }

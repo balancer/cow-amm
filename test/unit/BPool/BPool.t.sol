@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 import {BPoolBase} from './BPoolBase.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-import {MockBPool} from 'test/manual-smock/MockBPool.sol';
+import {MockBPool} from 'test/smock/MockBPool.sol';
 
 contract BPool is BPoolBase {
   function test_ConstructorWhenCalled(address _deployer) external {
@@ -13,7 +13,7 @@ contract BPool is BPoolBase {
     // it sets caller as controller
     assertEq(_newBPool.call__controller(), _deployer);
     // it sets caller as factory
-    assertEq(_newBPool.call__FACTORY(), _deployer);
+    assertEq(_newBPool.FACTORY(), _deployer);
     // it sets swap fee to MIN_FEE
     assertEq(_newBPool.call__swapFee(), MIN_FEE);
     // it does NOT finalize the pool

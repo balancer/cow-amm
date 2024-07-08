@@ -5,7 +5,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {BConst} from 'contracts/BConst.sol';
 import {Test} from 'forge-std/Test.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
-import {MockBPool} from 'test/manual-smock/MockBPool.sol';
+import {MockBPool} from 'test/smock/MockBPool.sol';
 import {Utils} from 'test/utils/Utils.sol';
 
 contract BPoolBase is Test, BConst, Utils {
