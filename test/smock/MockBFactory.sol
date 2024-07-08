@@ -35,8 +35,8 @@ contract MockBFactory is BFactory, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', bPool), abi.encode());
   }
 
-  function mock_call_isBPool(address b, bool _returnParam0) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('isBPool(address)', b), abi.encode(_returnParam0));
+  function mock_call_isBPool(address bPool, bool _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('isBPool(address)', bPool), abi.encode(_returnParam0));
   }
 
   function mock_call_getBLabs(address _returnParam0) public {

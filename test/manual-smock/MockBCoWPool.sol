@@ -7,69 +7,41 @@ import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBCoWPool is BCoWPool, Test {
+  // NOTE: manually added method (public overrides not supported in smock)
+  function verify(GPv2Order.Data memory order) public view override {
+    (bool _success, bytes memory _data) =
+      address(this).staticcall(abi.encodeWithSignature('verify(GPv2Order.Data)', order));
+
+    if (_success) return abi.decode(_data, ());
+    else return super.verify(order);
+  }
+
+  // NOTE: manually added method (public overrides not supported in smock)
+  function expectCall_verify(GPv2Order.Data memory order) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('verify(GPv2Order.Data)', order));
+  }
+
   /// MockBCoWPool mock methods
 
-  constructor(address _cowSolutionSettler, bytes32 _appData) BCoWPool(_cowSolutionSettler, _appData) {}
+  constructor(address cowSolutionSettler, bytes32 appData) BCoWPool(cowSolutionSettler, appData) {}
 
   function mock_call_commit(bytes32 orderHash) public {
     vm.mockCall(address(this), abi.encodeWithSignature('commit(bytes32)', orderHash), abi.encode());
   }
 
-  function mock_call_isValidSignature(bytes32 _hash, bytes memory signature, bytes4 _returnParam0) public {
+  function mock_call_isValidSignature(bytes32 orderHash, bytes memory signature, bytes4 magicValue) public {
     vm.mockCall(
       address(this),
-      abi.encodeWithSignature('isValidSignature(bytes32,bytes)', _hash, signature),
-      abi.encode(_returnParam0)
+      abi.encodeWithSignature('isValidSignature(bytes32,bytes)', orderHash, signature),
+      abi.encode(magicValue)
     );
-  }
-
-  function mock_call_commitment(bytes32 value) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('commitment()'), abi.encode(value));
   }
 
   function mock_call_verify(GPv2Order.Data memory order) public {
     vm.mockCall(address(this), abi.encodeWithSignature('verify(GPv2Order.Data)', order), abi.encode());
   }
 
-  function mock_call_hash(bytes32 appData, bytes32 _returnParam0) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('hash(bytes32)', appData), abi.encode(_returnParam0));
-  }
   /// BPool Mocked methods
-
-  function _setLock(bytes32 _value) internal override {
-    (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_setLock(bytes32)', _value));
-
-    if (_success) return abi.decode(_data, ());
-    else return super._setLock(_value);
-  }
-
-  function call__setLock(bytes32 _value) public {
-    return _setLock(_value);
-  }
-
-  function expectCall__setLock(bytes32 _value) public {
-    vm.expectCall(address(this), abi.encodeWithSignature('_setLock(bytes32)', _value));
-  }
-
-  function mock_call__getLock(bytes32 _value) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_getLock()'), abi.encode(_value));
-  }
-
-  function _getLock() internal view override returns (bytes32 _value) {
-    (bool _success, bytes memory _data) = address(this).staticcall(abi.encodeWithSignature('_getLock()'));
-
-    if (_success) return abi.decode(_data, (bytes32));
-    else return super._getLock();
-  }
-
-  function call__getLock() public view returns (bytes32 _value) {
-    return _getLock();
-  }
-
-  function expectCall__getLock() public {
-    vm.expectCall(address(this), abi.encodeWithSignature('_getLock()'));
-  }
-
   function set__controller(address __controller) public {
     _controller = __controller;
   }
@@ -122,8 +94,8 @@ contract MockBCoWPool is BCoWPool, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('setSwapFee(uint256)', swapFee), abi.encode());
   }
 
-  function mock_call_setController(address manager) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('setController(address)', manager), abi.encode());
+  function mock_call_setController(address newController) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('setController(address)', newController), abi.encode());
   }
 
   function mock_call_finalize() public {
@@ -316,66 +288,99 @@ contract MockBCoWPool is BCoWPool, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('getController()'), abi.encode(_returnParam0));
   }
 
-  function mock_call__pullUnderlying(address erc20, address from, uint256 amount) public {
+  function mock_call__setLock(bytes32 value) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_setLock(bytes32)', value), abi.encode());
+  }
+
+  function _setLock(bytes32 value) internal override {
+    (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_setLock(bytes32)', value));
+
+    if (_success) return abi.decode(_data, ());
+    else return super._setLock(value);
+  }
+
+  function call__setLock(bytes32 value) public {
+    return _setLock(value);
+  }
+
+  function expectCall__setLock(bytes32 value) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_setLock(bytes32)', value));
+  }
+
+  function mock_call__pullUnderlying(address token, address from, uint256 amount) public {
     vm.mockCall(
       address(this),
-      abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', erc20, from, amount),
+      abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', token, from, amount),
       abi.encode()
     );
   }
 
-  function _pullUnderlying(address erc20, address from, uint256 amount) internal override {
+  function _pullUnderlying(address token, address from, uint256 amount) internal override {
     (bool _success, bytes memory _data) =
-      address(this).call(abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', erc20, from, amount));
+      address(this).call(abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', token, from, amount));
 
     if (_success) return abi.decode(_data, ());
-    else return super._pullUnderlying(erc20, from, amount);
+    else return super._pullUnderlying(token, from, amount);
   }
 
-  function call__pullUnderlying(address erc20, address from, uint256 amount) public {
-    return _pullUnderlying(erc20, from, amount);
+  function call__pullUnderlying(address token, address from, uint256 amount) public {
+    return _pullUnderlying(token, from, amount);
   }
 
-  function expectCall__pullUnderlying(address erc20, address from, uint256 amount) public {
+  function expectCall__pullUnderlying(address token, address from, uint256 amount) public {
     vm.expectCall(
-      address(this), abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', erc20, from, amount)
+      address(this), abi.encodeWithSignature('_pullUnderlying(address,address,uint256)', token, from, amount)
     );
   }
 
-  function mock_call__pushUnderlying(address erc20, address to, uint256 amount) public {
+  function mock_call__pushUnderlying(address token, address to, uint256 amount) public {
     vm.mockCall(
       address(this),
-      abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', erc20, to, amount),
+      abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', token, to, amount),
       abi.encode()
     );
   }
 
-  function _pushUnderlying(address erc20, address to, uint256 amount) internal override {
+  function _pushUnderlying(address token, address to, uint256 amount) internal override {
     (bool _success, bytes memory _data) =
-      address(this).call(abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', erc20, to, amount));
+      address(this).call(abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', token, to, amount));
 
     if (_success) return abi.decode(_data, ());
-    else return super._pushUnderlying(erc20, to, amount);
+    else return super._pushUnderlying(token, to, amount);
   }
 
-  function call__pushUnderlying(address erc20, address to, uint256 amount) public {
-    return _pushUnderlying(erc20, to, amount);
+  function call__pushUnderlying(address token, address to, uint256 amount) public {
+    return _pushUnderlying(token, to, amount);
   }
 
-  function expectCall__pushUnderlying(address erc20, address to, uint256 amount) public {
-    vm.expectCall(address(this), abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', erc20, to, amount));
-  }
-  // BCoWPool overrides
-
-  function verify(GPv2Order.Data memory order) public view override {
-    (bool _success, bytes memory _data) =
-      address(this).staticcall(abi.encodeWithSignature('verify(GPv2Order.Data)', order));
-
-    if (_success) return abi.decode(_data, ());
-    else return super.verify(order);
+  function expectCall__pushUnderlying(address token, address to, uint256 amount) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_pushUnderlying(address,address,uint256)', token, to, amount));
   }
 
-  function expectCall_verify(GPv2Order.Data memory order) public {
-    vm.expectCall(address(this), abi.encodeWithSignature('verify(GPv2Order.Data)', order));
+  function call__afterFinalize() public {
+    return _afterFinalize();
+  }
+
+  function expectCall__afterFinalize() public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_afterFinalize()'));
+  }
+
+  function mock_call__getLock(bytes32 value) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_getLock()'), abi.encode(value));
+  }
+
+  function _getLock() internal view override returns (bytes32 value) {
+    (bool _success, bytes memory _data) = address(this).staticcall(abi.encodeWithSignature('_getLock()'));
+
+    if (_success) return abi.decode(_data, (bytes32));
+    else return super._getLock();
+  }
+
+  function call__getLock() public returns (bytes32 value) {
+    return _getLock();
+  }
+
+  function expectCall__getLock() public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_getLock()'));
   }
 }

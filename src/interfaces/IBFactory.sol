@@ -48,10 +48,10 @@ interface IBFactory {
 
   /**
    * @notice Checks if an address is a BPool created from this factory
-   * @param b The address to check
+   * @param bPool The address to check
    * @return isBPool True if the address is a BPool, False otherwise
    */
-  function isBPool(address b) external view returns (bool isBPool);
+  function isBPool(address bPool) external view returns (bool isBPool);
 
   /**
    * @notice Gets the BLabs address

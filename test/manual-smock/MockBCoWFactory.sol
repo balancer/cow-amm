@@ -5,24 +5,24 @@ import {BCoWFactory, BCoWPool, BFactory, IBCoWFactory, IBPool} from '../../src/c
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBCoWFactory is BCoWFactory, Test {
-  constructor(address _solutionSettler, bytes32 _appData) BCoWFactory(_solutionSettler, _appData) {}
+  constructor(address solutionSettler, bytes32 appData) BCoWFactory(solutionSettler, appData) {}
 
   function mock_call_logBCoWPool() public {
     vm.mockCall(address(this), abi.encodeWithSignature('logBCoWPool()'), abi.encode());
   }
 
-  function mock_call__newBPool(IBPool _pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(_pool));
+  function mock_call__newBPool(IBPool bCoWPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(bCoWPool));
   }
 
-  function _newBPool() internal override returns (IBPool _pool) {
+  function _newBPool() internal override returns (IBPool bCoWPool) {
     (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
 
     if (_success) return abi.decode(_data, (IBPool));
     else return super._newBPool();
   }
 
-  function call__newBPool() public returns (IBPool _pool) {
+  function call__newBPool() public returns (IBPool bCoWPool) {
     return _newBPool();
   }
 
