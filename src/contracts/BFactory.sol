@@ -13,11 +13,11 @@ import {IBPool} from 'interfaces/IBPool.sol';
 contract BFactory is IBFactory {
   /// @dev Mapping indicating whether the address is a BPool.
   mapping(address => bool) internal _isBPool;
-  /// @dev bLabs address.
-  address internal _bLabs;
+  /// @dev bDao address.
+  address internal _bDao;
 
   constructor() {
-    _bLabs = msg.sender;
+    _bDao = msg.sender;
   }
 
   /// @inheritdoc IBFactory
@@ -29,25 +29,25 @@ contract BFactory is IBFactory {
   }
 
   /// @inheritdoc IBFactory
-  function setBLabs(address bLabs) external {
-    if (bLabs == address(0)) {
+  function setBDao(address bDao) external {
+    if (bDao == address(0)) {
       revert BFactory_AddressZero();
     }
 
-    if (msg.sender != _bLabs) {
-      revert BFactory_NotBLabs();
+    if (msg.sender != _bDao) {
+      revert BFactory_NotBDao();
     }
-    emit LOG_BLABS(msg.sender, bLabs);
-    _bLabs = bLabs;
+    emit LOG_BDAO(msg.sender, bDao);
+    _bDao = bDao;
   }
 
   /// @inheritdoc IBFactory
   function collect(IBPool bPool) external {
-    if (msg.sender != _bLabs) {
-      revert BFactory_NotBLabs();
+    if (msg.sender != _bDao) {
+      revert BFactory_NotBDao();
     }
     uint256 collected = bPool.balanceOf(address(this));
-    SafeERC20.safeTransfer(bPool, _bLabs, collected);
+    SafeERC20.safeTransfer(bPool, _bDao, collected);
   }
 
   /// @inheritdoc IBFactory
@@ -56,8 +56,8 @@ contract BFactory is IBFactory {
   }
 
   /// @inheritdoc IBFactory
-  function getBLabs() external view returns (address) {
-    return _bLabs;
+  function getBDao() external view returns (address) {
+    return _bDao;
   }
 
   /**

@@ -1,6 +1,6 @@
 BFactoryTest::constructor
 └── when called
-    └── it should set the deployer as BLabs
+    └── it should set the deployer as BDao
 
 BFactoryTest::newBPool
 └── when called
@@ -14,22 +14,22 @@ BFactoryTest::_newBPool
 └── when called
     └── it should deploy a new BPool
 
-BFactoryTest::setBLabs
-├── when the sender is not the current BLabs
+BFactoryTest::setBDao
+├── when the sender is not the current BDao
 │   └── it should revert
-└── when the sender is the current BLabs
+└── when the sender is the current BDao
     ├── when the address is zero
     │   └── it should revert
     └── when the address is not zero
-        ├── it should set the new BLabs address
-        └── it should emit a BLabsSet event
+        ├── it should set the new BDao address
+        └── it should emit a BDaoSet event
 
 
 BFactoryTest::collect
-├── when the sender is not the current BLabs
+├── when the sender is not the current BDao
 │   └── it should revert
-└── when the sender is the current BLabs
+└── when the sender is the current BDao
     ├── it should get the pool's btoken balance of the factory
-    ├── it should transfer the btoken balance of the factory to BLabs
+    ├── it should transfer the btoken balance of the factory to BDao
     └── when the btoken transfer fails
         └── it should revert

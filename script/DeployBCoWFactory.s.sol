@@ -11,7 +11,7 @@ contract DeployBCoWFactory is Script, Params {
 
     vm.startBroadcast();
     BCoWFactory bCoWFactory = new BCoWFactory(params.settlement, params.appData);
-    bCoWFactory.setBLabs(params.bLabs);
+    bCoWFactory.setBDao(params.bDao);
     vm.stopBroadcast();
   }
 }

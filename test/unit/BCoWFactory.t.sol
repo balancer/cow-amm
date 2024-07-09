@@ -24,15 +24,15 @@ contract BCoWFactoryTest is Test {
     );
   }
 
-  function test_ConstructorWhenCalled(address _blabs, address _newSettler, bytes32 _appData) external {
-    vm.prank(_blabs);
+  function test_ConstructorWhenCalled(address _bDao, address _newSettler, bytes32 _appData) external {
+    vm.prank(_bDao);
     MockBCoWFactory _newFactory = new MockBCoWFactory(_newSettler, _appData);
     // it should set solution settler
     assertEq(_newFactory.SOLUTION_SETTLER(), _newSettler);
     // it should set app data
     assertEq(_newFactory.APP_DATA(), _appData);
-    // it should set blabs
-    assertEq(_newFactory.getBLabs(), _blabs);
+    // it should set BDao
+    assertEq(_newFactory.getBDao(), _bDao);
   }
 
   function test__newBPoolWhenCalled() external {

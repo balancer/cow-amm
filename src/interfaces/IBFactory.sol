@@ -12,11 +12,11 @@ interface IBFactory {
   event LOG_NEW_POOL(address indexed caller, address indexed bPool);
 
   /**
-   * @notice Emitted when setting the BLabs address
-   * @param caller The caller of the set BLabs function
-   * @param bLabs The address of the new BLabs
+   * @notice Emitted when setting the BDao address
+   * @param caller The caller of the set BDao function
+   * @param bDao The address of the new BDao
    */
-  event LOG_BLABS(address indexed caller, address indexed bLabs);
+  event LOG_BDAO(address indexed caller, address indexed bDao);
 
   /**
    * @notice Thrown when setting a variable to address zero
@@ -24,9 +24,9 @@ interface IBFactory {
   error BFactory_AddressZero();
 
   /**
-   * @notice Thrown when caller is not BLabs address
+   * @notice Thrown when caller is not BDao address
    */
-  error BFactory_NotBLabs();
+  error BFactory_NotBDao();
 
   /**
    * @notice Creates a new BPool, assigning the caller as the pool controller
@@ -35,13 +35,13 @@ interface IBFactory {
   function newBPool() external returns (IBPool bPool);
 
   /**
-   * @notice Sets the BLabs address in the factory
-   * @param bLabs The new BLabs address
+   * @notice Sets the BDao address in the factory
+   * @param bDao The new BDao address
    */
-  function setBLabs(address bLabs) external;
+  function setBDao(address bDao) external;
 
   /**
-   * @notice Collects the fees of a pool and transfers it to BLabs address
+   * @notice Collects the fees of a pool and transfers it to BDao address
    * @param bPool The address of the pool to collect fees from
    */
   function collect(IBPool bPool) external;
@@ -54,8 +54,8 @@ interface IBFactory {
   function isBPool(address bPool) external view returns (bool isBPool);
 
   /**
-   * @notice Gets the BLabs address
-   * @return bLabs The address of the BLabs
+   * @notice Gets the BDao address
+   * @return bDao The address of the BDao
    */
-  function getBLabs() external view returns (address bLabs);
+  function getBDao() external view returns (address bDao);
 }

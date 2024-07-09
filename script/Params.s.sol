@@ -3,11 +3,11 @@ pragma solidity 0.8.25;
 
 contract Params {
   struct BFactoryDeploymentParams {
-    address bLabs;
+    address bDao;
   }
 
   struct BCoWFactoryDeploymentParams {
-    address bLabs;
+    address bDao;
     address settlement;
     bytes32 appData;
   }

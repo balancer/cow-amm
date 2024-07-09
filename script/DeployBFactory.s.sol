@@ -11,7 +11,7 @@ contract DeployBFactory is Script, Params {
 
     vm.startBroadcast();
     BFactory bFactory = new BFactory();
-    bFactory.setBLabs(params.bLabs);
+    bFactory.setBDao(params.bDao);
     vm.stopBroadcast();
   }
 }

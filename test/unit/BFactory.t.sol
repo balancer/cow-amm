@@ -21,11 +21,11 @@ contract BFactoryTest is Test {
     factory = new MockBFactory();
   }
 
-  function test_ConstructorWhenCalled(address _blabs) external {
-    vm.prank(_blabs);
+  function test_ConstructorWhenCalled(address _bDao) external {
+    vm.prank(_bDao);
     MockBFactory newFactory = new MockBFactory();
-    // it should set BLabs
-    assertEq(newFactory.getBLabs(), _blabs);
+    // it should set BDao
+    assertEq(newFactory.getBDao(), _bDao);
   }
 
   function test_NewBPoolWhenCalled(address _deployer, address _newBPool) external {
@@ -60,55 +60,52 @@ contract BFactoryTest is Test {
     assertEq(_newBPool.code, _expectedCode);
   }
 
-  function test_SetBLabsRevertWhen_TheSenderIsNotTheCurrentBLabs(address _caller) external {
+  function test_SetBDaoRevertWhen_TheSenderIsNotTheCurrentBDao(address _caller) external {
     vm.assume(_caller != factoryDeployer);
 
     // it should revert
-    vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
+    vm.expectRevert(IBFactory.BFactory_NotBDao.selector);
 
     vm.prank(_caller);
-    factory.setBLabs(makeAddr('newBLabs'));
+    factory.setBDao(makeAddr('newBDao'));
   }
 
-  modifier whenTheSenderIsTheCurrentBLabs() {
+  modifier whenTheSenderIsTheCurrentBDao() {
     vm.startPrank(factoryDeployer);
     _;
   }
 
-  function test_SetBLabsRevertWhen_TheAddressIsZero() external whenTheSenderIsTheCurrentBLabs {
+  function test_SetBDaoRevertWhen_TheAddressIsZero() external whenTheSenderIsTheCurrentBDao {
     // it should revert
     vm.expectRevert(IBFactory.BFactory_AddressZero.selector);
 
-    factory.setBLabs(address(0));
+    factory.setBDao(address(0));
   }
 
-  function test_SetBLabsWhenTheAddressIsNotZero(address _newBLabs) external whenTheSenderIsTheCurrentBLabs {
-    vm.assume(_newBLabs != address(0));
+  function test_SetBDaoWhenTheAddressIsNotZero(address _newBDao) external whenTheSenderIsTheCurrentBDao {
+    vm.assume(_newBDao != address(0));
 
-    // it should emit a BLabsSet event
+    // it should emit a BDaoSet event
     vm.expectEmit(address(factory));
-    emit IBFactory.LOG_BLABS(factoryDeployer, _newBLabs);
+    emit IBFactory.LOG_BDAO(factoryDeployer, _newBDao);
 
-    factory.setBLabs(_newBLabs);
+    factory.setBDao(_newBDao);
 
-    // it should set the new bLabs address
-    assertEq(factory.getBLabs(), _newBLabs);
+    // it should set the new bDao address
+    assertEq(factory.getBDao(), _newBDao);
   }
 
-  function test_CollectRevertWhen_TheSenderIsNotTheCurrentBLabs(address _caller) external {
+  function test_CollectRevertWhen_TheSenderIsNotTheCurrentBDao(address _caller) external {
     vm.assume(_caller != factoryDeployer);
 
     // it should revert
-    vm.expectRevert(IBFactory.BFactory_NotBLabs.selector);
+    vm.expectRevert(IBFactory.BFactory_NotBDao.selector);
 
     vm.prank(_caller);
     factory.collect(IBPool(makeAddr('pool')));
   }
 
-  function test_CollectWhenTheSenderIsTheCurrentBLabs(uint256 _factoryBTBalance)
-    external
-    whenTheSenderIsTheCurrentBLabs
-  {
+  function test_CollectWhenTheSenderIsTheCurrentBDao(uint256 _factoryBTBalance) external whenTheSenderIsTheCurrentBDao {
     address _mockPool = makeAddr('pool');
     vm.mockCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)), abi.encode(_factoryBTBalance));
     vm.mockCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)), abi.encode(true));
@@ -116,7 +113,7 @@ contract BFactoryTest is Test {
     // it should get the pool's btoken balance of the factory
     vm.expectCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)));
 
-    // it should transfer the btoken balance of the factory to BLabs
+    // it should transfer the btoken balance of the factory to BDao
     vm.expectCall(_mockPool, abi.encodeCall(IERC20.transfer, (factoryDeployer, _factoryBTBalance)));
 
     factory.collect(IBPool(_mockPool));
@@ -124,7 +121,7 @@ contract BFactoryTest is Test {
 
   function test_CollectRevertWhen_TheBtokenTransferFails(uint256 _factoryBTBalance)
     external
-    whenTheSenderIsTheCurrentBLabs
+    whenTheSenderIsTheCurrentBDao
   {
     address _mockPool = makeAddr('pool');
     vm.mockCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)), abi.encode(_factoryBTBalance));

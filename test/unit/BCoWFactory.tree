@@ -2,7 +2,7 @@ BCoWFactoryTest::constructor
 └── when called
     ├── it should set solution settler
     ├── it should set app data
-    └── it should set blabs
+    └── it should set BDao
 
 BCoWFactoryTest::_newBPool
 └── when called
