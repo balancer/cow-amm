@@ -25,16 +25,13 @@ contract BPoolJoinPool is BPoolBase {
     bPool.set__finalized(true);
     // mint an initial amount of pool shares (expected to happen at _finalize)
     bPool.call__mintPoolShare(INIT_POOL_SUPPLY);
-    address[] memory _tokens = new address[](2);
-    _tokens[0] = token;
-    _tokens[1] = secondToken;
-    bPool.set__tokens(_tokens);
+    bPool.set__tokens(_tokensToMemory());
     // token weights are not used for all-token joins
-    _setRecord(token, IBPool.Record({bound: true, index: 0, denorm: 0}));
-    _setRecord(secondToken, IBPool.Record({bound: true, index: 1, denorm: 0}));
+    _setRecord(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
+    _setRecord(tokens[1], IBPool.Record({bound: true, index: 1, denorm: 0}));
     // underlying balances are used instead
-    vm.mockCall(token, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token0Balance)));
-    vm.mockCall(secondToken, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token1Balance)));
+    vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token0Balance)));
+    vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token1Balance)));
 
     maxAmountsIn = new uint256[](2);
     maxAmountsIn[0] = requiredToken0In;
@@ -74,7 +71,7 @@ contract BPoolJoinPool is BPoolBase {
   }
 
   function test_RevertWhen_BalanceOfPoolInAnyTokenIsZero() external {
-    vm.mockCall(secondToken, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(0)));
+    vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(0)));
     // it should revert
     vm.expectRevert(IBPool.BPool_InvalidTokenAmountIn.selector);
     bPool.joinPool(poolAmountOut, maxAmountsIn);
@@ -91,10 +88,10 @@ contract BPoolJoinPool is BPoolBase {
     // it sets reentrancy lock
     bPool.expectCall__setLock(_MUTEX_TAKEN);
     // it calls _pullUnderlying for every token
-    bPool.mock_call__pullUnderlying(token, address(this), requiredToken0In);
-    bPool.expectCall__pullUnderlying(token, address(this), requiredToken0In);
-    bPool.mock_call__pullUnderlying(secondToken, address(this), requiredToken1In);
-    bPool.expectCall__pullUnderlying(secondToken, address(this), requiredToken1In);
+    bPool.mock_call__pullUnderlying(tokens[0], address(this), requiredToken0In);
+    bPool.expectCall__pullUnderlying(tokens[0], address(this), requiredToken0In);
+    bPool.mock_call__pullUnderlying(tokens[1], address(this), requiredToken1In);
+    bPool.expectCall__pullUnderlying(tokens[1], address(this), requiredToken1In);
     // it mints the pool shares
     bPool.expectCall__mintPoolShare(poolAmountOut);
     // it sends pool shares to caller
@@ -109,9 +106,9 @@ contract BPoolJoinPool is BPoolBase {
     emit IBPool.LOG_CALL(IBPool.joinPool.selector, address(this), _data);
     // it emits LOG_JOIN event for every token
     vm.expectEmit();
-    emit IBPool.LOG_JOIN(address(this), token, requiredToken0In);
+    emit IBPool.LOG_JOIN(address(this), tokens[0], requiredToken0In);
     vm.expectEmit();
-    emit IBPool.LOG_JOIN(address(this), secondToken, requiredToken1In);
+    emit IBPool.LOG_JOIN(address(this), tokens[1], requiredToken1In);
     bPool.joinPool(poolAmountOut, maxAmounts);
     // it clears the reentrancy lock
     assertEq(_MUTEX_FREE, bPool.call__getLock());

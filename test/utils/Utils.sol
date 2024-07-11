@@ -9,7 +9,7 @@ contract Utils is Test {
 
   uint256 public constant TOKENS_AMOUNT = 3;
 
-  address[TOKENS_AMOUNT] public tokens;
+  address[] public tokens;
 
   function _getDeterministicTokenArray(uint256 _length) internal returns (address[] memory _tokenArray) {
     _tokenArray = new address[](_length);
