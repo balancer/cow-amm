@@ -15,7 +15,7 @@
   "scripts": {
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
-    "coverage": "forge coverage --match-contract Unit",
+    "coverage": "forge coverage --match-path 'test/unit/**'",
     "deploy:bcowfactory:mainnet": "bash -c 'source .env && forge script DeployBCoWFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
     "deploy:bcowfactory:testnet": "bash -c 'source .env && forge script DeployBCoWFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
     "deploy:bfactory:mainnet": "bash -c 'source .env && forge script DeployBFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
