@@ -18,7 +18,7 @@ contract BToken is ERC20 {
    */
   function increaseApproval(address spender, uint256 amount) external returns (bool success) {
     _approve(msg.sender, spender, allowance(msg.sender, spender) + amount);
-    return true;
+    success = true;
   }
 
   /**
@@ -34,7 +34,7 @@ contract BToken is ERC20 {
     } else {
       _approve(msg.sender, spender, oldValue - amount);
     }
-    return true;
+    success = true;
   }
 
   /**

@@ -191,17 +191,19 @@ contract MockBPool is BPool, Test {
     );
   }
 
-  function mock_call_getSpotPrice(address tokenIn, address tokenOut, uint256 spotPrice) public {
+  function mock_call_getSpotPrice(address tokenIn, address tokenOut, uint256 _returnParam0) public {
     vm.mockCall(
-      address(this), abi.encodeWithSignature('getSpotPrice(address,address)', tokenIn, tokenOut), abi.encode(spotPrice)
+      address(this),
+      abi.encodeWithSignature('getSpotPrice(address,address)', tokenIn, tokenOut),
+      abi.encode(_returnParam0)
     );
   }
 
-  function mock_call_getSpotPriceSansFee(address tokenIn, address tokenOut, uint256 spotPrice) public {
+  function mock_call_getSpotPriceSansFee(address tokenIn, address tokenOut, uint256 _returnParam0) public {
     vm.mockCall(
       address(this),
       abi.encodeWithSignature('getSpotPriceSansFee(address,address)', tokenIn, tokenOut),
-      abi.encode(spotPrice)
+      abi.encode(_returnParam0)
     );
   }
 
@@ -209,20 +211,20 @@ contract MockBPool is BPool, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('isFinalized()'), abi.encode(_returnParam0));
   }
 
-  function mock_call_isBound(address t, bool _returnParam0) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('isBound(address)', t), abi.encode(_returnParam0));
+  function mock_call_isBound(address token, bool _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('isBound(address)', token), abi.encode(_returnParam0));
   }
 
   function mock_call_getNumTokens(uint256 _returnParam0) public {
     vm.mockCall(address(this), abi.encodeWithSignature('getNumTokens()'), abi.encode(_returnParam0));
   }
 
-  function mock_call_getCurrentTokens(address[] memory tokens) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('getCurrentTokens()'), abi.encode(tokens));
+  function mock_call_getCurrentTokens(address[] memory _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('getCurrentTokens()'), abi.encode(_returnParam0));
   }
 
-  function mock_call_getFinalTokens(address[] memory tokens) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('getFinalTokens()'), abi.encode(tokens));
+  function mock_call_getFinalTokens(address[] memory _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('getFinalTokens()'), abi.encode(_returnParam0));
   }
 
   function mock_call_getDenormalizedWeight(address token, uint256 _returnParam0) public {
