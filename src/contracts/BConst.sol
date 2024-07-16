@@ -17,7 +17,7 @@ contract BConst {
   /// @notice The minimum swap fee that can be set.
   uint256 public constant MIN_FEE = BONE / 10 ** 6;
   /// @notice The maximum swap fee that can be set.
-  uint256 public constant MAX_FEE = BONE / 10;
+  uint256 public constant MAX_FEE = BONE - MIN_FEE;
   /// @notice The immutable exit fee percentage
   uint256 public constant EXIT_FEE = 0;
 

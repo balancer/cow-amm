@@ -243,6 +243,7 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
     uint256 _zoo = bsub(BONE, _normalizedWeight);
     uint256 _zar = bmul(_zoo, _swapFee);
     uint256 _tokenAmountOutBeforeSwapFee = bdiv(_tokenAmountOut, bsub(BONE, _zar));
+    vm.assume(_tokenOutBalance >= _tokenAmountOutBeforeSwapFee);
     uint256 _newTokenOutBalance = bsub(_tokenOutBalance, _tokenAmountOutBeforeSwapFee);
     vm.assume(_newTokenOutBalance < type(uint256).max / _tokenOutBalance);
 
@@ -1379,6 +1380,7 @@ contract BPool_Unit_ExitswapPoolAmountIn is BasePoolTest {
       _fuzz.poolAmountIn,
       _fuzz.swapFee
     );
+    vm.assume(_fuzz.tokenOutBalance < type(uint256).max / MAX_OUT_RATIO);
     vm.assume(_tokenAmountOut > bmul(_fuzz.tokenOutBalance, MAX_OUT_RATIO));
 
     _setValues(_fuzz);

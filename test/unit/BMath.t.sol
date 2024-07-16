@@ -113,15 +113,6 @@ contract BMathTest is Test, BConst {
     bMath.calcOutGivenIn(balanceIn, weightIn, balanceOut, weightOut, amountIn, _swapFee);
   }
 
-  function test_CalcOutGivenInWhenSwapFeeEqualsBONE() external virtual {
-    uint256 _swapFee = BONE;
-
-    // it should return zero
-    uint256 _amountOut = bMath.calcOutGivenIn(balanceIn, weightIn, balanceOut, weightOut, amountIn, _swapFee);
-
-    assertEq(_amountOut, 0);
-  }
-
   function test_CalcOutGivenInRevertWhen_TokenAmountInTooBig(uint256 _amountIn) external {
     _amountIn = bound(_amountIn, type(uint256).max / (BONE - swapFee) + 1, type(uint256).max);
 
@@ -152,6 +143,15 @@ contract BMathTest is Test, BConst {
     vm.expectRevert(BNum.BNum_DivZero.selector);
 
     bMath.calcOutGivenIn(_balanceIn, weightIn, balanceOut, weightOut, amountIn, _swapFee);
+  }
+
+  function test_CalcOutGivenInWhenSwapFeeEqualsBONE() external virtual {
+    uint256 _swapFee = BONE;
+
+    // it should return zero
+    uint256 _amountOut = bMath.calcOutGivenIn(balanceIn, weightIn, balanceOut, weightOut, amountIn, _swapFee);
+
+    assertEq(_amountOut, 0);
   }
 
   function test_CalcOutGivenInWhenTokenWeightInIsZero() external virtual {
@@ -477,7 +477,7 @@ contract BMathTest is Test, BConst {
     bMath.calcPoolInGivenSingleOut(_balanceOut, weightOut, poolSupply, totalWeight, amountOut, swapFee);
   }
 
-  function test_CalcPoolInGivenSingleOutRevertWhen_SwapFeeIs1AndTokenWeightOutIsZero() external {
+  function test_CalcPoolInGivenSingleOutRevertWhen_SwapFeeEqualsBONEAndTokenWeightOutIsZero() external {
     uint256 _swapFee = BONE;
     uint256 _weightOut = 0;
 
@@ -486,6 +486,14 @@ contract BMathTest is Test, BConst {
     vm.expectRevert(BNum.BNum_DivZero.selector);
 
     bMath.calcPoolInGivenSingleOut(balanceOut, _weightOut, poolSupply, totalWeight, amountOut, _swapFee);
+  }
+
+  function test_CalcPoolInGivenSingleOutRevertWhen_SwapFeeGreaterThanBONE() external {
+    // it should revert
+    //     subtraction underflow
+    vm.expectRevert(BNum.BNum_SubUnderflow.selector);
+
+    bMath.calcPoolInGivenSingleOut(balanceOut, weightOut, poolSupply, totalWeight, amountOut, BONE + 1);
   }
 
   function test_CalcPoolInGivenSingleOutWhenTokenAmountOutIsZero() external virtual {
