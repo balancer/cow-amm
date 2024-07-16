@@ -1,0 +1,28 @@
+BPool::SwapExactAmountOut
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token out is not bound
+│   └── it should revert
+├── when token out exceeds max allowed ratio
+│   └── it should revert
+├── when spot price before swap exceeds maxPrice
+│   └── it should revert
+├── when spot price after swap exceeds maxPrice
+│   └── it should revert
+├── when required tokenIn is more than maxAmountIn
+│   └── it should revert
+├── when token ratio after swap exceeds spot price before swap
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits a LOG_CALL event
+    ├── it sets the reentrancy lock
+    ├── it emits a LOG_SWAP event
+    ├── it calls _pullUnderlying for tokenIn
+    ├── it calls _pushUnderlying for tokenOut
+    ├── it returns the tokenIn amount swapped
+    ├── it returns the spot price after the swap
+    └── it clears the reeentrancy lock
