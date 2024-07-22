@@ -5,6 +5,32 @@ BPool::constructor
     ├── it sets swap fee to MIN_FEE
     └── it does NOT finalize the pool
 
+BPool::setSwapFee
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is not controller
+│   └── it should revert
+├── when pool is finalized
+│   └── it should revert
+├── when swap fee is below MIN_FEE
+│   └── it should revert
+├── when swap fee is above MAX_FEE
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    └── it sets swap fee
+
+BPool::setController
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is not controller
+│   └── it should revert
+├── when new controller is zero address
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    └── it sets new controller
+
 BPool::isFinalized
 ├── when pool is finalized
 │   └── it returns true
@@ -20,6 +46,87 @@ BPool::isBound
 BPool::getNumTokens
 └── when called
     └── it returns number of tokens
+
+BPool::getFinalTokens
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+└── when preconditions are met
+    └── it returns pool tokens
+
+BPool::getCurrentTokens
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns pool tokens
+
+BPool::getDenormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    └── it returns token weight
+
+BPool::getTotalDenormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns total weight
+
+BPool::getNormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    └── it returns normalized weight
+
+BPool::getBalance
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token balance
+    └── it returns token balance
+
+BPool::getSwapFee
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns swap fee
+
+BPool::getController
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns controller
+
+BPool::getSpotPrice
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token out is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token in balance
+    ├── it queries token out balance
+    └── it returns spot price
+
+BPool::getSpotPriceSansFee
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token out is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token in balance
+    ├── it queries token out balance
+    └── it returns spot price sans fee
 
 BPool::finalize
 ├── when caller is not controller
