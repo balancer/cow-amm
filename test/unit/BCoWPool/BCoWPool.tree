@@ -6,3 +6,11 @@ BCoWPool::_afterFinalize
 │   └── it returns
 └── when factorys logBCoWPool reverts
     └── it emits a COWAMMPoolCreated event
+
+BCoWPool::Commit
+├── when reentrancy lock is set
+│   └──it should revert
+├── when sender is not solution settler
+│   └──it should revert
+└── when preconditions are met
+    └── it should set the transient reentrancy lock
