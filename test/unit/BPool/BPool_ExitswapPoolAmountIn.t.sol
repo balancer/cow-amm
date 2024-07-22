@@ -22,7 +22,7 @@ contract BPoolExitSwapPoolAmountIn is BPoolBase, BMath {
   function setUp() public virtual override {
     super.setUp();
     tokenOut = tokens[1];
-    _setRecord(tokenOut, IBPool.Record({bound: true, index: 0, denorm: tokenOutWeight}));
+    bPool.set__records(tokenOut, IBPool.Record({bound: true, index: 0, denorm: tokenOutWeight}));
     bPool.set__tokens(tokens);
     bPool.set__totalWeight(totalWeight);
     bPool.set__finalized(true);

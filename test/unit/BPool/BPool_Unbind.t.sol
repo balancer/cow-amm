@@ -44,7 +44,7 @@ contract BPoolUnbind is BPoolBase {
   }
 
   function test_RevertWhen_PoolIsFinalized() external whenCallerIsController {
-    _setRecord(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
+    bPool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
     bPool.set__finalized(true);
     // it should revert
     vm.expectRevert(IBPool.BPool_PoolIsFinalized.selector);
@@ -52,7 +52,7 @@ contract BPoolUnbind is BPoolBase {
   }
 
   modifier whenTokenCanBeUnbound() {
-    _setRecord(tokens[0], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
+    bPool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
     bPool.set__totalWeight(totalWeight);
     address[] memory tokens = new address[](1);
     tokens[0] = tokens[0];
@@ -83,7 +83,7 @@ contract BPoolUnbind is BPoolBase {
   }
 
   function test_WhenTokenIsNOTLastOnTheTokensArray() external whenCallerIsController whenTokenCanBeUnbound {
-    _setRecord(tokens[1], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
+    bPool.set__records(tokens[1], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
     bPool.set__tokens(_tokensToMemory());
     bPool.unbind(tokens[0]);
     // it removes the token record

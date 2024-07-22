@@ -27,8 +27,8 @@ contract BPoolJoinPool is BPoolBase {
     bPool.call__mintPoolShare(INIT_POOL_SUPPLY);
     bPool.set__tokens(_tokensToMemory());
     // token weights are not used for all-token joins
-    _setRecord(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
-    _setRecord(tokens[1], IBPool.Record({bound: true, index: 1, denorm: 0}));
+    bPool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
+    bPool.set__records(tokens[1], IBPool.Record({bound: true, index: 1, denorm: 0}));
     // underlying balances are used instead
     vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token0Balance)));
     vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(token1Balance)));

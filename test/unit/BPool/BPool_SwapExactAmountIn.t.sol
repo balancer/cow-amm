@@ -35,8 +35,8 @@ contract BPoolSwapExactAmountIn is BPoolBase, BNum {
     tokenOut = tokens[1];
     bPool.set__finalized(true);
     bPool.set__tokens(tokens);
-    _setRecord(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInWeight}));
-    _setRecord(tokenOut, IBPool.Record({bound: true, index: 1, denorm: tokenOutWeight}));
+    bPool.set__records(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInWeight}));
+    bPool.set__records(tokenOut, IBPool.Record({bound: true, index: 1, denorm: tokenOutWeight}));
 
     vm.mockCall(tokenIn, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(tokenInBalance)));
     vm.mockCall(tokenOut, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(tokenOutBalance)));

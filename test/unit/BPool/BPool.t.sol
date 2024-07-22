@@ -33,13 +33,13 @@ contract BPool is BPoolBase {
   }
 
   function test_IsBoundWhenTokenIsBound(address _token) external {
-    _setRecord(_token, IBPool.Record({bound: true, index: 0, denorm: 0}));
+    bPool.set__records(_token, IBPool.Record({bound: true, index: 0, denorm: 0}));
     // it returns true
     assertTrue(bPool.isBound(_token));
   }
 
   function test_IsBoundWhenTokenIsNOTBound(address _token) external {
-    _setRecord(_token, IBPool.Record({bound: false, index: 0, denorm: 0}));
+    bPool.set__records(_token, IBPool.Record({bound: false, index: 0, denorm: 0}));
     // it returns false
     assertFalse(bPool.isBound(_token));
   }

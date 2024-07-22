@@ -38,7 +38,7 @@ contract BPoolBind is BPoolBase {
   }
 
   function test_RevertWhen_TokenIsAlreadyBound() external whenCallerIsController {
-    _setRecord(tokens[0], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
+    bPool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
     // it should revert
     vm.expectRevert(IBPool.BPool_TokenAlreadyBound.selector);
     bPool.bind(tokens[0], tokenBindBalance, tokenWeight);

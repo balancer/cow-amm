@@ -29,7 +29,7 @@ contract BPoolJoinswapExternAmountIn is BPoolBase, BNum {
     bPool.call__mintPoolShare(INIT_POOL_SUPPLY);
     bPool.set__tokens(_tokensToMemory());
     bPool.set__totalWeight(totalWeight);
-    _setRecord(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInWeight}));
+    bPool.set__records(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInWeight}));
     vm.mockCall(tokenIn, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(tokenInBalance)));
   }
 

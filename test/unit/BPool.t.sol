@@ -34,9 +34,9 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   function _setRandomTokens(uint256 _length) internal returns (address[] memory _tokensToAdd) {
     _tokensToAdd = _getDeterministicTokenArray(_length);
     for (uint256 i = 0; i < _length; i++) {
-      _setRecord(_tokensToAdd[i], IBPool.Record({bound: true, index: i, denorm: 0}));
+      bPool.set__records(_tokensToAdd[i], IBPool.Record({bound: true, index: i, denorm: 0}));
     }
-    _setTokens(_tokensToAdd);
+    bPool.set__tokens(_tokensToAdd);
   }
 
   function _mockTransfer(address _token) internal {
@@ -51,14 +51,6 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
 
   function _mockPoolBalance(address _token, uint256 _balance) internal {
     vm.mockCall(_token, abi.encodeWithSelector(IERC20.balanceOf.selector, address(bPool)), abi.encode(_balance));
-  }
-
-  function _setTokens(address[] memory _tokens) internal {
-    bPool.set__tokens(_tokens);
-  }
-
-  function _setRecord(address _token, IBPool.Record memory _record) internal {
-    bPool.set__records(_token, _record);
   }
 
   function _setSwapFee(uint256 _swapFee) internal {
@@ -253,111 +245,6 @@ abstract contract BasePoolTest is Test, BConst, Utils, BMath {
   }
 }
 
-abstract contract SwapExactAmountInUtils is BasePoolTest {
-  address tokenIn;
-  address tokenOut;
-
-  struct SwapExactAmountIn_FuzzScenario {
-    uint256 tokenAmountIn;
-    uint256 tokenInBalance;
-    uint256 tokenInDenorm;
-    uint256 tokenOutBalance;
-    uint256 tokenOutDenorm;
-    uint256 swapFee;
-  }
-
-  function _setValues(SwapExactAmountIn_FuzzScenario memory _fuzz) internal {
-    tokenIn = tokens[0];
-    tokenOut = tokens[1];
-
-    // Create mocks for tokenIn and tokenOut (only use the first 2 tokens)
-    _mockTransferFrom(tokenIn);
-    _mockTransfer(tokenOut);
-
-    // Set balances
-    _setRecord(
-      tokenIn,
-      IBPool.Record({
-        bound: true,
-        index: 0, // NOTE: irrelevant for this method
-        denorm: _fuzz.tokenInDenorm
-      })
-    );
-    _mockPoolBalance(tokenIn, _fuzz.tokenInBalance);
-
-    _setRecord(
-      tokenOut,
-      IBPool.Record({
-        bound: true,
-        index: 0, // NOTE: irrelevant for this method
-        denorm: _fuzz.tokenOutDenorm
-      })
-    );
-    _mockPoolBalance(tokenOut, _fuzz.tokenOutBalance);
-
-    // Set swapFee
-    _setSwapFee(_fuzz.swapFee);
-    // Set finalize
-    _setFinalize(true);
-  }
-
-  function _assumeHappyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) internal view virtual {
-    // safe bound assumptions
-    _fuzz.tokenInDenorm = bound(_fuzz.tokenInDenorm, MIN_WEIGHT, MAX_WEIGHT);
-    _fuzz.tokenOutDenorm = bound(_fuzz.tokenOutDenorm, MIN_WEIGHT, MAX_WEIGHT);
-    _fuzz.swapFee = bound(_fuzz.swapFee, MIN_FEE, MAX_FEE);
-
-    // min - max - calcSpotPrice (spotPriceBefore)
-    _fuzz.tokenInBalance = bound(_fuzz.tokenInBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenInDenorm);
-    _fuzz.tokenOutBalance = bound(_fuzz.tokenOutBalance, MIN_BALANCE, type(uint256).max / _fuzz.tokenOutDenorm);
-
-    // max - calcSpotPrice (spotPriceAfter)
-    vm.assume(_fuzz.tokenAmountIn < type(uint256).max - _fuzz.tokenInBalance);
-    vm.assume(_fuzz.tokenInBalance + _fuzz.tokenAmountIn < type(uint256).max / _fuzz.tokenInDenorm);
-
-    // internal calculation for calcSpotPrice (spotPriceBefore)
-    _assumeCalcSpotPrice(
-      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
-    );
-
-    // MAX_IN_RATIO
-    vm.assume(_fuzz.tokenAmountIn <= bmul(_fuzz.tokenInBalance, MAX_IN_RATIO));
-
-    // L338 BPool.sol
-    uint256 _spotPriceBefore = calcSpotPrice(
-      _fuzz.tokenInBalance, _fuzz.tokenInDenorm, _fuzz.tokenOutBalance, _fuzz.tokenOutDenorm, _fuzz.swapFee
-    );
-
-    _assumeCalcOutGivenIn(_fuzz.tokenInBalance, _fuzz.tokenAmountIn, _fuzz.swapFee);
-    uint256 _tokenAmountOut = calcOutGivenIn(
-      _fuzz.tokenInBalance,
-      _fuzz.tokenInDenorm,
-      _fuzz.tokenOutBalance,
-      _fuzz.tokenOutDenorm,
-      _fuzz.tokenAmountIn,
-      _fuzz.swapFee
-    );
-    vm.assume(_tokenAmountOut > BONE);
-
-    // internal calculation for calcSpotPrice (spotPriceAfter)
-    _assumeCalcSpotPrice(
-      _fuzz.tokenInBalance + _fuzz.tokenAmountIn,
-      _fuzz.tokenInDenorm,
-      _fuzz.tokenOutBalance - _tokenAmountOut,
-      _fuzz.tokenOutDenorm,
-      _fuzz.swapFee
-    );
-
-    vm.assume(bmul(_spotPriceBefore, _tokenAmountOut) <= _fuzz.tokenAmountIn);
-  }
-
-  modifier happyPath(SwapExactAmountIn_FuzzScenario memory _fuzz) {
-    _assumeHappyPath(_fuzz);
-    _setValues(_fuzz);
-    _;
-  }
-}
-
 contract BPool_Unit_GetCurrentTokens is BasePoolTest {
   function test_Returns_CurrentTokens(uint256 _length) public {
     vm.assume(_length > 0);
@@ -435,7 +322,7 @@ contract BPool_Unit_GetNormalizedWeight is BasePoolTest {
     _weight = bound(_weight, MIN_WEIGHT, MAX_WEIGHT);
     _totalWeight = bound(_totalWeight, MIN_WEIGHT, MAX_TOTAL_WEIGHT);
     vm.assume(_weight < _totalWeight);
-    _setRecord(_token, IBPool.Record({bound: true, index: 0, denorm: _weight}));
+    bPool.set__records(_token, IBPool.Record({bound: true, index: 0, denorm: _weight}));
     _setTotalWeight(_totalWeight);
 
     assertEq(bPool.getNormalizedWeight(_token), bdiv(_weight, _totalWeight));
@@ -695,9 +582,9 @@ contract BPool_Unit_GetSpotPrice is BasePoolTest {
   }
 
   function _setValues(GetSpotPrice_FuzzScenario memory _fuzz) internal {
-    _setRecord(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
+    bPool.set__records(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
     _mockPoolBalance(_fuzz.tokenIn, _fuzz.tokenInBalance);
-    _setRecord(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
+    bPool.set__records(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
     _mockPoolBalance(_fuzz.tokenOut, _fuzz.tokenOutBalance);
     _setSwapFee(_fuzz.swapFee);
   }
@@ -764,9 +651,9 @@ contract BPool_Unit_GetSpotPriceSansFee is BasePoolTest {
   }
 
   function _setValues(GetSpotPriceSansFee_FuzzScenario memory _fuzz) internal {
-    _setRecord(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
+    bPool.set__records(_fuzz.tokenIn, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenInDenorm}));
     _mockPoolBalance(_fuzz.tokenIn, _fuzz.tokenInBalance);
-    _setRecord(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
+    bPool.set__records(_fuzz.tokenOut, IBPool.Record({bound: true, index: 0, denorm: _fuzz.tokenOutDenorm}));
     _mockPoolBalance(_fuzz.tokenOut, _fuzz.tokenOutBalance);
     _setSwapFee(0);
   }
@@ -838,7 +725,7 @@ contract BPool_Unit_JoinswapPoolAmountOut is BasePoolTest {
     _mockTransferFrom(tokenIn);
 
     // Set balances
-    _setRecord(
+    bPool.set__records(
       tokenIn,
       IBPool.Record({
         bound: true,
@@ -1070,7 +957,7 @@ contract BPool_Unit_ExitswapExternAmountOut is BasePoolTest {
     _mockTransfer(tokenOut);
 
     // Set balances
-    _setRecord(
+    bPool.set__records(
       tokenOut,
       IBPool.Record({
         bound: true,
