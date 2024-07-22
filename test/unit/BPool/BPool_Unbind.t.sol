@@ -8,6 +8,8 @@ import {IBPool} from 'interfaces/IBPool.sol';
 
 contract BPoolUnbind is BPoolBase {
   uint256 public boundTokenAmount = 100e18;
+  uint256 public tokenWeight = 1e18;
+  uint256 public totalWeight = 10e18;
 
   function setUp() public virtual override {
     super.setUp();
