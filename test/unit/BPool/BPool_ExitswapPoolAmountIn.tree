@@ -1,0 +1,24 @@
+BPool::ExitSwapPoolAmountIn
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+├── when total supply is zero
+│   └── it should revert // subtraction underflow
+├── when computed token amount out is less than minAmountOut
+│   └── it should revert
+├── when computed token amount out exceeds max allowed ratio
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    ├── it sets the reentrancy lock
+    ├── it queries token out balance
+    ├── it emits LOG_EXIT event for token out
+    ├── it pulls poolAmountIn shares
+    ├── it burns poolAmountIn - exitFee shares
+    ├── it sends exitFee to factory
+    ├── it calls _pushUnderlying for token out
+    ├── it returns token out amount
+    └── it clears the reentrancy lock
