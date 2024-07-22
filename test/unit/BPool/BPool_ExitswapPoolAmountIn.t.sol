@@ -32,7 +32,7 @@ contract BPoolExitSwapPoolAmountIn is BPoolBase, BMath {
 
     bPool.mock_call__pullPoolShare(address(this), poolAmountIn);
     bPool.mock_call__burnPoolShare(poolAmountIn);
-    bPool.mock_call__pushPoolShare(deployer, 0);
+    bPool.mock_call__pushPoolShare(address(this), 0);
     bPool.mock_call__pushUnderlying(tokenOut, address(this), expectedAmountOut);
   }
 
@@ -90,7 +90,7 @@ contract BPoolExitSwapPoolAmountIn is BPoolBase, BMath {
     // it burns poolAmountIn - exitFee shares
     bPool.expectCall__burnPoolShare(poolAmountIn);
     // it sends exitFee to factory
-    bPool.expectCall__pushPoolShare(deployer, 0);
+    bPool.expectCall__pushPoolShare(address(this), 0);
     // it calls _pushUnderlying for token out
     bPool.expectCall__pushUnderlying(tokenOut, address(this), expectedAmountOut);
     // it emits LOG_CALL event

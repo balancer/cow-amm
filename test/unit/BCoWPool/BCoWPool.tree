@@ -1,0 +1,8 @@
+BCoWPool::_afterFinalize
+├── when called
+│   ├── it calls approve on every bound token
+│   └── it calls logBCoWPool on the factory
+├── when factorys logBCoWPool does not revert
+│   └── it returns
+└── when factorys logBCoWPool reverts
+    └── it emits a COWAMMPoolCreated event

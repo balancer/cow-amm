@@ -92,7 +92,7 @@ contract BPoolExitPool is BPoolBase, BNum {
     // it pulls poolAmountIn shares
     bPool.expectCall__pullPoolShare(address(this), poolAmountIn);
     // it sends exitFee to factory
-    bPool.expectCall__pushPoolShare(deployer, exitFee);
+    bPool.expectCall__pushPoolShare(address(this), exitFee);
     // it burns poolAmountIn - exitFee shares
     bPool.expectCall__burnPoolShare(poolAmountIn - exitFee);
     // it calls _pushUnderlying for every token

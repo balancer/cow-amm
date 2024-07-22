@@ -26,24 +26,19 @@ contract BPoolUnbind is BPoolBase {
 
   function test_RevertWhen_CallerIsNOTController(address _caller) external {
     // it should revert
-    vm.assume(_caller != deployer);
+    vm.assume(_caller != address(this));
     vm.prank(_caller);
     vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
     bPool.unbind(tokens[0]);
   }
 
-  modifier whenCallerIsController() {
-    vm.startPrank(deployer);
-    _;
-  }
-
-  function test_RevertWhen_TokenIsNotBound() external whenCallerIsController {
+  function test_RevertWhen_TokenIsNotBound() external {
     vm.expectRevert(IBPool.BPool_TokenNotBound.selector);
     // it should revert
     bPool.unbind(tokens[0]);
   }
 
-  function test_RevertWhen_PoolIsFinalized() external whenCallerIsController {
+  function test_RevertWhen_PoolIsFinalized() external {
     bPool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: 0}));
     bPool.set__finalized(true);
     // it should revert
@@ -60,16 +55,16 @@ contract BPoolUnbind is BPoolBase {
     _;
   }
 
-  function test_WhenTokenIsLastOnTheTokensArray() external whenCallerIsController whenTokenCanBeUnbound {
+  function test_WhenTokenIsLastOnTheTokensArray() external whenTokenCanBeUnbound {
     // it sets the reentrancy lock
     bPool.expectCall__setLock(_MUTEX_TAKEN);
     // it calls _pushUnderlying
-    bPool.expectCall__pushUnderlying(tokens[0], deployer, boundTokenAmount);
+    bPool.expectCall__pushUnderlying(tokens[0], address(this), boundTokenAmount);
 
     // it emits LOG_CALL event
     vm.expectEmit();
     bytes memory _data = abi.encodeWithSelector(IBPool.unbind.selector, tokens[0]);
-    emit IBPool.LOG_CALL(IBPool.unbind.selector, deployer, _data);
+    emit IBPool.LOG_CALL(IBPool.unbind.selector, address(this), _data);
     bPool.unbind(tokens[0]);
 
     // it clears the reentrancy lock
@@ -82,7 +77,7 @@ contract BPoolUnbind is BPoolBase {
     assertEq(bPool.call__totalWeight(), totalWeight - tokenWeight);
   }
 
-  function test_WhenTokenIsNOTLastOnTheTokensArray() external whenCallerIsController whenTokenCanBeUnbound {
+  function test_WhenTokenIsNOTLastOnTheTokensArray() external whenTokenCanBeUnbound {
     bPool.set__records(tokens[1], IBPool.Record({bound: true, index: 0, denorm: tokenWeight}));
     bPool.set__tokens(_tokensToMemory());
     bPool.unbind(tokens[0]);

@@ -78,41 +78,6 @@ contract BCoWPool_Unit_Constructor is BaseCoWPoolTest {
   }
 }
 
-contract BCoWPool_Unit_Finalize is BaseCoWPoolTest {
-  function setUp() public virtual override {
-    super.setUp();
-
-    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
-      vm.mockCall(tokens[i], abi.encodePacked(IERC20.approve.selector), abi.encode(true));
-    }
-
-    vm.mockCall(address(bCoWPool.FACTORY()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), abi.encode());
-  }
-
-  function test_Set_Approvals() public {
-    for (uint256 i = 0; i < TOKENS_AMOUNT; i++) {
-      vm.expectCall(tokens[i], abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max)), 1);
-    }
-    bCoWPool.finalize();
-  }
-
-  function test_Log_IfRevert() public {
-    vm.mockCallRevert(
-      address(bCoWPool.FACTORY()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), abi.encode()
-    );
-
-    vm.expectEmit(address(bCoWPool));
-    emit IBCoWFactory.COWAMMPoolCreated(address(bCoWPool));
-
-    bCoWPool.finalize();
-  }
-
-  function test_Call_LogBCoWPool() public {
-    vm.expectCall(address(bCoWPool.FACTORY()), abi.encodeWithSelector(IBCoWFactory.logBCoWPool.selector), 1);
-    bCoWPool.finalize();
-  }
-}
-
 contract BCoWPool_Unit_Commit is BaseCoWPoolTest {
   function test_Revert_NonSolutionSettler(address sender, bytes32 orderHash) public {
     vm.assume(sender != cowSolutionSettler);
