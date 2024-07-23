@@ -4,6 +4,8 @@ pragma solidity 0.8.25;
 import {BPoolBase} from './BPoolBase.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {Address} from '@openzeppelin/contracts/utils/Address.sol';
 
 import {BMath} from 'contracts/BMath.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
@@ -26,6 +28,10 @@ contract BPool is BPoolBase, BMath {
   // sPf = (10 / 20) * (1 / (1-0.1)) = 0.555...e18 (round-up)
   uint256 public spotPriceWithoutFee = 0.5e18;
   uint256 public spotPrice = 0.555555555555555556e18;
+  address public transferRecipient = makeAddr('transfer recipient');
+  address public transferFromSpender = makeAddr('transfer from spender');
+  address public transferredToken = makeAddr('underlying token');
+  uint256 public transferredAmount = 10e18;
 
   function setUp() public virtual override {
     super.setUp();
@@ -370,7 +376,7 @@ contract BPool is BPoolBase, BMath {
   }
 
   function test_FinalizeRevertWhen_CallerIsNotController(address _caller) external {
-    vm.assume(_caller != address(this));
+    vm.assume(_caller != controller);
     vm.startPrank(_caller);
     // it should revert
     vm.expectRevert(IBPool.BPool_CallerIsNotController.selector);
@@ -418,5 +424,121 @@ contract BPool is BPoolBase, BMath {
     bPool.finalize();
     // it finalizes the pool
     assertEq(bPool.call__finalized(), true);
+  }
+
+  function test__pushUnderlyingRevertWhen_UnderlyingTokenReturnsFalse() external {
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount),
+      abi.encode(false)
+    );
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, transferredToken));
+    bPool.call__pushUnderlying(transferredToken, transferRecipient, transferredAmount);
+  }
+
+  function test__pushUnderlyingWhenUnderlyingTokenDoesntReturnAValue() external {
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount),
+      abi.encode()
+    );
+    // it assumes transfer success
+    bPool.call__pushUnderlying(transferredToken, transferRecipient, transferredAmount);
+  }
+
+  function test__pushUnderlyingRevertWhen_UnderlyingTokenRevertsWithoutData() external {
+    // it should revert with FailedInnerCall
+    vm.mockCallRevert(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount),
+      abi.encode()
+    );
+    vm.expectRevert(Address.FailedInnerCall.selector);
+    bPool.call__pushUnderlying(transferredToken, transferRecipient, transferredAmount);
+  }
+
+  function test__pushUnderlyingRevertWhen_UnderlyingTokenRevertsWithData(bytes memory errorData) external {
+    vm.assume(keccak256(errorData) != keccak256(bytes('')));
+    vm.mockCallRevert(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount),
+      errorData
+    );
+    // it should revert with same error data
+    vm.expectRevert(errorData);
+    bPool.call__pushUnderlying(transferredToken, transferRecipient, transferredAmount);
+  }
+
+  function test__pushUnderlyingWhenUnderlyingTokenReturnsTrue() external {
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount),
+      abi.encode(true)
+    );
+    // it calls underlying transfer
+    vm.expectCall(
+      transferredToken, abi.encodeWithSelector(IERC20.transfer.selector, transferRecipient, transferredAmount)
+    );
+    bPool.call__pushUnderlying(transferredToken, transferRecipient, transferredAmount);
+  }
+
+  function test__pullUnderlyingRevertWhen_UnderlyingTokenReturnsFalse() external {
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount),
+      abi.encode(false)
+    );
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, transferredToken));
+    bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
+  }
+
+  function test__pullUnderlyingWhenUnderlyingTokenDoesntReturnAValue() external {
+    // it assumes transferFrom success
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount),
+      abi.encode()
+    );
+    // it assumes transferFrom success
+    bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
+  }
+
+  function test__pullUnderlyingRevertWhen_UnderlyingTokenRevertsWithoutData() external {
+    vm.mockCallRevert(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount),
+      abi.encode()
+    );
+    // it should revert with FailedInnerCall
+    vm.expectRevert(Address.FailedInnerCall.selector);
+    bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
+  }
+
+  function test__pullUnderlyingRevertWhen_UnderlyingTokenRevertsWithData(bytes memory errorData) external {
+    vm.assume(keccak256(errorData) != keccak256(bytes('')));
+    vm.mockCallRevert(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount),
+      errorData
+    );
+    // it should revert with same error data
+    vm.expectRevert(errorData);
+    bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
+  }
+
+  function test__pullUnderlyingWhenUnderlyingTokenReturnsTrue() external {
+    vm.mockCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount),
+      abi.encode(true)
+    );
+    // it calls underlying transferFrom
+    vm.expectCall(
+      transferredToken,
+      abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount)
+    );
+    bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
   }
 }

@@ -141,3 +141,27 @@ BPool::finalize
     ├── it mints initial pool shares
     ├── it sends initial pool shares to controller
     └── it calls _afterFinalize hook
+
+BPool::_pushUnderlying
+├── when underlying token returns false
+│   └── it should revert
+├── when underlying token doesnt return a value
+│   └── it assumes transfer success
+├── when underlying token reverts without data
+│   └── it should revert // FailedInnerCall
+├── when underlying token reverts with data
+│   └── it should revert
+└── when underlying token returns true
+    └── it calls underlying transfer
+
+BPool::_pullUnderlying
+├── when underlying token returns false
+│   └── it should revert
+├── when underlying token doesnt return a value
+│   └── it assumes transferFrom success
+├── when underlying token reverts without data
+│   └── it should revert // FailedInnerCall
+├── when underlying token reverts with data
+│   └── it should revert
+└── when underlying token returns true
+    └── it calls underlying transferFrom
