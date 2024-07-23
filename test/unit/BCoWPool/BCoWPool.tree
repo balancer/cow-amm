@@ -1,3 +1,12 @@
+BCoWPool::Constructor
+└── when called
+    ├── it should set the solution settler
+    ├── it should query the solution settler for the domain separator
+    ├── it should set the domain separator
+    ├── it should query the solution settler for the vault relayer
+    ├── it should set the vault relayer
+    └── it should set the app data
+
 BCoWPool::_afterFinalize
 ├── when called
 │   ├── it calls approve on every bound token

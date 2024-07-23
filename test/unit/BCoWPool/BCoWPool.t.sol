@@ -9,6 +9,8 @@ import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
+import {ISettlement} from 'interfaces/ISettlement.sol';
+import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
 
 contract BCoWPool is BCoWPoolBase {
   bytes32 public commitmentValue = bytes32(uint256(0xf00ba5));
@@ -25,6 +27,30 @@ contract BCoWPool is BCoWPoolBase {
 
     vm.mockCall(tokens[0], abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max)), abi.encode(true));
     vm.mockCall(tokens[1], abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max)), abi.encode(true));
+  }
+
+  function test_ConstructorWhenCalled(
+    address _settler,
+    bytes32 _separator,
+    address _relayer,
+    bytes32 _appData
+  ) external {
+    assumeNotForgeAddress(_settler);
+    vm.mockCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(_separator));
+    vm.mockCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(_relayer));
+    // it should query the solution settler for the domain separator
+    vm.expectCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector));
+    // it should query the solution settler for the vault relayer
+    vm.expectCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector));
+    MockBCoWPool pool = new MockBCoWPool(_settler, _appData);
+    // it should set the solution settler
+    assertEq(address(pool.SOLUTION_SETTLER()), _settler);
+    // it should set the domain separator
+    assertEq(pool.SOLUTION_SETTLER_DOMAIN_SEPARATOR(), _separator);
+    // it should set the vault relayer
+    assertEq(pool.VAULT_RELAYER(), _relayer);
+    // it should set the app data
+    assertEq(pool.APP_DATA(), _appData);
   }
 
   function test__afterFinalizeWhenCalled() external {
