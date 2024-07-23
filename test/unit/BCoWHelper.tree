@@ -1,0 +1,33 @@
+BCoWHelperTest::constructor
+└── when called
+    ├── it should set factory
+    └── it should set app data from factory
+
+BCoWHelperTest::tokens
+├── when pool is not registered in factory
+│   └── it should revert
+├── when pool has less than 2 tokens
+│   └── it should revert
+├── when pool has more than 2 tokens
+│   └── it should revert
+├── when pool tokens have different weights
+│   └── it should revert
+└── when pool is supported
+    └── it should return pool tokens
+
+BCoWHelperTest::order
+├── when the pool is not supported
+│   └── it should revert
+├── when the pool is supported
+│   ├── it should call tokens
+│   ├── it should query the domain separator from the pool
+│   ├── it should return a valid pool order
+│   ├── it should return a commit pre-interaction
+│   ├── it should return an empty post-interaction
+│   └── it should return a valid signature
+├── given a price skeweness to token1
+│   ├── it should buy token0
+│   └── it should return a valid pool order
+└── given a price skeweness to token0
+    ├── it should buy token1
+    └── it should return a valid pool order

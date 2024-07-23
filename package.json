@@ -42,6 +42,7 @@
     "@cowprotocol/contracts": "github:cowprotocol/contracts.git#a10f40788a",
     "@openzeppelin/contracts": "5.0.2",
     "composable-cow": "github:cowprotocol/composable-cow.git#24d556b",
+    "cow-amm": "github:cowprotocol/cow-amm.git#6566128",
     "solmate": "github:transmissions11/solmate#c892309"
   },
   "devDependencies": {

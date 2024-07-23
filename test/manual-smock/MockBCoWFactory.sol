@@ -5,6 +5,16 @@ import {BCoWFactory, BCoWPool, BFactory, IBCoWFactory, IBPool} from '../../src/c
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBCoWFactory is BCoWFactory, Test {
+  // NOTE: manually added methods (immutable overrides not supported in smock)
+  function mock_call_APP_DATA(bytes32 _appData) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('APP_DATA()'), abi.encode(_appData));
+  }
+
+  function expectCall_APP_DATA() public {
+    vm.expectCall(address(this), abi.encodeWithSignature('APP_DATA()'));
+  }
+
+  // BCoWFactory methods
   constructor(address solutionSettler, bytes32 appData) BCoWFactory(solutionSettler, appData) {}
 
   function mock_call_logBCoWPool() public {
@@ -31,8 +41,39 @@ contract MockBCoWFactory is BCoWFactory, Test {
   }
 
   // MockBFactory methods
-
   function set__isBPool(address _key0, bool _value) public {
     _isBPool[_key0] = _value;
+  }
+
+  function call__isBPool(address _key0) public view returns (bool) {
+    return _isBPool[_key0];
+  }
+
+  function set__bDao(address __bDao) public {
+    _bDao = __bDao;
+  }
+
+  function call__bDao() public view returns (address) {
+    return _bDao;
+  }
+
+  function mock_call_newBPool(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(bPool));
+  }
+
+  function mock_call_setBDao(address bDao) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('setBDao(address)', bDao), abi.encode());
+  }
+
+  function mock_call_collect(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', bPool), abi.encode());
+  }
+
+  function mock_call_isBPool(address bPool, bool _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('isBPool(address)', bPool), abi.encode(_returnParam0));
+  }
+
+  function mock_call_getBDao(address _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('getBDao()'), abi.encode(_returnParam0));
   }
 }

@@ -5,6 +5,9 @@ solmate/=node_modules/solmate/src
 @cowprotocol/=node_modules/@cowprotocol/contracts/src/contracts
 cowprotocol/=node_modules/@cowprotocol/contracts/src/
 @composable-cow/=node_modules/composable-cow/
+@cow-amm/=node_modules/cow-amm/src
+lib/openzeppelin/=node_modules/@openzeppelin
 
 contracts/=src/contracts
 interfaces/=src/interfaces
+libraries/=src/libraries
