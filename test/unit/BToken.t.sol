@@ -1,154 +1,123 @@
-// SPDX-License-Identifier: GPL-3
-pragma solidity ^0.8.25;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.25;
 
+import {IERC20} from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import {IERC20Errors} from '@openzeppelin/contracts/interfaces/draft-IERC6093.sol';
 import {Test} from 'forge-std/Test.sol';
 import {MockBToken} from 'test/smock/MockBToken.sol';
 
-contract BToken_Unit_Constructor is Test {
-  function test_ConstructorParams() public {
-    MockBToken btoken = new MockBToken();
-    assertEq(btoken.name(), 'Balancer Pool Token');
-    assertEq(btoken.symbol(), 'BPT');
-    assertEq(btoken.decimals(), 18);
-  }
-}
+contract BToken is Test {
+  MockBToken public bToken;
+  uint256 public initialApproval = 100e18;
+  uint256 public initialBalance = 100e18;
+  address public caller = makeAddr('caller');
+  address public spender = makeAddr('spender');
+  address public target = makeAddr('target');
 
-abstract contract BToken_Unit_base is Test {
-  MockBToken internal bToken;
-
-  modifier assumeNonZeroAddresses(address addr1, address addr2) {
-    vm.assume(addr1 != address(0));
-    vm.assume(addr2 != address(0));
-    _;
-  }
-
-  modifier assumeNonZeroAddress(address addr) {
-    vm.assume(addr != address(0));
-    _;
-  }
-
-  function setUp() public virtual {
+  function setUp() external {
     bToken = new MockBToken();
-  }
-}
 
-contract BToken_Unit_IncreaseApproval is BToken_Unit_base {
-  function test_increasesApprovalFromZero(
-    address sender,
-    address spender,
-    uint256 amount
-  ) public assumeNonZeroAddresses(sender, spender) {
-    vm.prank(sender);
-    bToken.increaseApproval(spender, amount);
-    assertEq(bToken.allowance(sender, spender), amount);
+    vm.startPrank(caller);
+    // sets initial approval (cannot be mocked)
+    bToken.approve(spender, initialApproval);
   }
 
-  function test_increasesApprovalFromNonZero(
-    address sender,
-    address spender,
-    uint128 existingAllowance,
-    uint128 amount
-  ) public assumeNonZeroAddresses(sender, spender) {
-    vm.assume(existingAllowance > 0);
-    vm.startPrank(sender);
-    bToken.approve(spender, existingAllowance);
-    bToken.increaseApproval(spender, amount);
-    vm.stopPrank();
-    assertEq(bToken.allowance(sender, spender), uint256(amount) + existingAllowance);
-  }
-}
-
-contract BToken_Unit_DecreaseApproval is BToken_Unit_base {
-  function test_decreaseApprovalToNonZero(
-    address sender,
-    address spender,
-    uint256 existingAllowance,
-    uint256 amount
-  ) public assumeNonZeroAddresses(sender, spender) {
-    existingAllowance = bound(existingAllowance, 1, type(uint256).max);
-    amount = bound(amount, 0, existingAllowance - 1);
-    vm.startPrank(sender);
-    bToken.approve(spender, existingAllowance);
-    bToken.decreaseApproval(spender, amount);
-    vm.stopPrank();
-    assertEq(bToken.allowance(sender, spender), existingAllowance - amount);
+  function test_ConstructorWhenCalled() external {
+    MockBToken _bToken = new MockBToken();
+    // it sets token name
+    assertEq(_bToken.name(), 'Balancer Pool Token');
+    // it sets token symbol
+    assertEq(_bToken.symbol(), 'BPT');
   }
 
-  function test_decreaseApprovalToZero(
-    address sender,
-    address spender,
-    uint256 existingAllowance,
-    uint256 amount
-  ) public assumeNonZeroAddresses(sender, spender) {
-    amount = bound(amount, existingAllowance, type(uint256).max);
-    vm.startPrank(sender);
-    bToken.approve(spender, existingAllowance);
-    bToken.decreaseApproval(spender, amount);
-    vm.stopPrank();
-    assertEq(bToken.allowance(sender, spender), 0);
-  }
-}
+  function test_IncreaseApprovalRevertWhen_SenderIsAddressZero() external {
+    vm.startPrank(address(0));
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidApprover.selector, address(0)));
 
-contract BToken_Unit__push is BToken_Unit_base {
-  function test_revertsOnInsufficientSelfBalance(
-    address to,
-    uint128 existingBalance,
-    uint128 offset
-  ) public assumeNonZeroAddress(to) {
-    vm.assume(offset > 1);
-    deal(address(bToken), address(bToken), existingBalance);
-    vm.expectRevert(
-      abi.encodeWithSelector(
-        IERC20Errors.ERC20InsufficientBalance.selector,
-        address(bToken),
-        existingBalance,
-        uint256(existingBalance) + offset
-      )
-    );
-    bToken.call__push(to, uint256(existingBalance) + offset);
+    bToken.increaseApproval(spender, 100e18);
   }
 
-  function test_sendsTokens(
-    address to,
-    uint128 existingBalance,
-    uint256 transferAmount
-  ) public assumeNonZeroAddress(to) {
-    vm.assume(to != address(bToken));
-    transferAmount = bound(transferAmount, 0, existingBalance);
-    deal(address(bToken), address(bToken), existingBalance);
-    bToken.call__push(to, transferAmount);
-    assertEq(bToken.balanceOf(to), transferAmount);
-    assertEq(bToken.balanceOf(address(bToken)), existingBalance - transferAmount);
-  }
-}
-
-contract BToken_Unit__pull is BToken_Unit_base {
-  function test_revertsOnInsufficientFromBalance(
-    address from,
-    uint128 existingBalance,
-    uint128 offset
-  ) public assumeNonZeroAddress(from) {
-    vm.assume(offset > 1);
-    deal(address(bToken), from, existingBalance);
-    vm.expectRevert(
-      abi.encodeWithSelector(
-        IERC20Errors.ERC20InsufficientBalance.selector, from, existingBalance, uint256(existingBalance) + offset
-      )
-    );
-    bToken.call__pull(from, uint256(existingBalance) + offset);
+  function test_IncreaseApprovalRevertWhen_SpenderIsAddressZero() external {
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidSpender.selector, address(0)));
+    bToken.increaseApproval(address(0), 100e18);
   }
 
-  function test_getsTokens(
-    address from,
-    uint128 existingBalance,
-    uint256 transferAmount
-  ) public assumeNonZeroAddress(from) {
-    vm.assume(from != address(bToken));
-    transferAmount = bound(transferAmount, 0, existingBalance);
-    deal(address(bToken), address(from), existingBalance);
-    bToken.call__pull(from, transferAmount);
-    assertEq(bToken.balanceOf(address(bToken)), transferAmount);
-    assertEq(bToken.balanceOf(from), existingBalance - transferAmount);
+  function test_IncreaseApprovalWhenCalled() external {
+    // it emits Approval event
+    vm.expectEmit();
+    emit IERC20.Approval(caller, spender, 200e18);
+
+    bToken.increaseApproval(spender, 100e18);
+    // it increases spender approval
+    assertEq(bToken.allowance(caller, spender), 200e18);
+  }
+
+  function test_DecreaseApprovalRevertWhen_SenderIsAddressZero() external {
+    vm.startPrank(address(0));
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidApprover.selector, address(0)));
+    bToken.decreaseApproval(spender, 50e18);
+  }
+
+  function test_DecreaseApprovalRevertWhen_SpenderIsAddressZero() external {
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InvalidSpender.selector, address(0)));
+    bToken.decreaseApproval(address(0), 50e18);
+  }
+
+  function test_DecreaseApprovalWhenDecrementIsBiggerThanCurrentApproval() external {
+    bToken.decreaseApproval(spender, 200e18);
+    // it decreases spender approval to 0
+    assertEq(bToken.allowance(caller, spender), 0);
+  }
+
+  function test_DecreaseApprovalWhenCalled() external {
+    // it emits Approval event
+    vm.expectEmit();
+    emit IERC20.Approval(caller, spender, 50e18);
+
+    bToken.decreaseApproval(spender, 50e18);
+    // it decreases spender approval
+    assertEq(bToken.allowance(caller, spender), 50e18);
+  }
+
+  function test__pushRevertWhen_ContractDoesNotHaveEnoughBalance() external {
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, address(bToken), 0, 50e18));
+    bToken.call__push(target, 50e18);
+  }
+
+  function test__pushWhenCalled() external {
+    deal(address(bToken), address(bToken), initialBalance);
+    // it emits Transfer event
+    vm.expectEmit();
+    emit IERC20.Transfer(address(bToken), target, 50e18);
+
+    bToken.call__push(target, 50e18);
+
+    // it transfers tokens to recipient
+    assertEq(bToken.balanceOf(address(bToken)), 50e18);
+    assertEq(bToken.balanceOf(target), 50e18);
+  }
+
+  function test__pullRevertWhen_TargetDoesNotHaveEnoughBalance() external {
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, target, 0, 50e18));
+    bToken.call__pull(target, 50e18);
+  }
+
+  function test__pullWhenCalled() external {
+    deal(address(bToken), address(target), initialBalance);
+    // it emits Transfer event
+    vm.expectEmit();
+    emit IERC20.Transfer(target, address(bToken), 50e18);
+
+    bToken.call__pull(target, 50e18);
+
+    // it transfers tokens from sender
+    assertEq(bToken.balanceOf(target), 50e18);
+    assertEq(bToken.balanceOf(address(bToken)), 50e18);
   }
 }
