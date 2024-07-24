@@ -1,17 +1,17 @@
 {
-  "name": "balancer-core",
-  "version": "0.0.7",
+  "name": "balancer-cow-amm",
+  "version": "1.0.0",
   "private": true,
-  "description": "Balancer Core Contracts and ABI",
-  "homepage": "https://github.com/balancer-labs/balancer-core#readme",
+  "description": "Balancer CoW AMM",
+  "homepage": "https://github.com/balancer/cow-amm#readme",
   "bugs": {
-    "url": "https://github.com/balancer-labs/balancer-core/issues"
+    "url": "https://github.com/balancer/cow-amm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/balancer-labs/balancer-core.git"
+    "url": "git+https://github.com/balancer/cow-amm.git"
   },
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
