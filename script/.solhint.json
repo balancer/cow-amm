@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "one-contract-per-file": "off",
+    "custom-errors": "off"
+  }
+}
