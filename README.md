@@ -60,8 +60,14 @@ yarn test    # run the tests
 
 # Deployments
 Ethereum Mainnet:
-  - BCoWFactory: (0x21Cd97D70f8475DF3d62917880aF9f41D9a9dCeF)[https://etherscan.io/address/0x21Cd97D70f8475DF3d62917880aF9f41D9a9dCeF#code]
+  - BCoWFactory: [0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843](https://etherscan.io/address/0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843)
+  - BCoWHelper: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://etherscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
 
 Ethereum Sepolia:
-  - BCoWFactory: (0xe8587525430fFC9193831e1113a672f3133C1B8A)[https://sepolia.etherscan.io/address/0xe8587525430fFC9193831e1113a672f3133C1B8A#code]
-  - BCoWPool: (0xFe1ce255D68B3Bff95E71DDef1c8fc55459aaCd7)[https://sepolia.etherscan.io/address/0xFe1ce255D68B3Bff95E71DDef1c8fc55459aaCd7#code]
+  - BCoWFactory: [0xf3916A8567DdC51a60208B35AC542F5226f46773](https://sepolia.etherscan.io/address/0xf3916A8567DdC51a60208B35AC542F5226f46773)
+  - BCoWHelper: [0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50](https://sepolia.etherscan.io/address/0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50)
+  - BCoWPool: [0x60048091401F27117C3DFb8136c1ec550D949B12](https://sepolia.etherscan.io/address/0x60048091401F27117C3DFb8136c1ec550D949B12)
+
+  Gnosis Mainnet:
+  - BCoWFactory: [0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667](https://gnosisscan.io/address/0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667)
+  - BCoWHelper: [0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc](https://gnosisscan.io/address/0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc)

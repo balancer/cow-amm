@@ -16,7 +16,7 @@ abstract contract BaseScript is Registry, Script {
 /// @notice This script will be executed by `yarn script:mainnet`
 contract MainnetScript is BaseScript {
   function run() public {
-    assert(block.chainid == 1);
+    assert(block.chainid == 1 || block.chainid == 100);
     vm.startBroadcast();
 
     // script logic here
