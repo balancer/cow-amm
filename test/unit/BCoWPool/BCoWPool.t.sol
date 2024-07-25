@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 
-import {BCoWPoolBase} from './BCoWPoolBase.sol';
+import {BCoWPoolBase} from './BCoWPoolBase.t.sol';
 
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 

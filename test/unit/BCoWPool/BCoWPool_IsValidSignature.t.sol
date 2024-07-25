@@ -6,7 +6,7 @@ import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 
-import {BCoWPoolBase} from './BCoWPoolBase.sol';
+import {BCoWPoolBase} from './BCoWPoolBase.t.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 
 contract BCoWPoolIsValidSignature is BCoWPoolBase {

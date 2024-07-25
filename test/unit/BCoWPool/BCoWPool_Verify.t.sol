@@ -10,6 +10,8 @@ import {IBPool} from 'interfaces/IBPool.sol';
 
 contract BCoWPoolVerify is BCoWPoolBase {
   // Valid scenario:
+  address public tokenIn;
+  address public tokenOut;
   uint256 public tokenAmountIn = 1e18;
   uint256 public tokenInBalance = 100e18;
   uint256 public tokenOutBalance = 80e18;
@@ -22,6 +24,8 @@ contract BCoWPoolVerify is BCoWPoolBase {
 
   function setUp() public virtual override {
     super.setUp();
+    tokenIn = tokens[0];
+    tokenOut = tokens[1];
     bCoWPool.set__tokens(tokens);
     bCoWPool.set__records(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInWeight}));
     bCoWPool.set__records(tokenOut, IBPool.Record({bound: true, index: 1, denorm: tokenOutWeight}));
