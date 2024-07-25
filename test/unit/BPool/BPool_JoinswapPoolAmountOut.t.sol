@@ -52,6 +52,13 @@ contract BPoolJoinswapPoolAmountOut is BPoolBase, BNum {
     bPool.joinswapPoolAmountOut(makeAddr('unknown token'), poolAmountOut, maxTokenIn);
   }
 
+  function test_RevertWhen_TokenAmountInIsZero() external {
+    // it should revert
+    vm.expectRevert(IBPool.BPool_InvalidTokenAmountIn.selector);
+    // using a small amount that rounds to zero
+    bPool.joinswapPoolAmountOut(tokenIn, 20, type(uint256).max);
+  }
+
   function test_RevertWhen_TokenAmountInExceedsMaxRatio() external {
     // it should revert
     vm.expectRevert(IBPool.BPool_TokenAmountInAboveMaxRatio.selector);

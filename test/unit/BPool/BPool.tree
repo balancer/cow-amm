@@ -165,3 +165,13 @@ BPool::_pullUnderlying
 │   └── it should revert
 └── when underlying token returns true
     └── it calls underlying transferFrom
+
+BPool::_mintPoolShare
+└── when called
+    └── it mints shares to the pool's own balance
+
+BPool::_burnPoolShare
+├── when pool has less balance than amount to burn
+│   └── it should revert
+└── when pool has enough balance
+    └── it mints shares to the pool's own balance

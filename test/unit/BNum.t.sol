@@ -165,8 +165,8 @@ contract BNumTest is Test, BConst {
   }
 
   function test_BmulRevertWhen_PassingAAndBTooBig(uint256 _a, uint256 _b) external {
-    _a = bound(_a, 1, type(uint256).max);
-    _b = bound(_b, _a == 1 ? type(uint256).max : type(uint256).max / _a + 1, type(uint256).max);
+    _a = bound(_a, type(uint256).max / 2, type(uint256).max);
+    _b = bound(_b, type(uint256).max / 2, type(uint256).max);
 
     // it should revert
     //     a * b > uint256 max
@@ -175,14 +175,14 @@ contract BNumTest is Test, BConst {
     bNum.call_bmul(_a, _b);
   }
 
-  function test_BmulRevertWhen_PassingAMulBTooBig(uint256 _a, uint256 _b) external {
-    _a = bound(_a, 1, type(uint256).max);
-    _b = bound(_b, (type(uint256).max - (BONE / 2)) / _a + 1, type(uint256).max);
+  function test_BmulRevertWhen_PassingAMulBTooBig() external {
+    // type(uint256).max - BONE/2  < (2^248 - 1)*2^8 < type(uint256).max
+    uint256 _a = 2 ** 248 - 1;
+    uint256 _b = 2 ** 8;
 
     // it should revert
     //     a * b + BONE / 2 > uint256 max
     vm.expectRevert(BNum.BNum_MulOverflow.selector);
-
     bNum.call_bmul(_a, _b);
   }
 
@@ -334,12 +334,29 @@ contract BNumTest is Test, BConst {
   }
 
   function test_BpowWhenPassingKnownValues() external {
-    // it should return correct value
-    //     1.01 ^ 3 = 1.030301
-    uint256 _a = 1.01e18;
-    uint256 _b = 3e18;
+    uint256 testcasesCount = 5;
+    uint256[] memory bases = new uint256[](testcasesCount);
+    bases[0] = 1.01e18;
+    bases[1] = 0.03e18;
+    bases[2] = 0.4e18;
+    bases[3] = 1.5e18;
+    bases[4] = 1.2e18;
+    uint256[] memory exponents = new uint256[](testcasesCount);
+    exponents[0] = 3e18;
+    exponents[1] = 1.01e18;
+    exponents[2] = 4.1e18;
+    exponents[3] = 9e18;
+    exponents[4] = 0.003e18;
 
-    uint256 _result = bNum.call_bpow(_a, _b);
-    assertEq(_result, 1.030301e18);
+    uint256[] memory results = new uint256[](testcasesCount);
+    results[0] = 1.030301e18;
+    results[1] = 0.02896626284766446e18;
+    results[2] = 0.02335855453582031e18;
+    results[3] = 38.443359375e18;
+    results[4] = 1.000547114282833518e18;
+    for (uint256 i = 0; i < testcasesCount; i++) {
+      uint256 _result = bNum.call_bpow(bases[i], exponents[i]);
+      assertApproxEqAbs(_result, results[i], BPOW_PRECISION);
+    }
   }
 }

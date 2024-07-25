@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {BPoolBase} from './BPoolBase.sol';
 
+import {IERC20Errors} from '@openzeppelin/contracts/interfaces/draft-IERC6093.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {Address} from '@openzeppelin/contracts/utils/Address.sol';
@@ -540,5 +541,34 @@ contract BPool is BPoolBase, BMath {
       abi.encodeWithSelector(IERC20.transferFrom.selector, transferFromSpender, address(bPool), transferredAmount)
     );
     bPool.call__pullUnderlying(transferredToken, transferFromSpender, transferredAmount);
+  }
+
+  function test__mintPoolShareWhenCalled() external {
+    uint256 mintAmount = 100e18;
+    // it mints shares to the pool's own balance
+    bPool.call__mintPoolShare(mintAmount);
+    assertEq(bPool.balanceOf(address(bPool)), mintAmount);
+  }
+
+  function test__burnPoolShareRevertWhen_PoolHasLessBalanceThanAmountToBurn() external {
+    uint256 existingBalance = 40e18;
+    deal(address(bPool), address(bPool), existingBalance);
+    uint256 burnAmount = 100e18;
+    // it should revert
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IERC20Errors.ERC20InsufficientBalance.selector, address(bPool), existingBalance, burnAmount
+      )
+    );
+    bPool.call__burnPoolShare(burnAmount);
+  }
+
+  function test__burnPoolShareWhenPoolHasEnoughBalance() external {
+    uint256 existingBalance = 100e18;
+    uint256 burnAmount = 30e18;
+    deal(address(bPool), address(bPool), existingBalance);
+    bPool.call__burnPoolShare(burnAmount);
+    // it mints shares to the pool's own balance
+    assertEq(bPool.balanceOf(address(bPool)), existingBalance - burnAmount);
   }
 }

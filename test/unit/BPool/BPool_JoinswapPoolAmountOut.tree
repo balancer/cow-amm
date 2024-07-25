@@ -5,6 +5,8 @@ BPool::JoinswapPoolAmountOut
 │   └── it should revert
 ├── when token in is not bound
 │   └── it should revert
+├── when token amount in is zero
+│   └── it should revert 
 ├── when token amount in exceeds max ratio
 │   └── it should revert 
 ├── when calculated token amount in is more than expected

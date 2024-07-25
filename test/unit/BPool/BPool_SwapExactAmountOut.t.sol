@@ -95,13 +95,22 @@ contract BPoolSwapExactAmountOut is BPoolBase, BNum {
   }
 
   function test_RevertWhen_TokenRatioAfterSwapExceedsSpotPriceBeforeSwap() external {
+    // params obtained from legacy fuzz tests:
+    uint256 tokenAmountOut_ = 621_143_522_536_167_460_787_693_100_883_186_780;
+    uint256 tokenInBalance_ = 1_020_504_230_788_863_581_113_405_134_266_627;
+    uint256 tokenInDenorm_ = 49_062_504_624_460_684_226;
+    uint256 tokenOutBalance_ = 15_332_515_003_530_544_593_793_307_770_397_516_084_212_022_325;
+    uint256 tokenOutDenorm_ = 19_469_010_750_289_341_034;
+    uint256 swapFee_ = 894_812_326_421_000_610;
+
+    vm.mockCall(tokenIn, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(tokenInBalance_)));
+    vm.mockCall(tokenOut, abi.encodePacked(IERC20.balanceOf.selector), abi.encode(uint256(tokenOutBalance_)));
+    bPool.set__records(tokenIn, IBPool.Record({bound: true, index: 0, denorm: tokenInDenorm_}));
+    bPool.set__records(tokenOut, IBPool.Record({bound: true, index: 1, denorm: tokenOutDenorm_}));
+    bPool.set__swapFee(swapFee_);
     // it should revert
-    // skipping since the code for this is unreachable without manually
-    // overriding `calcSpotPrice` in a mock:
-    // P_{sb} = \frac{\frac{b_i}{w_i}}{\frac{b_o}{w_o}}
-    // P_{sa} = \frac{\frac{b_i + a_i}{w_i}}{\frac{b_o - a_o}{w_o}}
-    // ...and both a_i (amount in) and a_o (amount out) are uints
-    vm.skip(true);
+    vm.expectRevert(IBPool.BPool_SpotPriceBeforeAboveTokenRatio.selector);
+    bPool.swapExactAmountOut(tokenIn, type(uint256).max, tokenOut, tokenAmountOut_, type(uint256).max);
   }
 
   function test_WhenPreconditionsAreMet() external {
