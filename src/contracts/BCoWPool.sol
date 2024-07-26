@@ -46,20 +46,17 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   /// @inheritdoc IBCoWPool
   bytes32 public immutable APP_DATA;
 
-  constructor(address _cowSolutionSettler, bytes32 _appData) BPool() {
-    SOLUTION_SETTLER = ISettlement(_cowSolutionSettler);
-    SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(_cowSolutionSettler).domainSeparator();
-    VAULT_RELAYER = ISettlement(_cowSolutionSettler).vaultRelayer();
-    APP_DATA = _appData;
+  constructor(address cowSolutionSettler, bytes32 appData) BPool() {
+    SOLUTION_SETTLER = ISettlement(cowSolutionSettler);
+    SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(cowSolutionSettler).domainSeparator();
+    VAULT_RELAYER = ISettlement(cowSolutionSettler).vaultRelayer();
+    APP_DATA = appData;
   }
 
   /// @inheritdoc IBCoWPool
-  function commit(bytes32 orderHash) external {
+  function commit(bytes32 orderHash) external _viewlock_ {
     if (msg.sender != address(SOLUTION_SETTLER)) {
       revert CommitOutsideOfSettlement();
-    }
-    if (_getLock() != _MUTEX_FREE) {
-      revert BCoWPool_CommitmentAlreadySet();
     }
     _setLock(orderHash);
   }
@@ -68,19 +65,19 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * @inheritdoc IERC1271
    * @dev this function reverts if the order hash does not match the current commitment
    */
-  function isValidSignature(bytes32 _hash, bytes memory signature) external view returns (bytes4) {
+  function isValidSignature(bytes32 orderHash, bytes memory signature) external view returns (bytes4 magicValue) {
     (GPv2Order.Data memory order) = abi.decode(signature, (GPv2Order.Data));
 
     if (order.appData != APP_DATA) {
       revert AppDataDoesNotMatch();
     }
 
-    bytes32 orderHash = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
-    if (orderHash != _hash) {
+    bytes32 orderHash_ = order.hash(SOLUTION_SETTLER_DOMAIN_SEPARATOR);
+    if (orderHash_ != orderHash) {
       revert OrderDoesNotMatchMessageHash();
     }
 
-    if (orderHash != commitment()) {
+    if (orderHash_ != _getLock()) {
       revert OrderDoesNotMatchCommitmentHash();
     }
 
@@ -88,12 +85,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
 
     // A signature is valid according to EIP-1271 if this function returns
     // its selector as the so-called "magic value".
-    return this.isValidSignature.selector;
-  }
-
-  /// @inheritdoc IBCoWPool
-  function commitment() public view returns (bytes32 value) {
-    value = _getLock();
+    magicValue = this.isValidSignature.selector;
   }
 
   /// @inheritdoc IBCoWPool
@@ -107,7 +99,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
     if (order.receiver != GPv2Order.RECEIVER_SAME_AS_OWNER) {
       revert BCoWPool_ReceiverIsNotBCoWPool();
     }
-    if (order.validTo >= block.timestamp + MAX_ORDER_DURATION) {
+    if (order.validTo > block.timestamp + MAX_ORDER_DURATION) {
       revert BCoWPool_OrderValidityTooLong();
     }
     if (order.feeAmount != 0) {
@@ -122,7 +114,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
 
     uint256 buyTokenBalance = order.buyToken.balanceOf(address(this));
     if (order.buyAmount > bmul(buyTokenBalance, MAX_IN_RATIO)) {
-      revert BPool_TokenAmountInAboveMaxIn();
+      revert BPool_TokenAmountInAboveMaxRatio();
     }
 
     uint256 tokenAmountOut = calcOutGivenIn({
@@ -145,7 +137,8 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * pool after the finalization of the setup. Also emits COWAMMPoolCreated() event.
    */
   function _afterFinalize() internal override {
-    for (uint256 i; i < _tokens.length; i++) {
+    uint256 tokensLength = _tokens.length;
+    for (uint256 i; i < tokensLength; i++) {
       IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
     }
 
@@ -153,7 +146,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
     // If this pool was not deployed using a bCoWFactory, this will revert and catch
     // And the event will be emitted by this contract instead
     // solhint-disable-next-line no-empty-blocks
-    try IBCoWFactory(_factory).logBCoWPool() {}
+    try IBCoWFactory(FACTORY).logBCoWPool() {}
     catch {
       emit IBCoWFactory.COWAMMPoolCreated(address(this));
     }

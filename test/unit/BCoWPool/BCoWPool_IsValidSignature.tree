@@ -1,0 +1,10 @@
+BCoWPool::IsValidSignature
+├── when orders appdata is different than one set at construction
+│   └── it should revert
+├── when orderHash does not match hashed order
+│   └── it should revert
+├── when hashed order does not match commitment
+│   └── it should revert
+└── when preconditions are met
+    ├── it calls verify
+    └── it returns EIP-1271 magic value

@@ -1,0 +1,38 @@
+BToken::constructor
+└── when called
+    ├── it sets token name
+    └── it sets token symbol
+
+BToken::increaseApproval
+├── when sender is address zero
+│   └── it should revert
+├── when spender is address zero
+│   └── it should revert
+└── when called
+    ├── it emits Approval event
+    └── it increases spender approval
+
+BToken::decreaseApproval
+├── when sender is address zero
+│   └── it should revert
+├── when spender is address zero
+│   └── it should revert
+├── when decrement is bigger than current approval
+│   └── it decreases spender approval to 0
+└── when called
+    ├── it emits Approval event
+    └── it decreases spender approval
+
+BToken::_push
+├── when contract does not have enough balance
+│   └── it should revert
+└── when called
+    ├── it emits Transfer event
+    └── it transfers tokens to recipient
+
+BToken::_pull
+├── when target does not have enough balance
+│   └── it should revert
+└── when called
+    ├── it emits Transfer event
+    └── it transfers tokens from sender

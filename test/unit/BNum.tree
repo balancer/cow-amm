@@ -1,0 +1,93 @@
+BNumTest::btoi
+├── when passing zero
+│   └── it should return zero
+├── when passing BONE
+│   └── it should return one
+├── when passing a less than BONE
+│   └── it should return zero
+└── when using known values
+    └── it should return correct value
+
+
+BNumTest::bfloor
+├── when passing zero
+│   └── it should return zero
+├── when passing a less than BONE
+│   └── it should return zero
+└── when using known values
+    └── it should return correct value
+
+
+BNumTest::badd
+├── when passing zero and zero
+│   └── it should return zero
+├── when passing a and b too big
+│   └── it should revert // a+b > uint256 max
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bsub
+├── when passing zero and zero
+│   └── it should return zero
+├── when passing a less than b
+│   └── it should revert
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bsubSign
+├── when passing zero and zero
+│   └── it should return zero and false
+├── when passing a less than b
+│   └── it should return correct value and true
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bmul
+├── when passing zero and zero
+│   └── it should return zero
+├── when passing a and b too big
+│   └── it should revert // a*b > uint256 max
+├── when passing a mul b too big
+│   └── it should revert // a*BONE + b/2 > uint256 max
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bdiv
+├── when passing b as zero
+│   └── it should revert
+├── when passing a as zero
+│   └── it should return zero
+├── when passing a too big
+│   └── it should revert  // a*BONE > uint256 max
+├── when passing a and b too big
+│   └── it should revert // a*BONE + b/2 > uint256 max
+├── when flooring to zero
+│   └── it should return zero
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bpowi
+├── when passing exponent as zero
+│   └── it should return BONE
+├── when passing base as zero
+│   └── it should return zero
+├── when passing base as BONE
+│   └── it should return BONE
+└── when passing known values
+    └── it should return correct value
+
+
+BNumTest::bpow
+├── when passing exponent as zero
+│   └── it should return BONE
+├── when passing base lte than MIN_BPOW_BASE
+│   └── it should revert
+├── when passing base gte MAX_BPOW_BASE
+│   └── it should revert
+└── when passing known values
+    └── it should return correct value

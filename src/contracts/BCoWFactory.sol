@@ -4,7 +4,6 @@ pragma solidity 0.8.25;
 import {BCoWPool} from './BCoWPool.sol';
 import {BFactory} from './BFactory.sol';
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
-import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
 /**
@@ -19,9 +18,9 @@ contract BCoWFactory is BFactory, IBCoWFactory {
   /// @inheritdoc IBCoWFactory
   bytes32 public immutable APP_DATA;
 
-  constructor(address _solutionSettler, bytes32 _appData) BFactory() {
-    SOLUTION_SETTLER = _solutionSettler;
-    APP_DATA = _appData;
+  constructor(address solutionSettler, bytes32 appData) BFactory() {
+    SOLUTION_SETTLER = solutionSettler;
+    APP_DATA = appData;
   }
 
   /// @inheritdoc IBCoWFactory
@@ -32,9 +31,9 @@ contract BCoWFactory is BFactory, IBCoWFactory {
 
   /**
    * @dev Deploys a BCoWPool instead of a regular BPool.
-   * @return _pool The deployed BCoWPool
+   * @return bCoWPool The deployed BCoWPool
    */
-  function _newBPool() internal virtual override returns (IBPool _pool) {
-    return new BCoWPool(SOLUTION_SETTLER, APP_DATA);
+  function _newBPool() internal virtual override returns (IBPool bCoWPool) {
+    bCoWPool = new BCoWPool(SOLUTION_SETTLER, APP_DATA);
   }
 }

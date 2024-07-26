@@ -142,7 +142,7 @@ contract BMath is BConst, BNum {
     uint256 swapFee
   ) public pure returns (uint256 poolAmountOut) {
     // Charge the trading fee for the proportion of tokenAi
-    ///  which is implicitly traded to the other pool tokens.
+    // which is implicitly traded to the other pool tokens.
     // That proportion is (1- weightTokenIn)
     // tokenAiAfterFee = tAi * (1 - (1-weightTi) * poolFee);
     uint256 normalizedWeight = bdiv(tokenWeightIn, totalWeight);
@@ -173,9 +173,9 @@ contract BMath is BConst, BNum {
    * pS = poolSupply                 || ---------  | ^ | --------- || * bI - bI
    * pAo = poolAmountOut              \\    pS    /     \(wI / tW)//
    * bI = balanceIn          tAi =  --------------------------------------------
-   * wI = weightIn                              /      wI       \
-   * tW = totalWeight                          |  1 - ---- * sF  |
-   * sF = swapFee                               \      tW       /
+   * wI = weightIn                                /      wI  \
+   * tW = totalWeight                        1 - |  1 - ----  | * sF
+   * sF = swapFee                                 \      tW  /
    */
   function calcSingleInGivenPoolOut(
     uint256 tokenBalanceIn,
@@ -263,7 +263,7 @@ contract BMath is BConst, BNum {
    * @dev Formula:
    * pAi = poolAmountIn               // /               tAo             \\     / wO \     \
    * bO = tokenBalanceOut            // | bO - -------------------------- |\   | ---- |     \
-   * tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (w0 / tW)) * sF)/  | ^ \ tW /  * pS |
+   * tAo = tokenAmountOut      pS - ||   \     1 - ((1 - (wO / tW)) * sF)/  | ^ \ tW /  * pS |
    * ps = poolSupply                 \\ -----------------------------------/                /
    * wO = tokenWeightOut  pAi =       \\               bO                 /                /
    * tW = totalWeight           -------------------------------------------------------------

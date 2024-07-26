@@ -7,6 +7,12 @@
     "ordering": "off",
     "private-vars-leading-underscore": ["off"],
     "state-visibility": "off",
-    "style-guide-casing": ["warn", { "ignorePublicFunctions": true,"ignoreStructs": true,  "ignoreExternalFunctions": true  , "ignoreContracts": true} ]
+    "style-guide-casing": ["warn", { 
+      "ignorePublicFunctions": true,
+      "ignoreStructs": true,
+      "ignoreExternalFunctions": true,
+      "ignoreContracts": true, 
+      "ignoreConstants": true
+      }]
   }
 }

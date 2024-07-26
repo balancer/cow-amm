@@ -57,6 +57,11 @@ interface IBPool is IERC20 {
   event LOG_CALL(bytes4 indexed sig, address indexed caller, bytes data) anonymous;
 
   /**
+   * @notice Thrown when setting a variable to address zero
+   */
+  error BPool_AddressZero();
+
+  /**
    * @notice Thrown when a reentrant call is made
    */
   error BPool_Reentrancy();
@@ -152,12 +157,12 @@ interface IBPool is IERC20 {
   error BPool_PoolNotFinalized();
 
   /**
-   * @notice Thrown when the token amount in surpasses the maximum in allowed by the pool
+   * @notice Thrown when the token amount in surpasses the maximum in ratio allowed by the pool
    */
-  error BPool_TokenAmountInAboveMaxIn();
+  error BPool_TokenAmountInAboveMaxRatio();
 
   /**
-   * @notice Thrown when the spot price before the swap is above the max allowed by the caller
+   * @notice Thrown when the spot price before or after the swap is above the max allowed by the caller
    */
   error BPool_SpotPriceAboveMaxPrice();
 
@@ -170,11 +175,6 @@ interface IBPool is IERC20 {
    * @notice Thrown when the spot price after the swap is below the spot price before the swap
    */
   error BPool_SpotPriceAfterBelowSpotPriceBefore();
-
-  /**
-   * @notice Thrown when the spot price after the swap is above the max allowed by the caller
-   */
-  error BPool_SpotPriceAfterBelowMaxPrice();
 
   /**
    * @notice Thrown when the spot price before the swap is above the ratio between the two tokens in the pool
@@ -200,11 +200,6 @@ interface IBPool is IERC20 {
    * @notice Thrown when the pool token amount in is above the maximum amount in allowed by the caller
    */
   error BPool_PoolAmountInAboveMaxPoolAmountIn();
-
-  /**
-   * @notice Thrown when the ERC20 transfer fails
-   */
-  error BPool_ERC20TransferFailed();
 
   /**
    * @notice Sets the new swap fee
@@ -270,7 +265,7 @@ interface IBPool is IERC20 {
   ) external returns (uint256 tokenAmountOut, uint256 spotPriceAfter);
 
   /**
-   * @notice Swaps as many tokens in as possible for an exact amount of tokens out
+   * @notice Swaps as many tokens in as needed for an exact amount of tokens out
    * @param tokenIn The address of the token to swap in
    * @param maxAmountIn The maximum amount of token to swap in
    * @param tokenOut The address of the token to swap out
@@ -424,4 +419,11 @@ interface IBPool is IERC20 {
    * @return controller The controller of the pool
    */
   function getController() external view returns (address controller);
+
+  /**
+   * @notice Gets the BFactory address that deployed the pool
+   * @return factory The address of the factory
+   */
+  // solhint-disable-next-line style-guide-casing
+  function FACTORY() external view returns (address factory);
 }

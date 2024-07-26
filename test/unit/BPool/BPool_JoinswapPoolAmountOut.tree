@@ -1,0 +1,22 @@
+BPool::JoinswapPoolAmountOut
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token amount in is zero
+│   └── it should revert 
+├── when token amount in exceeds max ratio
+│   └── it should revert 
+├── when calculated token amount in is more than expected
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    ├── it sets the reentrancy lock
+    ├── it queries token in balance
+    ├── it emits LOG_JOIN event for token in
+    ├── it mints the pool shares
+    ├── it sends pool shares to caller
+    ├── it calls _pullUnderlying for token in
+    └── it clears the reentrancy lock

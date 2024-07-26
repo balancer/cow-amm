@@ -7,55 +7,55 @@ interface IBFactory {
   /**
    * @notice Emitted when creating a new pool
    * @param caller The caller of the function that will be set as the controller
-   * @param pool The address of the new pool
+   * @param bPool The address of the new pool
    */
-  event LOG_NEW_POOL(address indexed caller, address indexed pool);
+  event LOG_NEW_POOL(address indexed caller, address indexed bPool);
 
   /**
-   * @notice Emitted when setting the BLabs address
-   * @param caller The caller of the set BLabs function
-   * @param bLabs The address of the new BLabs
+   * @notice Emitted when setting the BDao address
+   * @param caller The caller of the set BDao function
+   * @param bDao The address of the new BDao
    */
-  event LOG_BLABS(address indexed caller, address indexed bLabs);
+  event LOG_BDAO(address indexed caller, address indexed bDao);
 
   /**
-   * @notice Thrown when caller is not BLabs address
+   * @notice Thrown when setting a variable to address zero
    */
-  error BFactory_NotBLabs();
+  error BFactory_AddressZero();
 
   /**
-   * @notice Thrown when the ERC20 transfer fails
+   * @notice Thrown when caller is not BDao address
    */
-  error BFactory_ERC20TransferFailed();
+  error BFactory_NotBDao();
 
   /**
    * @notice Creates a new BPool, assigning the caller as the pool controller
-   * @return _pool The new BPool
+   * @return bPool The new BPool
    */
-  function newBPool() external returns (IBPool _pool);
+  function newBPool() external returns (IBPool bPool);
 
   /**
-   * @notice Sets the BLabs address in the factory
-   * @param b The new BLabs address
+   * @notice Sets the BDao address in the factory
+   * @param bDao The new BDao address
    */
-  function setBLabs(address b) external;
+  function setBDao(address bDao) external;
 
   /**
-   * @notice Collects the fees of a pool and transfers it to BLabs address
-   * @param pool The address of the pool to collect fees from
+   * @notice Collects the fees of a pool and transfers it to BDao address
+   * @param bPool The address of the pool to collect fees from
    */
-  function collect(IBPool pool) external;
+  function collect(IBPool bPool) external;
 
   /**
    * @notice Checks if an address is a BPool created from this factory
-   * @param b The address to check
+   * @param bPool The address to check
    * @return isBPool True if the address is a BPool, False otherwise
    */
-  function isBPool(address b) external view returns (bool isBPool);
+  function isBPool(address bPool) external view returns (bool isBPool);
 
   /**
-   * @notice Gets the BLabs address
-   * @return bLabs The address of the BLabs
+   * @notice Gets the BDao address
+   * @return bDao The address of the BDao
    */
-  function getBLabs() external view returns (address bLabs);
+  function getBDao() external view returns (address bDao);
 }

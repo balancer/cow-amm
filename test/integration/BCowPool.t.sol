@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {PoolSwapIntegrationTest} from './PoolSwap.t.sol';
+import {BPoolIntegrationTest} from './BPool.t.sol';
 import {GPv2TradeEncoder} from '@composable-cow/test/vendored/GPv2TradeEncoder.sol';
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 import {GPv2Interaction} from '@cowprotocol/libraries/GPv2Interaction.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {GPv2Trade} from '@cowprotocol/libraries/GPv2Trade.sol';
 import {GPv2Signing} from '@cowprotocol/mixins/GPv2Signing.sol';
+
 import {BCoWConst} from 'contracts/BCoWConst.sol';
 import {BCoWFactory} from 'contracts/BCoWFactory.sol';
 
@@ -15,7 +16,7 @@ import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 
-contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
+contract BCowPoolIntegrationTest is BPoolIntegrationTest, BCoWConst {
   using GPv2Order for GPv2Order.Data;
 
   address public solver = address(0xa5559C2E1302c5Ce82582A6b1E4Aec562C2FbCf4);
@@ -238,5 +239,15 @@ contract BCowPoolIntegrationTest is PoolSwapIntegrationTest, BCoWConst {
     snapStart('settlementCoWSwapInverse');
     settlement.settle(tokens, clearingPrices, trades, interactions);
     snapEnd();
+  }
+
+  // NOTE: not implemented in Balancer CoW flow
+  function _makeJoin() internal override {
+    vm.skip(true);
+  }
+
+  // NOTE: not implemented in Balancer CoW flow
+  function _makeExit() internal override {
+    vm.skip(true);
   }
 }

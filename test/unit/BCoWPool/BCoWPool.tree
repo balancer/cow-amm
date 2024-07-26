@@ -1,0 +1,25 @@
+BCoWPool::Constructor
+└── when called
+    ├── it should set the solution settler
+    ├── it should query the solution settler for the domain separator
+    ├── it should set the domain separator
+    ├── it should query the solution settler for the vault relayer
+    ├── it should set the vault relayer
+    └── it should set the app data
+
+BCoWPool::_afterFinalize
+├── when called
+│   ├── it calls approve on every bound token
+│   └── it calls logBCoWPool on the factory
+├── when factorys logBCoWPool does not revert
+│   └── it returns
+└── when factorys logBCoWPool reverts
+    └── it emits a COWAMMPoolCreated event
+
+BCoWPool::Commit
+├── when reentrancy lock is set
+│   └──it should revert
+├── when sender is not solution settler
+│   └──it should revert
+└── when preconditions are met
+    └── it should set the transient reentrancy lock

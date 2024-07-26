@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
@@ -25,14 +25,14 @@ interface ISettlement {
   ) external;
 
   /**
-   * @return The domain separator for IERC1271 signature
+   * @return domainSeparator The domain separator for IERC1271 signature
    * @dev Immutable value, would not change on chain forks
    */
-  function domainSeparator() external view returns (bytes32);
+  function domainSeparator() external view returns (bytes32 domainSeparator);
 
   /**
-   * @return The address that'll use the pool liquidity in CoWprotocol swaps
+   * @return vaultRelayer The address that'll use the pool liquidity in CoWprotocol swaps
    * @dev Address that will transfer and transferFrom the pool. Has an infinite allowance.
    */
-  function vaultRelayer() external view returns (address);
+  function vaultRelayer() external view returns (address vaultRelayer);
 }

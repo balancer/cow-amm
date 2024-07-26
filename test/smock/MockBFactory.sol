@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import {BFactory, BPool, IBFactory, IBPool} from '../../src/contracts/BFactory.sol';
+import {BFactory, BPool, IBFactory, IBPool, SafeERC20} from '../../src/contracts/BFactory.sol';
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBFactory is BFactory, Test {
@@ -13,48 +13,48 @@ contract MockBFactory is BFactory, Test {
     return _isBPool[_key0];
   }
 
-  function set__blabs(address __blabs) public {
-    _blabs = __blabs;
+  function set__bDao(address __bDao) public {
+    _bDao = __bDao;
   }
 
-  function call__blabs() public view returns (address) {
-    return _blabs;
+  function call__bDao() public view returns (address) {
+    return _bDao;
   }
 
   constructor() BFactory() {}
 
-  function mock_call_newBPool(IBPool _pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(_pool));
+  function mock_call_newBPool(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(bPool));
   }
 
-  function mock_call_setBLabs(address b) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('setBLabs(address)', b), abi.encode());
+  function mock_call_setBDao(address bDao) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('setBDao(address)', bDao), abi.encode());
   }
 
-  function mock_call_collect(IBPool pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', pool), abi.encode());
+  function mock_call_collect(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('collect(IBPool)', bPool), abi.encode());
   }
 
-  function mock_call_isBPool(address b, bool _returnParam0) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('isBPool(address)', b), abi.encode(_returnParam0));
+  function mock_call_isBPool(address bPool, bool _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('isBPool(address)', bPool), abi.encode(_returnParam0));
   }
 
-  function mock_call_getBLabs(address _returnParam0) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('getBLabs()'), abi.encode(_returnParam0));
+  function mock_call_getBDao(address _returnParam0) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('getBDao()'), abi.encode(_returnParam0));
   }
 
-  function mock_call__newBPool(IBPool _pool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(_pool));
+  function mock_call__newBPool(IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(bPool));
   }
 
-  function _newBPool() internal override returns (IBPool _pool) {
+  function _newBPool() internal override returns (IBPool bPool) {
     (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
 
     if (_success) return abi.decode(_data, (IBPool));
     else return super._newBPool();
   }
 
-  function call__newBPool() public returns (IBPool _pool) {
+  function call__newBPool() public returns (IBPool bPool) {
     return _newBPool();
   }
 

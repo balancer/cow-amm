@@ -1,0 +1,21 @@
+BPool::JoinPool
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+├── when total supply is zero
+│   └── it should revert // division by zero
+├── when pool amount out is too small
+│   └── it should revert
+├── when balance of pool in any token is zero
+│   └── it should revert
+├── when required amount of a token is more than maxAmountsIn
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    ├── it sets the reentrancy lock
+    ├── it emits LOG_JOIN event for every token
+    ├── it calls _pullUnderlying for every token
+    ├── it mints the pool shares
+    ├── it sends pool shares to caller
+    └── it clears the reentrancy lock

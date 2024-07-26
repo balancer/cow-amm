@@ -1,83 +1,68 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Base, BaseBFactory_Unit_Constructor, BaseBFactory_Unit_NewBPool} from './BFactory.t.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {BCoWPool} from 'contracts/BCoWPool.sol';
+import {Test} from 'forge-std/Test.sol';
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
-import {IBFactory} from 'interfaces/IBFactory.sol';
 import {ISettlement} from 'interfaces/ISettlement.sol';
 import {MockBCoWFactory} from 'test/manual-smock/MockBCoWFactory.sol';
 
-abstract contract BCoWFactoryTest is Base {
+contract BCoWFactoryTest is Test {
+  address public factoryDeployer = makeAddr('factoryDeployer');
   address public solutionSettler = makeAddr('solutionSettler');
   bytes32 public appData = bytes32('appData');
 
-  function _configureBFactory() internal override returns (IBFactory) {
+  MockBCoWFactory factory;
+
+  function setUp() external {
+    vm.prank(factoryDeployer);
+    factory = new MockBCoWFactory(solutionSettler, appData);
     vm.mockCall(solutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(bytes32(0)));
     vm.mockCall(
       solutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vault relayer'))
     );
-    vm.prank(owner);
-    return new MockBCoWFactory(solutionSettler, appData);
   }
 
-  function _bPoolBytecode() internal virtual override returns (bytes memory _bytecode) {
-    vm.skip(true);
-
-    // NOTE: "runtimeCode" is not available for contracts containing immutable variables.
-    // return type(BCoWPool).runtimeCode;
-    return _bytecode;
-  }
-}
-
-contract BCoWFactory_Unit_Constructor is BaseBFactory_Unit_Constructor, BCoWFactoryTest {
-  function test_Set_SolutionSettler(address _settler) public {
-    MockBCoWFactory factory = new MockBCoWFactory(_settler, appData);
-    assertEq(factory.SOLUTION_SETTLER(), _settler);
+  function test_ConstructorWhenCalled(address _bDao, address _newSettler, bytes32 _appData) external {
+    vm.prank(_bDao);
+    MockBCoWFactory _newFactory = new MockBCoWFactory(_newSettler, _appData);
+    // it should set solution settler
+    assertEq(_newFactory.SOLUTION_SETTLER(), _newSettler);
+    // it should set app data
+    assertEq(_newFactory.APP_DATA(), _appData);
+    // it should set BDao
+    assertEq(_newFactory.getBDao(), _bDao);
   }
 
-  function test_Set_AppData(bytes32 _appData) public {
-    MockBCoWFactory factory = new MockBCoWFactory(solutionSettler, _appData);
-    assertEq(factory.APP_DATA(), _appData);
+  function test__newBPoolWhenCalled() external {
+    vm.prank(address(factory));
+    bytes memory _expectedCode = address(new BCoWPool(solutionSettler, appData)).code; // NOTE: uses nonce 1
+    address _futurePool = vm.computeCreateAddress(address(factory), 2);
+
+    IBCoWPool _newPool = IBCoWPool(address(factory.call__newBPool()));
+    assertEq(address(_newPool), _futurePool);
+    // it should set the new BCoWPool solution settler
+    assertEq(address(_newPool.SOLUTION_SETTLER()), solutionSettler);
+    // it should set the new BCoWPool app data
+    assertEq(_newPool.APP_DATA(), appData);
+    // it should deploy a new BCoWPool
+    assertEq(address(_newPool).code, _expectedCode);
   }
-}
 
-contract BCoWFactory_Unit_NewBPool is BaseBFactory_Unit_NewBPool, BCoWFactoryTest {
-  function test_Set_SolutionSettler(address _settler) public {
-    assumeNotForgeAddress(_settler);
-    bFactory = new MockBCoWFactory(_settler, appData);
-    vm.mockCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(bytes32(0)));
-    vm.mockCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vault relayer')));
-    IBCoWPool bCoWPool = IBCoWPool(address(bFactory.newBPool()));
-    assertEq(address(bCoWPool.SOLUTION_SETTLER()), _settler);
-  }
-
-  function test_Set_AppData(bytes32 _appData) public {
-    bFactory = new MockBCoWFactory(solutionSettler, _appData);
-    IBCoWPool bCoWPool = IBCoWPool(address(bFactory.newBPool()));
-    assertEq(bCoWPool.APP_DATA(), _appData);
-  }
-}
-
-contract BCoWPoolFactory_Unit_LogBCoWPool is BCoWFactoryTest {
-  function test_Revert_NotValidBCoWPool(address _pool) public {
-    bFactory = new MockBCoWFactory(solutionSettler, appData);
-    MockBCoWFactory(address(bFactory)).set__isBPool(address(_pool), false);
-
+  function test_LogBCowPoolRevertWhen_TheSenderIsNotAValidPool(address _caller) external {
+    // it should revert
     vm.expectRevert(IBCoWFactory.BCoWFactory_NotValidBCoWPool.selector);
-
-    vm.prank(_pool);
-    IBCoWFactory(address(bFactory)).logBCoWPool();
+    vm.prank(_caller);
+    factory.logBCoWPool();
   }
 
-  function test_Emit_COWAMMPoolCreated(address _pool) public {
-    bFactory = new MockBCoWFactory(solutionSettler, appData);
-    MockBCoWFactory(address(bFactory)).set__isBPool(address(_pool), true);
-    vm.expectEmit(address(bFactory));
+  function test_LogBCowPoolWhenTheSenderIsAValidPool(address _pool) external {
+    factory.set__isBPool(address(_pool), true);
+    // it should emit a COWAMMPoolCreated event
+    vm.expectEmit(address(factory));
     emit IBCoWFactory.COWAMMPoolCreated(_pool);
-
     vm.prank(_pool);
-    IBCoWFactory(address(bFactory)).logBCoWPool();
+    IBCoWFactory(address(factory)).logBCoWPool();
   }
 }

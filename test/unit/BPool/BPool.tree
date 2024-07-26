@@ -1,0 +1,177 @@
+BPool::constructor
+└── when called
+    ├── it sets caller as controller
+    ├── it sets caller as factory
+    ├── it sets swap fee to MIN_FEE
+    └── it does NOT finalize the pool
+
+BPool::setSwapFee
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is not controller
+│   └── it should revert
+├── when pool is finalized
+│   └── it should revert
+├── when swap fee is below MIN_FEE
+│   └── it should revert
+├── when swap fee is above MAX_FEE
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    └── it sets swap fee
+
+BPool::setController
+├── when reentrancy lock is set
+│   └── it should revert
+├── when caller is not controller
+│   └── it should revert
+├── when new controller is zero address
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    └── it sets new controller
+
+BPool::isFinalized
+├── when pool is finalized
+│   └── it returns true
+└── when pool is NOT finalized
+    └── it returns false
+
+BPool::isBound
+├── when token is bound
+│   └── it returns true
+└── when token is NOT bound
+    └── it returns false
+
+BPool::getNumTokens
+└── when called
+    └── it returns number of tokens
+
+BPool::getFinalTokens
+├── when reentrancy lock is set
+│   └── it should revert
+├── when pool is not finalized
+│   └── it should revert
+└── when preconditions are met
+    └── it returns pool tokens
+
+BPool::getCurrentTokens
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns pool tokens
+
+BPool::getDenormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    └── it returns token weight
+
+BPool::getTotalDenormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns total weight
+
+BPool::getNormalizedWeight
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    └── it returns normalized weight
+
+BPool::getBalance
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token balance
+    └── it returns token balance
+
+BPool::getSwapFee
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns swap fee
+
+BPool::getController
+├── when reentrancy lock is set
+│   └── it should revert
+└── when preconditions are met
+    └── it returns controller
+
+BPool::getSpotPrice
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token out is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token in balance
+    ├── it queries token out balance
+    └── it returns spot price
+
+BPool::getSpotPriceSansFee
+├── when reentrancy lock is set
+│   └── it should revert
+├── when token in is not bound
+│   └── it should revert
+├── when token out is not bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it queries token in balance
+    ├── it queries token out balance
+    └── it returns spot price sans fee
+
+BPool::finalize
+├── when caller is not controller
+│   └── it should revert
+├── when pool is finalized
+│   └── it should revert
+├── when there are too few tokens bound
+│   └── it should revert
+└── when preconditions are met
+    ├── it emits LOG_CALL event
+    ├── it finalizes the pool
+    ├── it mints initial pool shares
+    ├── it sends initial pool shares to controller
+    └── it calls _afterFinalize hook
+
+BPool::_pushUnderlying
+├── when underlying token returns false
+│   └── it should revert
+├── when underlying token doesnt return a value
+│   └── it assumes transfer success
+├── when underlying token reverts without data
+│   └── it should revert // FailedInnerCall
+├── when underlying token reverts with data
+│   └── it should revert
+└── when underlying token returns true
+    └── it calls underlying transfer
+
+BPool::_pullUnderlying
+├── when underlying token returns false
+│   └── it should revert
+├── when underlying token doesnt return a value
+│   └── it assumes transferFrom success
+├── when underlying token reverts without data
+│   └── it should revert // FailedInnerCall
+├── when underlying token reverts with data
+│   └── it should revert
+└── when underlying token returns true
+    └── it calls underlying transferFrom
+
+BPool::_mintPoolShare
+└── when called
+    └── it mints shares to the pool's own balance
+
+BPool::_burnPoolShare
+├── when pool has less balance than amount to burn
+│   └── it should revert
+└── when pool has enough balance
+    └── it mints shares to the pool's own balance

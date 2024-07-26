@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {BPool} from './BPool.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IBFactory} from 'interfaces/IBFactory.sol';
 import {IBPool} from 'interfaces/IBPool.sol';
 
@@ -12,59 +13,59 @@ import {IBPool} from 'interfaces/IBPool.sol';
 contract BFactory is IBFactory {
   /// @dev Mapping indicating whether the address is a BPool.
   mapping(address => bool) internal _isBPool;
-  /// @dev bLabs address.
-  address internal _blabs;
+  /// @dev bDao address.
+  address internal _bDao;
 
   constructor() {
-    _blabs = msg.sender;
+    _bDao = msg.sender;
   }
 
   /// @inheritdoc IBFactory
-  function newBPool() external returns (IBPool _pool) {
-    IBPool bpool = _newBPool();
-    _isBPool[address(bpool)] = true;
-    emit LOG_NEW_POOL(msg.sender, address(bpool));
-    bpool.setController(msg.sender);
-    return bpool;
+  function newBPool() external returns (IBPool bPool) {
+    bPool = _newBPool();
+    _isBPool[address(bPool)] = true;
+    emit LOG_NEW_POOL(msg.sender, address(bPool));
+    bPool.setController(msg.sender);
   }
 
   /// @inheritdoc IBFactory
-  function setBLabs(address b) external {
-    if (msg.sender != _blabs) {
-      revert BFactory_NotBLabs();
+  function setBDao(address bDao) external {
+    if (bDao == address(0)) {
+      revert BFactory_AddressZero();
     }
-    emit LOG_BLABS(msg.sender, b);
-    _blabs = b;
-  }
 
-  /// @inheritdoc IBFactory
-  function collect(IBPool pool) external {
-    if (msg.sender != _blabs) {
-      revert BFactory_NotBLabs();
+    if (msg.sender != _bDao) {
+      revert BFactory_NotBDao();
     }
-    uint256 collected = pool.balanceOf(address(this));
-    bool xfer = pool.transfer(_blabs, collected);
-    if (!xfer) {
-      revert BFactory_ERC20TransferFailed();
+    emit LOG_BDAO(msg.sender, bDao);
+    _bDao = bDao;
+  }
+
+  /// @inheritdoc IBFactory
+  function collect(IBPool bPool) external {
+    if (msg.sender != _bDao) {
+      revert BFactory_NotBDao();
     }
+    uint256 collected = bPool.balanceOf(address(this));
+    SafeERC20.safeTransfer(bPool, _bDao, collected);
   }
 
   /// @inheritdoc IBFactory
-  function isBPool(address b) external view returns (bool) {
-    return _isBPool[b];
+  function isBPool(address bPool) external view returns (bool) {
+    return _isBPool[bPool];
   }
 
   /// @inheritdoc IBFactory
-  function getBLabs() external view returns (address) {
-    return _blabs;
+  function getBDao() external view returns (address) {
+    return _bDao;
   }
 
   /**
    * @notice Deploys a new BPool.
    * @dev Internal function to allow overriding in derived contracts.
-   * @return _pool The deployed BPool
+   * @return bPool The deployed BPool
    */
-  function _newBPool() internal virtual returns (IBPool _pool) {
-    return new BPool();
+  function _newBPool() internal virtual returns (IBPool bPool) {
+    bPool = new BPool();
   }
 }
