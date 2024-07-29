@@ -65,9 +65,9 @@ Ethereum Mainnet:
   - BCoWHelper: [0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 ](https://etherscan.io/address/0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 )
 
 Ethereum Sepolia:
-  - BCoWFactory: [0x9F151748595bAA8829d44448Bb3181AD6b995E8e ](https://sepolia.etherscan.io/address/0x9F151748595bAA8829d44448Bb3181AD6b995E8e )
-  - BCoWHelper: [0xb15c9D2d2D886C2ae96c50e2db2b5E413560e61b](https://sepolia.etherscan.io/address/0xb15c9D2d2D886C2ae96c50e2db2b5E413560e61b)
-  - BCoWPool: [0xAf2001952C159568ca3444f10ABE54f15d8e2A92](https://sepolia.etherscan.io/address/0xAf2001952C159568ca3444f10ABE54f15d8e2A92)
+  - BCoWFactory: [0xF3F089AF5FaAF8784B445593B3bd8A514EaA3433 ](https://sepolia.etherscan.io/address/0xF3F089AF5FaAF8784B445593B3bd8A514EaA3433 )
+  - BCoWHelper: [0x07E7E9e3f4E715Ef1434b7f865fedBCE82Dd41Ba](https://sepolia.etherscan.io/address/0x07E7E9e3f4E715Ef1434b7f865fedBCE82Dd41Ba)
+  - BCoWPool: [0x4Cc911897fFCC5553627d454533D944F1D78CBdE](https://sepolia.etherscan.io/address/0x4Cc911897fFCC5553627d454533D944F1D78CBdE)
 
   Gnosis Mainnet:
   - BCoWFactory: [0x7573B99BC09c11Dc0427fb9c6662bc603E008304](https://gnosisscan.io/address/0x7573B99BC09c11Dc0427fb9c6662bc603E008304)

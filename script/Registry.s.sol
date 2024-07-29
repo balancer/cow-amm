@@ -24,8 +24,8 @@ abstract contract Registry is Params {
       bCoWHelper = BCoWHelper(0x85315994492E88D6faCd3B0E3585c68A4720627e);
     } else if (chainId == 11_155_111) {
       // Ethereum Sepolia [Testnet]
-      bCoWFactory = BCoWFactory(0x9F151748595bAA8829d44448Bb3181AD6b995E8e);
-      bCoWHelper = BCoWHelper(0xb15c9D2d2D886C2ae96c50e2db2b5E413560e61b);
+      bCoWFactory = BCoWFactory(0xF3F089AF5FaAF8784B445593B3bd8A514EaA3433);
+      bCoWHelper = BCoWHelper(0x07E7E9e3f4E715Ef1434b7f865fedBCE82Dd41Ba);
     } else {
       revert('Registry: unknown chain ID');
     }
