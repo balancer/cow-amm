@@ -32,6 +32,7 @@ yarn test    # run the tests
 - Deprecated `Migrations` contract (not needed)
 - Added an `_afterFinalize` hook (to be called at the end of the finalize routine)
 - Implemented reentrancy locks using transient storage.
+- Deprecated `joinswap` and `exitswap` methods (avoid single-token math precision issues)
 
 ## Features on BCoWPool (added via inheritance to BPool)
 - Immutably stores CoW Protocol's `SolutionSettler` and `VaultRelayer` addresses at deployment
@@ -60,14 +61,14 @@ yarn test    # run the tests
 
 # Deployments
 Ethereum Mainnet:
-  - BCoWFactory: [0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843](https://etherscan.io/address/0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843)
-  - BCoWHelper: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://etherscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
+  - BCoWFactory: [0x23fcC2166F991B8946D195de53745E1b804C91B7](https://etherscan.io/address/0x23fcC2166F991B8946D195de53745E1b804C91B7)
+  - BCoWHelper: [0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 ](https://etherscan.io/address/0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 )
 
 Ethereum Sepolia:
-  - BCoWFactory: [0xf3916A8567DdC51a60208B35AC542F5226f46773](https://sepolia.etherscan.io/address/0xf3916A8567DdC51a60208B35AC542F5226f46773)
-  - BCoWHelper: [0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50](https://sepolia.etherscan.io/address/0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50)
-  - BCoWPool: [0x60048091401F27117C3DFb8136c1ec550D949B12](https://sepolia.etherscan.io/address/0x60048091401F27117C3DFb8136c1ec550D949B12)
+  - BCoWFactory: [0x9F151748595bAA8829d44448Bb3181AD6b995E8e ](https://sepolia.etherscan.io/address/0x9F151748595bAA8829d44448Bb3181AD6b995E8e )
+  - BCoWHelper: [0xb15c9D2d2D886C2ae96c50e2db2b5E413560e61b](https://sepolia.etherscan.io/address/0xb15c9D2d2D886C2ae96c50e2db2b5E413560e61b)
+  - BCoWPool: [0xAf2001952C159568ca3444f10ABE54f15d8e2A92](https://sepolia.etherscan.io/address/0xAf2001952C159568ca3444f10ABE54f15d8e2A92)
 
   Gnosis Mainnet:
-  - BCoWFactory: [0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667](https://gnosisscan.io/address/0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667)
-  - BCoWHelper: [0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc](https://gnosisscan.io/address/0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc)
+  - BCoWFactory: [0x7573B99BC09c11Dc0427fb9c6662bc603E008304](https://gnosisscan.io/address/0x7573B99BC09c11Dc0427fb9c6662bc603E008304)
+  - BCoWHelper: [0x85315994492E88D6faCd3B0E3585c68A4720627e](https://gnosisscan.io/address/0x85315994492E88D6faCd3B0E3585c68A4720627e)
