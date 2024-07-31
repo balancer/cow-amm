@@ -8,6 +8,14 @@ BCoWPool::constructor
     └── it should set the app data
 
 BCoWPool::_afterFinalize
+├── when one of the tokens returns false
+│   └── it should revert
+├── when one of the tokens doesnt return a value
+│   └── it assumes approval success
+├── when one of the tokens reverts without data
+│   └── it should revert // FailedInnerCall
+├── when one of the tokens reverts with data
+│   └── it should revert
 ├── when called
 │   ├── it calls approve on every bound token
 │   └── it calls logBCoWPool on the factory

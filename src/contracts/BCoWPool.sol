@@ -21,6 +21,7 @@ import {BPool} from './BPool.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
@@ -33,6 +34,7 @@ import {ISettlement} from 'interfaces/ISettlement.sol';
  */
 contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   using GPv2Order for GPv2Order.Data;
+  using SafeERC20 for IERC20;
 
   /// @inheritdoc IBCoWPool
   address public immutable VAULT_RELAYER;
@@ -146,7 +148,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   function _afterFinalize() internal override {
     uint256 tokensLength = _tokens.length;
     for (uint256 i; i < tokensLength; i++) {
-      IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
+      IERC20(_tokens[i]).forceApprove(VAULT_RELAYER, type(uint256).max);
     }
 
     // Make the factory emit the event, to be easily indexed by off-chain agents
