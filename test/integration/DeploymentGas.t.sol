@@ -18,6 +18,9 @@ contract DeploymentIntegrationGasTest is Test, GasSnapshot {
   address solutionSettler;
   address deployer = makeAddr('deployer');
 
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
+
   function setUp() public {
     vm.startPrank(deployer);
     bFactory = new BFactory();
@@ -38,11 +41,11 @@ contract DeploymentIntegrationGasTest is Test, GasSnapshot {
 
   function testPoolDeployment() public {
     snapStart('newBPool');
-    bFactory.newBPool();
+    bFactory.newBPool(ERC20_NAME, ERC20_SYMBOL);
     snapEnd();
 
     snapStart('newBCoWPool');
-    bCowFactory.newBPool();
+    bCowFactory.newBPool(ERC20_NAME, ERC20_SYMBOL);
     snapEnd();
   }
 }

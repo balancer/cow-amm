@@ -53,7 +53,7 @@ contract MockBPool is BPool, Test {
     return _totalWeight;
   }
 
-  constructor() BPool() {}
+  constructor(string memory name, string memory symbol) BPool(name, symbol) {}
 
   function mock_call_setSwapFee(uint256 swapFee) public {
     vm.mockCall(address(this), abi.encodeWithSignature('setSwapFee(uint256)', swapFee), abi.encode());

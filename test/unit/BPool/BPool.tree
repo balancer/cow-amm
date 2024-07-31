@@ -1,5 +1,7 @@
 BPool::constructor
 └── when called
+    ├── it should set the ERC20 name
+    ├── it should set the ERC20 symbol
     ├── it sets caller as controller
     ├── it sets caller as factory
     ├── it sets swap fee to MIN_FEE

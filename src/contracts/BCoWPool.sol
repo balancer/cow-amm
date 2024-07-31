@@ -46,7 +46,14 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   /// @inheritdoc IBCoWPool
   bytes32 public immutable APP_DATA;
 
-  constructor(address cowSolutionSettler, bytes32 appData) BPool() {
+  constructor(
+    address cowSolutionSettler,
+    bytes32 appData,
+    // solhint-disable-next-line no-unused-vars
+    string memory name,
+    // solhint-disable-next-line no-unused-vars
+    string memory symbol
+  ) BPool(name, symbol) {
     SOLUTION_SETTLER = ISettlement(cowSolutionSettler);
     SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(cowSolutionSettler).domainSeparator();
     VAULT_RELAYER = ISettlement(cowSolutionSettler).vaultRelayer();

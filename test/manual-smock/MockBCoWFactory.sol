@@ -21,23 +21,24 @@ contract MockBCoWFactory is BCoWFactory, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('logBCoWPool()'), abi.encode());
   }
 
-  function mock_call__newBPool(IBPool bCoWPool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(bCoWPool));
+  function mock_call__newBPool(string memory name, string memory symbol, IBPool bCoWPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool(string,string)', name, symbol), abi.encode(bCoWPool));
   }
 
-  function _newBPool() internal override returns (IBPool bCoWPool) {
-    (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
+  function _newBPool(string memory name, string memory symbol) internal override returns (IBPool bCoWPool) {
+    (bool _success, bytes memory _data) =
+      address(this).call(abi.encodeWithSignature('_newBPool(string,string)', name, symbol));
 
     if (_success) return abi.decode(_data, (IBPool));
-    else return super._newBPool();
+    else return super._newBPool(name, symbol);
   }
 
-  function call__newBPool() public returns (IBPool bCoWPool) {
-    return _newBPool();
+  function call__newBPool(string memory name, string memory symbol) public returns (IBPool bCoWPool) {
+    return _newBPool(name, symbol);
   }
 
-  function expectCall__newBPool() public {
-    vm.expectCall(address(this), abi.encodeWithSignature('_newBPool()'));
+  function expectCall__newBPool(string memory name, string memory symbol) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_newBPool(string,string)', name, symbol));
   }
 
   // MockBFactory methods
@@ -57,8 +58,8 @@ contract MockBCoWFactory is BCoWFactory, Test {
     return _bDao;
   }
 
-  function mock_call_newBPool(IBPool bPool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(bPool));
+  function mock_call_newBPool(string memory name, string memory symbol, IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('newBPool(string,string)', name, symbol), abi.encode(bPool));
   }
 
   function mock_call_setBDao(address bDao) public {

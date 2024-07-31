@@ -14,20 +14,23 @@ contract BToken is Test {
   address public spender = makeAddr('spender');
   address public target = makeAddr('target');
 
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
+
   function setUp() external {
-    bToken = new MockBToken();
+    bToken = new MockBToken(ERC20_NAME, ERC20_SYMBOL);
 
     vm.startPrank(caller);
     // sets initial approval (cannot be mocked)
     bToken.approve(spender, initialApproval);
   }
 
-  function test_ConstructorWhenCalled() external {
-    MockBToken _bToken = new MockBToken();
+  function test_ConstructorWhenCalled(string memory _name, string memory _symbol) external {
+    MockBToken _bToken = new MockBToken(_name, _symbol);
     // it sets token name
-    assertEq(_bToken.name(), 'Balancer Pool Token');
+    assertEq(_bToken.name(), _name);
     // it sets token symbol
-    assertEq(_bToken.symbol(), 'BPT');
+    assertEq(_bToken.symbol(), _symbol);
   }
 
   function test_IncreaseApprovalRevertWhen_SenderIsAddressZero() external {

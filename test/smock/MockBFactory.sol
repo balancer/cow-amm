@@ -23,8 +23,8 @@ contract MockBFactory is BFactory, Test {
 
   constructor() BFactory() {}
 
-  function mock_call_newBPool(IBPool bPool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('newBPool()'), abi.encode(bPool));
+  function mock_call_newBPool(string memory name, string memory symbol, IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('newBPool(string,string)', name, symbol), abi.encode(bPool));
   }
 
   function mock_call_setBDao(address bDao) public {
@@ -43,22 +43,23 @@ contract MockBFactory is BFactory, Test {
     vm.mockCall(address(this), abi.encodeWithSignature('getBDao()'), abi.encode(_returnParam0));
   }
 
-  function mock_call__newBPool(IBPool bPool) public {
-    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool()'), abi.encode(bPool));
+  function mock_call__newBPool(string memory name, string memory symbol, IBPool bPool) public {
+    vm.mockCall(address(this), abi.encodeWithSignature('_newBPool(string,string)', name, symbol), abi.encode(bPool));
   }
 
-  function _newBPool() internal override returns (IBPool bPool) {
-    (bool _success, bytes memory _data) = address(this).call(abi.encodeWithSignature('_newBPool()'));
+  function _newBPool(string memory name, string memory symbol) internal override returns (IBPool bPool) {
+    (bool _success, bytes memory _data) =
+      address(this).call(abi.encodeWithSignature('_newBPool(string,string)', name, symbol));
 
     if (_success) return abi.decode(_data, (IBPool));
-    else return super._newBPool();
+    else return super._newBPool(name, symbol);
   }
 
-  function call__newBPool() public returns (IBPool bPool) {
-    return _newBPool();
+  function call__newBPool(string memory name, string memory symbol) public returns (IBPool bPool) {
+    return _newBPool(name, symbol);
   }
 
-  function expectCall__newBPool() public {
-    vm.expectCall(address(this), abi.encodeWithSignature('_newBPool()'));
+  function expectCall__newBPool(string memory name, string memory symbol) public {
+    vm.expectCall(address(this), abi.encodeWithSignature('_newBPool(string,string)', name, symbol));
   }
 }

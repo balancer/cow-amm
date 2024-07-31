@@ -33,7 +33,12 @@ contract MockBCoWPool is BCoWPool, Test {
   }
 
   /// MockBCoWPool mock methods
-  constructor(address cowSolutionSettler, bytes32 appData) BCoWPool(cowSolutionSettler, appData) {}
+  constructor(
+    address cowSolutionSettler,
+    bytes32 appData,
+    string memory name,
+    string memory symbol
+  ) BCoWPool(cowSolutionSettler, appData, name, symbol) {}
 
   function mock_call_commit(bytes32 orderHash) public {
     vm.mockCall(address(this), abi.encodeWithSignature('commit(bytes32)', orderHash), abi.encode());

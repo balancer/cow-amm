@@ -53,13 +53,16 @@ abstract contract BPoolIntegrationTest is Test, GasSnapshot {
   uint256 public constant WETH_OUT_AMOUNT = 94_049_266_814_811_022; // 0.094 ETH
   uint256 public constant DAI_OUT_AMOUNT_INVERSE = 94_183_552_501_642_552_000; // 94.1 DAI
 
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
+
   function setUp() public virtual {
     vm.createSelectFork('mainnet', 20_012_063);
 
     factory = _deployFactory();
 
     vm.startPrank(lp);
-    pool = factory.newBPool();
+    pool = factory.newBPool(ERC20_NAME, ERC20_SYMBOL);
 
     deal(address(dai), lp, DAI_LP_AMOUNT);
     deal(address(weth), lp, WETH_LP_AMOUNT);

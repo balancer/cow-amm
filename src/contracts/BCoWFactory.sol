@@ -31,9 +31,11 @@ contract BCoWFactory is BFactory, IBCoWFactory {
 
   /**
    * @dev Deploys a BCoWPool instead of a regular BPool.
+   * @param name The name of the Pool ERC20 token
+   * @param symbol The symbol of the Pool ERC20 token
    * @return bCoWPool The deployed BCoWPool
    */
-  function _newBPool() internal virtual override returns (IBPool bCoWPool) {
-    bCoWPool = new BCoWPool(SOLUTION_SETTLER, APP_DATA);
+  function _newBPool(string memory name, string memory symbol) internal virtual override returns (IBPool bCoWPool) {
+    bCoWPool = new BCoWPool(SOLUTION_SETTLER, APP_DATA, name, symbol);
   }
 }

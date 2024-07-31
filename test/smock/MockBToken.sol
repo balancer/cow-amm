@@ -5,7 +5,7 @@ import {BToken, ERC20} from '../../src/contracts/BToken.sol';
 import {Test} from 'forge-std/Test.sol';
 
 contract MockBToken is BToken, Test {
-  constructor() BToken() {}
+  constructor(string memory name, string memory symbol) BToken(name, symbol) {}
 
   function mock_call_increaseApproval(address spender, uint256 amount, bool success) public {
     vm.mockCall(

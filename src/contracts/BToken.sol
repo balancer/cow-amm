@@ -8,7 +8,7 @@ import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
  * @notice Balancer Pool Token base contract, providing ERC20 functionality.
  */
 contract BToken is ERC20 {
-  constructor() ERC20('Balancer Pool Token', 'BPT') {}
+  constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
   /**
    * @notice Increase the allowance of the spender.

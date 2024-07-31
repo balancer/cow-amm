@@ -80,7 +80,8 @@ contract BPool is BToken, BMath, IBPool {
     _;
   }
 
-  constructor() {
+  // solhint-disable-next-line no-unused-vars
+  constructor(string memory name, string memory symbol) BToken(name, symbol) {
     _controller = msg.sender;
     FACTORY = msg.sender;
     _swapFee = MIN_FEE;

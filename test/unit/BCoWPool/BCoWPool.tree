@@ -1,4 +1,4 @@
-BCoWPool::Constructor
+BCoWPool::constructor
 └── when called
     ├── it should set the solution settler
     ├── it should query the solution settler for the domain separator
@@ -16,7 +16,7 @@ BCoWPool::_afterFinalize
 └── when factorys logBCoWPool reverts
     └── it emits a COWAMMPoolCreated event
 
-BCoWPool::Commit
+BCoWPool::commit
 ├── when reentrancy lock is set
 │   └──it should revert
 ├── when sender is not solution settler

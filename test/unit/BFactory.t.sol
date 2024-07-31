@@ -14,6 +14,9 @@ import {MockBFactory} from 'test/smock/MockBFactory.sol';
 contract BFactoryTest is Test {
   address factoryDeployer = makeAddr('factoryDeployer');
 
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
+
   MockBFactory factory;
 
   function setUp() external {
@@ -31,9 +34,9 @@ contract BFactoryTest is Test {
   function test_NewBPoolWhenCalled(address _deployer, address _newBPool) external {
     assumeNotForgeAddress(_newBPool);
     vm.mockCall(_newBPool, abi.encodePacked(IBPool.setController.selector), abi.encode());
-    factory.mock_call__newBPool(IBPool(_newBPool));
+    factory.mock_call__newBPool(ERC20_NAME, ERC20_SYMBOL, IBPool(_newBPool));
     // it should call _newBPool
-    factory.expectCall__newBPool();
+    factory.expectCall__newBPool(ERC20_NAME, ERC20_SYMBOL);
     // it should set the controller of the newBPool to the caller
     vm.expectCall(_newBPool, abi.encodeCall(IBPool.setController, (_deployer)));
     // it should emit a PoolCreated event
@@ -41,7 +44,7 @@ contract BFactoryTest is Test {
     emit IBFactory.LOG_NEW_POOL(_deployer, _newBPool);
 
     vm.prank(_deployer);
-    IBPool pool = factory.newBPool();
+    IBPool pool = factory.newBPool(ERC20_NAME, ERC20_SYMBOL);
 
     // it should add the newBPool to the list of pools
     assertTrue(factory.isBPool(address(_newBPool)));
@@ -51,10 +54,10 @@ contract BFactoryTest is Test {
 
   function test__newBPoolWhenCalled() external {
     vm.prank(address(factory));
-    bytes memory _expectedCode = address(new BPool()).code; // NOTE: uses nonce 1
+    bytes memory _expectedCode = address(new BPool(ERC20_NAME, ERC20_SYMBOL)).code; // NOTE: uses nonce 1
     address _futurePool = vm.computeCreateAddress(address(factory), 2);
 
-    address _newBPool = address(factory.call__newBPool());
+    address _newBPool = address(factory.call__newBPool(ERC20_NAME, ERC20_SYMBOL));
     assertEq(_newBPool, _futurePool);
     // it should deploy a new BPool
     assertEq(_newBPool.code, _expectedCode);

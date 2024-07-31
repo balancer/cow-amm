@@ -42,7 +42,7 @@ contract BCoWPool is BCoWPoolBase {
     vm.expectCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector));
     // it should query the solution settler for the vault relayer
     vm.expectCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector));
-    MockBCoWPool pool = new MockBCoWPool(_settler, _appData);
+    MockBCoWPool pool = new MockBCoWPool(_settler, _appData, ERC20_NAME, ERC20_SYMBOL);
     // it should set the solution settler
     assertEq(address(pool.SOLUTION_SETTLER()), _settler);
     // it should set the domain separator
