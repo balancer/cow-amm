@@ -61,14 +61,14 @@ yarn test    # run the tests
 
 # Deployments
 Ethereum Mainnet:
-  - BCoWFactory: [0x23fcC2166F991B8946D195de53745E1b804C91B7](https://etherscan.io/address/0x23fcC2166F991B8946D195de53745E1b804C91B7)
-  - BCoWHelper: [0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 ](https://etherscan.io/address/0x5F6e7D3ef6e9aedD21C107BF8faA610f1215C730 )
+  - BCoWFactory: [0xf76c421bAb7df8548604E60deCCcE50477C10462](https://etherscan.io/address/0xf76c421bAb7df8548604E60deCCcE50477C10462)
+  - BCoWHelper: [0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31](https://etherscan.io/address/0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31)
 
 Ethereum Sepolia:
-  - BCoWFactory: [0xF3F089AF5FaAF8784B445593B3bd8A514EaA3433 ](https://sepolia.etherscan.io/address/0xF3F089AF5FaAF8784B445593B3bd8A514EaA3433 )
-  - BCoWHelper: [0x07E7E9e3f4E715Ef1434b7f865fedBCE82Dd41Ba](https://sepolia.etherscan.io/address/0x07E7E9e3f4E715Ef1434b7f865fedBCE82Dd41Ba)
-  - BCoWPool: [0x4Cc911897fFCC5553627d454533D944F1D78CBdE](https://sepolia.etherscan.io/address/0x4Cc911897fFCC5553627d454533D944F1D78CBdE)
+  - BCoWFactory: [0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9](https://sepolia.etherscan.io/address/0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9)
+  - BCoWHelper: [0xf5CEd4769ce2c90dfE0084320a0abfB9d99FB91D](https://sepolia.etherscan.io/address/0xf5CEd4769ce2c90dfE0084320a0abfB9d99FB91D)
+  - BCoWPool: [0xE4aBfDa4E8c02fcAfC34981daFAeb426AA4186e6](https://sepolia.etherscan.io/address/0xE4aBfDa4E8c02fcAfC34981daFAeb426AA4186e6)
 
   Gnosis Mainnet:
-  - BCoWFactory: [0x7573B99BC09c11Dc0427fb9c6662bc603E008304](https://gnosisscan.io/address/0x7573B99BC09c11Dc0427fb9c6662bc603E008304)
-  - BCoWHelper: [0x85315994492E88D6faCd3B0E3585c68A4720627e](https://gnosisscan.io/address/0x85315994492E88D6faCd3B0E3585c68A4720627e)
+  - BCoWFactory: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://gnosisscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
+  - BCoWHelper: [0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751](https://gnosisscan.io/address/0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751)
