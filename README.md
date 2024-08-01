@@ -50,8 +50,9 @@ yarn test    # run the tests
 
 ## Creating a Pool
 - Create a new pool by calling the corresponding pool factory:
-  - `IBFactory.newBPool()` for regular Balancer `BPool`s
-  - `IBCoWFactory.newBPool()` for Balancer `BCoWPool`s, compatible with CoW Protocol
+  - `IBFactory.newBPool(name, symbol)` for regular Balancer `BPool`s
+  - `IBCoWFactory.newBPool(name, symbol)` for Balancer `BCoWPool`s, compatible with CoW Protocol
+    > Being `name` and `symbol` strings with the desired name and symbol of the pool's ERC20 LP token
 - Give ERC20 allowance to the pool by calling `IERC20.approve(pool, amount)`
 - Bind tokens one by one by calling `IBPool.bind(token, amount, weight)`
   - The amount represents the initial balance of the token in the pool (pulled from the caller's balance)
