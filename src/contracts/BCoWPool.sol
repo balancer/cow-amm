@@ -145,7 +145,7 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * @dev Grants infinite approval to the vault relayer for all tokens in the
    * pool after the finalization of the setup. Also emits COWAMMPoolCreated() event.
    */
-  function _afterFinalize() internal override {
+  function _afterFinalize() internal virtual override {
     uint256 tokensLength = _tokens.length;
     for (uint256 i; i < tokensLength; i++) {
       IERC20(_tokens[i]).forceApprove(VAULT_RELAYER, type(uint256).max);

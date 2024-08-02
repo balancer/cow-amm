@@ -42,7 +42,7 @@ contract BFactory is IBFactory {
   }
 
   /// @inheritdoc IBFactory
-  function collect(IBPool bPool) external {
+  function collect(IBPool bPool) external virtual {
     if (msg.sender != _bDao) {
       revert BFactory_NotBDao();
     }

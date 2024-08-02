@@ -1,0 +1,7 @@
+# https://github.com/crytic/echidna/blob/master/tests/solidity/basic/default.yaml for more options
+testMode: assertion
+corpusDir: test/invariants/fuzz/corpuses/BMath/
+coverageFormats: ["html","lcov"]
+allContracts: false
+testLimit: 50000
+seqLen: 1

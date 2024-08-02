@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "custom-errors": "off",
+    "no-empty-blocks":"off",
+    "reason-string": "off",
+    "reentrancy": "off",
+    "style-guide-casing": [ "warn", {
+      "ignoreVariables": true,
+      "ignorePublicFunctions": true,
+      "ignoreExternalFunctions": true
+    }]
+  }
+}

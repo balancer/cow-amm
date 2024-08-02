@@ -19,3 +19,7 @@ broadcast/*/*/*
 
 # Out dir
 out
+
+# echidna corpuses
+**/corpuses/*
+**/crytic-export/*
