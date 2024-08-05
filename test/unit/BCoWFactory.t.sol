@@ -12,6 +12,8 @@ contract BCoWFactoryTest is Test {
   address public factoryDeployer = makeAddr('factoryDeployer');
   address public solutionSettler = makeAddr('solutionSettler');
   bytes32 public appData = bytes32('appData');
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
 
   MockBCoWFactory factory;
 
@@ -37,10 +39,10 @@ contract BCoWFactoryTest is Test {
 
   function test__newBPoolWhenCalled() external {
     vm.prank(address(factory));
-    bytes memory _expectedCode = address(new BCoWPool(solutionSettler, appData)).code; // NOTE: uses nonce 1
+    bytes memory _expectedCode = address(new BCoWPool(solutionSettler, appData, ERC20_NAME, ERC20_SYMBOL)).code; // NOTE: uses nonce 1
     address _futurePool = vm.computeCreateAddress(address(factory), 2);
 
-    IBCoWPool _newPool = IBCoWPool(address(factory.call__newBPool()));
+    IBCoWPool _newPool = IBCoWPool(address(factory.call__newBPool(ERC20_NAME, ERC20_SYMBOL)));
     assertEq(address(_newPool), _futurePool);
     // it should set the new BCoWPool solution settler
     assertEq(address(_newPool.SOLUTION_SETTLER()), solutionSettler);

@@ -19,6 +19,6 @@ contract BCoWPoolBase is BPoolBase, BCoWConst, BNum {
     super.setUp();
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(domainSeparator));
     vm.mockCall(cowSolutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(vaultRelayer));
-    bCoWPool = new MockBCoWPool(cowSolutionSettler, appData);
+    bCoWPool = new MockBCoWPool(cowSolutionSettler, appData, ERC20_NAME, ERC20_SYMBOL);
   }
 }

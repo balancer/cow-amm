@@ -3,6 +3,9 @@ pragma solidity 0.8.25;
 
 import {IERC20} from '@cowprotocol/interfaces/IERC20.sol';
 
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {Address} from '@openzeppelin/contracts/utils/Address.sol';
+
 import {BCoWPoolBase} from './BCoWPoolBase.t.sol';
 
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
@@ -42,7 +45,7 @@ contract BCoWPool is BCoWPoolBase {
     vm.expectCall(_settler, abi.encodePacked(ISettlement.domainSeparator.selector));
     // it should query the solution settler for the vault relayer
     vm.expectCall(_settler, abi.encodePacked(ISettlement.vaultRelayer.selector));
-    MockBCoWPool pool = new MockBCoWPool(_settler, _appData);
+    MockBCoWPool pool = new MockBCoWPool(_settler, _appData, ERC20_NAME, ERC20_SYMBOL);
     // it should set the solution settler
     assertEq(address(pool.SOLUTION_SETTLER()), _settler);
     // it should set the domain separator
@@ -51,6 +54,42 @@ contract BCoWPool is BCoWPoolBase {
     assertEq(pool.VAULT_RELAYER(), _relayer);
     // it should set the app data
     assertEq(pool.APP_DATA(), _appData);
+  }
+
+  function test__afterFinalizeRevertWhen_OneOfTheTokensReturnsFalse() external {
+    vm.mockCall(
+      tokens[1], abi.encodeWithSelector(IERC20.approve.selector, vaultRelayer, type(uint256).max), abi.encode(false)
+    );
+    // it should revert
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, tokens[1]));
+    bCoWPool.call__afterFinalize();
+  }
+
+  function test__afterFinalizeWhenOneOfTheTokensDoesntReturnAValue() external {
+    vm.mockCall(
+      tokens[1], abi.encodeWithSelector(IERC20.approve.selector, vaultRelayer, type(uint256).max), abi.encode()
+    );
+    // it assumes approval success
+    bCoWPool.call__afterFinalize();
+  }
+
+  function test__afterFinalizeRevertWhen_OneOfTheTokensRevertsWithoutData() external {
+    vm.mockCallRevert(
+      tokens[1], abi.encodeWithSelector(IERC20.approve.selector, vaultRelayer, type(uint256).max), abi.encode()
+    );
+    // it should revert with FailedInnerCall
+    vm.expectRevert(Address.FailedInnerCall.selector);
+    bCoWPool.call__afterFinalize();
+  }
+
+  function test__afterFinalizeRevertWhen_OneOfTheTokensRevertsWithData(bytes memory errorData) external {
+    vm.assume(keccak256(errorData) != keccak256(bytes('')));
+    vm.mockCallRevert(
+      tokens[1], abi.encodeWithSelector(IERC20.approve.selector, vaultRelayer, type(uint256).max), errorData
+    );
+    // it should revert with same error data
+    vm.expectRevert(errorData);
+    bCoWPool.call__afterFinalize();
   }
 
   function test__afterFinalizeWhenCalled() external {

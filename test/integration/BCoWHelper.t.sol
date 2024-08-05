@@ -49,6 +49,9 @@ contract BCoWHelperIntegrationTest is Test {
   uint256 constant SKEWENESS_RATIO = 95; // -5% skewness
   uint256 constant EXPECTED_FINAL_SPOT_PRICE = INITIAL_SPOT_PRICE * 100 / SKEWENESS_RATIO;
 
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
+
   function setUp() public {
     vm.createSelectFork('mainnet', 20_012_063);
 
@@ -61,8 +64,8 @@ contract BCoWHelperIntegrationTest is Test {
     deal(address(WETH), lp, type(uint256).max, false);
 
     vm.startPrank(lp);
-    basicPool = ammFactory.newBPool();
-    weightedPool = ammFactory.newBPool();
+    basicPool = ammFactory.newBPool(ERC20_NAME, ERC20_SYMBOL);
+    weightedPool = ammFactory.newBPool(ERC20_NAME, ERC20_SYMBOL);
 
     DAI.approve(address(basicPool), type(uint256).max);
     WETH.approve(address(basicPool), type(uint256).max);

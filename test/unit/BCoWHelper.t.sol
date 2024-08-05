@@ -28,6 +28,8 @@ contract BCoWHelperTest is Test {
 
   uint256 constant VALID_WEIGHT = 1e18;
   uint256 constant BASE = 1e18;
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
 
   function setUp() external {
     factory = new MockBCoWFactory(address(0), bytes32(0));
@@ -39,7 +41,7 @@ contract BCoWHelperTest is Test {
     vm.mockCall(
       solutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vaultRelayer'))
     );
-    pool = new MockBCoWPool(makeAddr('solutionSettler'), bytes32(0));
+    pool = new MockBCoWPool(makeAddr('solutionSettler'), bytes32(0), ERC20_NAME, ERC20_SYMBOL);
 
     // creating a valid pool setup
     factory.mock_call_isBPool(address(pool), true);

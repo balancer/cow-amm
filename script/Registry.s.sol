@@ -16,16 +16,16 @@ abstract contract Registry is Params {
   constructor(uint256 chainId) Params(chainId) {
     if (chainId == 1) {
       // Ethereum Mainnet
-      bCoWFactory = BCoWFactory(0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843);
-      bCoWHelper = BCoWHelper(0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624);
+      bCoWFactory = BCoWFactory(0xf76c421bAb7df8548604E60deCCcE50477C10462);
+      bCoWHelper = BCoWHelper(0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31);
     } else if (chainId == 100) {
       // Gnosis Mainnet
-      bCoWFactory = BCoWFactory(0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667);
-      bCoWHelper = BCoWHelper(0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc);
+      bCoWFactory = BCoWFactory(0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624);
+      bCoWHelper = BCoWHelper(0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751);
     } else if (chainId == 11_155_111) {
       // Ethereum Sepolia [Testnet]
-      bCoWFactory = BCoWFactory(0xf3916A8567DdC51a60208B35AC542F5226f46773);
-      bCoWHelper = BCoWHelper(0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50);
+      bCoWFactory = BCoWFactory(0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9);
+      bCoWHelper = BCoWHelper(0xf5CEd4769ce2c90dfE0084320a0abfB9d99FB91D);
     } else {
       revert('Registry: unknown chain ID');
     }

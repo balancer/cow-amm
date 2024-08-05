@@ -14,9 +14,11 @@ contract BPoolBase is Test, BConst {
   address[] public tokens;
 
   MockBPool public bPool;
+  string constant ERC20_NAME = 'Balancer Pool Token';
+  string constant ERC20_SYMBOL = 'BPT';
 
   function setUp() public virtual {
-    bPool = new MockBPool();
+    bPool = new MockBPool(ERC20_NAME, ERC20_SYMBOL);
     tokens.push(makeAddr('token0'));
     tokens.push(makeAddr('token1'));
   }

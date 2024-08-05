@@ -43,7 +43,10 @@ contract TestnetScript is BaseScript {
     IFaucet(_SEPOLIA_FAUCET).drip(_SEPOLIA_DAI_TOKEN);
     IFaucet(_SEPOLIA_FAUCET).drip(_SEPOLIA_USDC_TOKEN);
 
-    IBPool bPool = bCoWFactory.newBPool();
+    string memory name = 'Balancer CoWAMM Pool';
+    string memory symbol = 'BPT';
+
+    IBPool bPool = bCoWFactory.newBPool(name, symbol);
 
     IERC20(_SEPOLIA_BAL_TOKEN).approve(address(bPool), type(uint256).max);
     IERC20(_SEPOLIA_DAI_TOKEN).approve(address(bPool), type(uint256).max);

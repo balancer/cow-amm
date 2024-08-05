@@ -32,6 +32,7 @@ yarn test    # run the tests
 - Deprecated `Migrations` contract (not needed)
 - Added an `_afterFinalize` hook (to be called at the end of the finalize routine)
 - Implemented reentrancy locks using transient storage.
+- Deprecated `joinswap` and `exitswap` methods (avoid single-token math precision issues)
 
 ## Features on BCoWPool (added via inheritance to BPool)
 - Immutably stores CoW Protocol's `SolutionSettler` and `VaultRelayer` addresses at deployment
@@ -49,8 +50,9 @@ yarn test    # run the tests
 
 ## Creating a Pool
 - Create a new pool by calling the corresponding pool factory:
-  - `IBFactory.newBPool()` for regular Balancer `BPool`s
-  - `IBCoWFactory.newBPool()` for Balancer `BCoWPool`s, compatible with CoW Protocol
+  - `IBFactory.newBPool(name, symbol)` for regular Balancer `BPool`s
+  - `IBCoWFactory.newBPool(name, symbol)` for Balancer `BCoWPool`s, compatible with CoW Protocol
+    > Being `name` and `symbol` strings with the desired name and symbol of the pool's ERC20 LP token
 - Give ERC20 allowance to the pool by calling `IERC20.approve(pool, amount)`
 - Bind tokens one by one by calling `IBPool.bind(token, amount, weight)`
   - The amount represents the initial balance of the token in the pool (pulled from the caller's balance)
@@ -60,14 +62,14 @@ yarn test    # run the tests
 
 # Deployments
 Ethereum Mainnet:
-  - BCoWFactory: [0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843](https://etherscan.io/address/0x5AC134DAC7070eFeE8b1C5e3fD0B353922ceD843)
-  - BCoWHelper: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://etherscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
+  - BCoWFactory: [0xf76c421bAb7df8548604E60deCCcE50477C10462](https://etherscan.io/address/0xf76c421bAb7df8548604E60deCCcE50477C10462)
+  - BCoWHelper: [0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31](https://etherscan.io/address/0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31)
 
 Ethereum Sepolia:
-  - BCoWFactory: [0xf3916A8567DdC51a60208B35AC542F5226f46773](https://sepolia.etherscan.io/address/0xf3916A8567DdC51a60208B35AC542F5226f46773)
-  - BCoWHelper: [0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50](https://sepolia.etherscan.io/address/0x55DDf396886C85e443E0B5A8E42CAA3939E4Cf50)
-  - BCoWPool: [0x60048091401F27117C3DFb8136c1ec550D949B12](https://sepolia.etherscan.io/address/0x60048091401F27117C3DFb8136c1ec550D949B12)
+  - BCoWFactory: [0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9](https://sepolia.etherscan.io/address/0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9)
+  - BCoWHelper: [0xf5CEd4769ce2c90dfE0084320a0abfB9d99FB91D](https://sepolia.etherscan.io/address/0xf5CEd4769ce2c90dfE0084320a0abfB9d99FB91D)
+  - BCoWPool: [0xE4aBfDa4E8c02fcAfC34981daFAeb426AA4186e6](https://sepolia.etherscan.io/address/0xE4aBfDa4E8c02fcAfC34981daFAeb426AA4186e6)
 
   Gnosis Mainnet:
-  - BCoWFactory: [0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667](https://gnosisscan.io/address/0xaD0447be7BDC80cf2e6DA20B13599E5dc859b667)
-  - BCoWHelper: [0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc](https://gnosisscan.io/address/0x21Ac2E4115429EcE4b5FE79409fCC48EB6315Ccc)
+  - BCoWFactory: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://gnosisscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
+  - BCoWHelper: [0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751](https://gnosisscan.io/address/0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751)

@@ -21,6 +21,7 @@ import {BPool} from './BPool.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import {IBCoWFactory} from 'interfaces/IBCoWFactory.sol';
 import {IBCoWPool} from 'interfaces/IBCoWPool.sol';
@@ -33,6 +34,7 @@ import {ISettlement} from 'interfaces/ISettlement.sol';
  */
 contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   using GPv2Order for GPv2Order.Data;
+  using SafeERC20 for IERC20;
 
   /// @inheritdoc IBCoWPool
   address public immutable VAULT_RELAYER;
@@ -46,7 +48,14 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
   /// @inheritdoc IBCoWPool
   bytes32 public immutable APP_DATA;
 
-  constructor(address cowSolutionSettler, bytes32 appData) BPool() {
+  constructor(
+    address cowSolutionSettler,
+    bytes32 appData,
+    // solhint-disable-next-line no-unused-vars
+    string memory name,
+    // solhint-disable-next-line no-unused-vars
+    string memory symbol
+  ) BPool(name, symbol) {
     SOLUTION_SETTLER = ISettlement(cowSolutionSettler);
     SOLUTION_SETTLER_DOMAIN_SEPARATOR = ISettlement(cowSolutionSettler).domainSeparator();
     VAULT_RELAYER = ISettlement(cowSolutionSettler).vaultRelayer();
@@ -136,10 +145,10 @@ contract BCoWPool is IERC1271, IBCoWPool, BPool, BCoWConst {
    * @dev Grants infinite approval to the vault relayer for all tokens in the
    * pool after the finalization of the setup. Also emits COWAMMPoolCreated() event.
    */
-  function _afterFinalize() internal override {
+  function _afterFinalize() internal virtual override {
     uint256 tokensLength = _tokens.length;
     for (uint256 i; i < tokensLength; i++) {
-      IERC20(_tokens[i]).approve(VAULT_RELAYER, type(uint256).max);
+      IERC20(_tokens[i]).forceApprove(VAULT_RELAYER, type(uint256).max);
     }
 
     // Make the factory emit the event, to be easily indexed by off-chain agents

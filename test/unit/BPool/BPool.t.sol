@@ -46,10 +46,14 @@ contract BPool is BPoolBase, BMath {
     bPool.set__controller(controller);
   }
 
-  function test_ConstructorWhenCalled(address _deployer) external {
+  function test_ConstructorWhenCalled(address _deployer, string memory _name, string memory _symbol) external {
     vm.startPrank(_deployer);
-    MockBPool _newBPool = new MockBPool();
+    MockBPool _newBPool = new MockBPool(_name, _symbol);
 
+    // it should set the ERC20 name
+    assertEq(_newBPool.name(), _name);
+    // it should set the ERC20 symbol
+    assertEq(_newBPool.symbol(), _symbol);
     // it sets caller as controller
     assertEq(_newBPool.call__controller(), _deployer);
     // it sets caller as factory

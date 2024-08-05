@@ -283,58 +283,6 @@ interface IBPool is IERC20 {
   ) external returns (uint256 tokenAmountIn, uint256 spotPriceAfter);
 
   /**
-   * @notice Joins a pool providing a single token in, specifying the exact amount of token given
-   * @param tokenIn The address of the token to swap in and join
-   * @param tokenAmountIn The amount of token to join
-   * @param minPoolAmountOut The minimum amount of pool token to receive
-   * @return poolAmountOut The amount of pool token received
-   */
-  function joinswapExternAmountIn(
-    address tokenIn,
-    uint256 tokenAmountIn,
-    uint256 minPoolAmountOut
-  ) external returns (uint256 poolAmountOut);
-
-  /**
-   * @notice Joins a pool providing a single token in, specifying the exact amount of pool tokens received
-   * @param tokenIn The address of the token to swap in and join
-   * @param poolAmountOut The amount of pool token to receive
-   * @param maxAmountIn The maximum amount of token to introduce to the pool
-   * @return tokenAmountIn The amount of token in introduced
-   */
-  function joinswapPoolAmountOut(
-    address tokenIn,
-    uint256 poolAmountOut,
-    uint256 maxAmountIn
-  ) external returns (uint256 tokenAmountIn);
-
-  /**
-   * @notice Exits a pool providing a specific amount of pool tokens in, and receiving only a single token
-   * @param tokenOut The address of the token to swap out and exit
-   * @param poolAmountIn The amount of pool token to burn
-   * @param minAmountOut The minimum amount of token to receive
-   * @return tokenAmountOut The amount of token received
-   */
-  function exitswapPoolAmountIn(
-    address tokenOut,
-    uint256 poolAmountIn,
-    uint256 minAmountOut
-  ) external returns (uint256 tokenAmountOut);
-
-  /**
-   * @notice Exits a pool expecting a specific amount of token out, and providing pool token
-   * @param tokenOut The address of the token to swap out and exit
-   * @param tokenAmountOut The amount of token to receive
-   * @param maxPoolAmountIn The maximum amount of pool token to burn
-   * @return poolAmountIn The amount of pool token burned
-   */
-  function exitswapExternAmountOut(
-    address tokenOut,
-    uint256 tokenAmountOut,
-    uint256 maxPoolAmountIn
-  ) external returns (uint256 poolAmountIn);
-
-  /**
    * @notice Gets the spot price of tokenIn in terms of tokenOut
    * @param tokenIn The address of the token to swap in
    * @param tokenOut The address of the token to swap out

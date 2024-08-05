@@ -33,7 +33,12 @@ contract MockBCoWPool is BCoWPool, Test {
   }
 
   /// MockBCoWPool mock methods
-  constructor(address cowSolutionSettler, bytes32 appData) BCoWPool(cowSolutionSettler, appData) {}
+  constructor(
+    address cowSolutionSettler,
+    bytes32 appData,
+    string memory name,
+    string memory symbol
+  ) BCoWPool(cowSolutionSettler, appData, name, symbol) {}
 
   function mock_call_commit(bytes32 orderHash) public {
     vm.mockCall(address(this), abi.encodeWithSignature('commit(bytes32)', orderHash), abi.encode());
@@ -177,62 +182,6 @@ contract MockBCoWPool is BCoWPool, Test {
         maxPrice
       ),
       abi.encode(tokenAmountIn, spotPriceAfter)
-    );
-  }
-
-  function mock_call_joinswapExternAmountIn(
-    address tokenIn,
-    uint256 tokenAmountIn,
-    uint256 minPoolAmountOut,
-    uint256 poolAmountOut
-  ) public {
-    vm.mockCall(
-      address(this),
-      abi.encodeWithSignature(
-        'joinswapExternAmountIn(address,uint256,uint256)', tokenIn, tokenAmountIn, minPoolAmountOut
-      ),
-      abi.encode(poolAmountOut)
-    );
-  }
-
-  function mock_call_joinswapPoolAmountOut(
-    address tokenIn,
-    uint256 poolAmountOut,
-    uint256 maxAmountIn,
-    uint256 tokenAmountIn
-  ) public {
-    vm.mockCall(
-      address(this),
-      abi.encodeWithSignature('joinswapPoolAmountOut(address,uint256,uint256)', tokenIn, poolAmountOut, maxAmountIn),
-      abi.encode(tokenAmountIn)
-    );
-  }
-
-  function mock_call_exitswapPoolAmountIn(
-    address tokenOut,
-    uint256 poolAmountIn,
-    uint256 minAmountOut,
-    uint256 tokenAmountOut
-  ) public {
-    vm.mockCall(
-      address(this),
-      abi.encodeWithSignature('exitswapPoolAmountIn(address,uint256,uint256)', tokenOut, poolAmountIn, minAmountOut),
-      abi.encode(tokenAmountOut)
-    );
-  }
-
-  function mock_call_exitswapExternAmountOut(
-    address tokenOut,
-    uint256 tokenAmountOut,
-    uint256 maxPoolAmountIn,
-    uint256 poolAmountIn
-  ) public {
-    vm.mockCall(
-      address(this),
-      abi.encodeWithSignature(
-        'exitswapExternAmountOut(address,uint256,uint256)', tokenOut, tokenAmountOut, maxPoolAmountIn
-      ),
-      abi.encode(poolAmountIn)
     );
   }
 
