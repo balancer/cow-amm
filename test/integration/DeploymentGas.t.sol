@@ -17,6 +17,7 @@ contract DeploymentIntegrationGasTest is Test, GasSnapshot {
   BCoWFactory public bCowFactory;
   address solutionSettler;
   address deployer = makeAddr('deployer');
+  address bdaoMsig = makeAddr('bdaoMsig');
 
   string constant ERC20_NAME = 'Balancer Pool Token';
   string constant ERC20_SYMBOL = 'BPT';
@@ -26,7 +27,7 @@ contract DeploymentIntegrationGasTest is Test, GasSnapshot {
     bFactory = new BFactory();
 
     solutionSettler = address(new MockSolutionSettler());
-    bCowFactory = new BCoWFactory(solutionSettler, bytes32('appData'));
+    bCowFactory = new BCoWFactory(solutionSettler, bytes32('appData'), bdaoMsig);
   }
 
   function testFactoryDeployment() public {
@@ -35,7 +36,7 @@ contract DeploymentIntegrationGasTest is Test, GasSnapshot {
     snapEnd();
 
     snapStart('newBCoWFactory');
-    new BCoWFactory(solutionSettler, bytes32('appData'));
+    new BCoWFactory(solutionSettler, bytes32('appData'), bdaoMsig);
     snapEnd();
   }
 
