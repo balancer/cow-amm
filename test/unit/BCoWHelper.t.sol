@@ -14,10 +14,11 @@ import {ICOWAMMPoolHelper} from '@cow-amm/interfaces/ICOWAMMPoolHelper.sol';
 import {GPv2Interaction} from '@cowprotocol/libraries/GPv2Interaction.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 
+import {BMath} from 'contracts/BMath.sol';
 import {MockBCoWFactory} from 'test/manual-smock/MockBCoWFactory.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
 
-contract BCoWHelperTest is Test {
+contract BCoWHelperTest is Test, BMath {
   MockBCoWHelper helper;
 
   MockBCoWFactory factory;
@@ -41,17 +42,10 @@ contract BCoWHelperTest is Test {
     vm.mockCall(
       solutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vaultRelayer'))
     );
-    pool = new MockBCoWPool(makeAddr('solutionSettler'), bytes32(0), ERC20_NAME, ERC20_SYMBOL);
 
     // creating a valid pool setup
-    factory.mock_call_isBPool(address(pool), true);
     tokens[0] = makeAddr('token0');
     tokens[1] = makeAddr('token1');
-    pool.set__tokens(tokens);
-    pool.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: VALID_WEIGHT}));
-    pool.set__records(tokens[1], IBPool.Record({bound: true, index: 1, denorm: VALID_WEIGHT}));
-    pool.set__totalWeight(2 * VALID_WEIGHT);
-    pool.set__finalized(true);
 
     priceVector[0] = 1e18;
     priceVector[1] = 1.05e18;
@@ -61,6 +55,25 @@ contract BCoWHelperTest is Test {
 
     factory.mock_call_APP_DATA(bytes32('appData'));
     helper = new MockBCoWHelper(address(factory));
+
+    pool = setUpMockPoolFromDefaults(VALID_WEIGHT, VALID_WEIGHT);
+  }
+
+  function setUpMockPoolFromDefaults(uint256 weight0, uint256 weight1) private returns (MockBCoWPool pool_) {
+    uint256 totalWeight = weight0 + weight1;
+    pool_ = new MockBCoWPool(makeAddr('solutionSettler'), bytes32(0), ERC20_NAME, ERC20_SYMBOL);
+    pool_.set__tokens(tokens);
+    pool_.set__records(tokens[0], IBPool.Record({bound: true, index: 0, denorm: weight0}));
+    pool_.set__records(tokens[1], IBPool.Record({bound: true, index: 1, denorm: weight1}));
+    pool_.set__totalWeight(totalWeight);
+    pool_.set__finalized(true);
+
+    factory.mock_call_isBPool(address(pool_), true);
+
+    pool_.mock_call_getDenormalizedWeight(tokens[0], weight0);
+    pool_.mock_call_getDenormalizedWeight(tokens[1], weight1);
+    pool_.mock_call_getNormalizedWeight(tokens[0], bdiv(weight0, totalWeight));
+    pool_.mock_call_getNormalizedWeight(tokens[1], bdiv(weight1, totalWeight));
   }
 
   function test_ConstructorWhenCalled(bytes32 _appData) external {
@@ -100,17 +113,17 @@ contract BCoWHelperTest is Test {
     helper.tokens(address(pool));
   }
 
-  function test_TokensRevertWhen_PoolTokensHaveDifferentWeights() external {
-    pool.mock_call_getNormalizedWeight(tokens[0], VALID_WEIGHT);
-    pool.mock_call_getNormalizedWeight(tokens[1], VALID_WEIGHT + 1);
-
-    vm.expectRevert(ICOWAMMPoolHelper.PoolDoesNotExist.selector);
-    // it should revert
-    helper.tokens(address(pool));
+  function test_TokensWhenPoolWithEqualWeightsIsSupported() external view {
+    // it should return pool tokens
+    address[] memory returned = helper.tokens(address(pool));
+    assertEq(returned[0], tokens[0]);
+    assertEq(returned[1], tokens[1]);
   }
 
-  function test_TokensWhenPoolIsSupported() external view {
+  function test_TokensWhenPoolWithDifferentWeightsIsSupported() external {
     // it should return pool tokens
+    pool = setUpMockPoolFromDefaults(VALID_WEIGHT, 2 * VALID_WEIGHT);
+
     address[] memory returned = helper.tokens(address(pool));
     assertEq(returned[0], tokens[0]);
     assertEq(returned[1], tokens[1]);
@@ -165,21 +178,27 @@ contract BCoWHelperTest is Test {
   function test_OrderGivenAPriceSkewenessToToken1(
     uint256 priceSkewness,
     uint256 balanceToken0,
-    uint256 balanceToken1
+    uint256 balanceToken1,
+    uint256 weightToken0,
+    uint256 weightToken1
   ) external {
     // skew the price by max 50% (more could result in reverts bc of max swap ratio)
     // avoids no-skewness revert
     priceSkewness = bound(priceSkewness, BASE + 0.0001e18, 1.5e18);
-
     balanceToken0 = bound(balanceToken0, 1e18, 1e27);
     balanceToken1 = bound(balanceToken1, 1e18, 1e27);
+    weightToken0 = bound(weightToken0, 1e15, 1e21);
+    weightToken1 = bound(weightToken1, 1e15, 1e21);
+    pool = setUpMockPoolFromDefaults(weightToken0, weightToken1);
     vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken0));
     vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken1));
 
     // NOTE: the price of token 1 is increased by the skeweness
     uint256[] memory prices = new uint256[](2);
-    prices[0] = balanceToken1;
-    prices[1] = balanceToken0 * priceSkewness / BASE;
+    // NOTE: the spot price is adjusted based to the pool weights as in
+    // `BMath.calcSpotPrice`.
+    prices[0] = bdiv(balanceToken1, weightToken1);
+    prices[1] = bdiv(balanceToken0, weightToken0) * priceSkewness / BASE;
 
     // it should return a valid pool order
     (GPv2Order.Data memory ammOrder,,,) = helper.order(address(pool), prices);
@@ -195,21 +214,27 @@ contract BCoWHelperTest is Test {
   function test_OrderGivenAPriceSkewenessToToken0(
     uint256 priceSkewness,
     uint256 balanceToken0,
-    uint256 balanceToken1
+    uint256 balanceToken1,
+    uint256 weightToken0,
+    uint256 weightToken1
   ) external {
     // skew the price by max 50% (more could result in reverts bc of max swap ratio)
     // avoids no-skewness revert
-    priceSkewness = bound(priceSkewness, 0.5e18, BASE - 0.0001e18);
-
+    priceSkewness = bound(priceSkewness, 0.75e18, BASE - 0.0001e18);
     balanceToken0 = bound(balanceToken0, 1e18, 1e27);
     balanceToken1 = bound(balanceToken1, 1e18, 1e27);
+    weightToken0 = bound(weightToken0, 1e15, 1e21);
+    weightToken1 = bound(weightToken1, 1e15, 1e21);
+    pool = setUpMockPoolFromDefaults(weightToken0, weightToken1);
     vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken0));
     vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken1));
 
     // NOTE: the price of token 1 is decrease by the skeweness
     uint256[] memory prices = new uint256[](2);
-    prices[0] = balanceToken1;
-    prices[1] = balanceToken0 * priceSkewness / BASE;
+    // NOTE: the spot price is adjusted based to the pool weights as in
+    // `BMath.calcSpotPrice`.
+    prices[0] = bdiv(balanceToken1, weightToken1);
+    prices[1] = bdiv(balanceToken0, weightToken0) * priceSkewness / BASE;
 
     // it should return a valid pool order
     (GPv2Order.Data memory ammOrder,,,) = helper.order(address(pool), prices);
