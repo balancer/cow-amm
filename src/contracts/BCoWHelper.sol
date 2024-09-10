@@ -16,7 +16,7 @@ import {BMath} from './BMath.sol';
 /**
  * @title BCoWHelper
  * @notice Helper contract that allows to trade on CoW Swap Protocol.
- * @dev This contract supports only 2-token equal-weights pools.
+ * @dev This contract supports only 2-token pools.
  */
 contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
   using GPv2Order for GPv2Order.Data;
