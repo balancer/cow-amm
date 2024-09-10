@@ -43,8 +43,8 @@ contract BCoWHelperIntegrationTest is Test {
   uint256 constant TEN_PERCENT = 0.1 ether;
   uint256 constant ONE_IN_A_BILLION = 0.000000001 ether;
   // NOTE: 1 ETH = 1000 DAI
-  uint256 constant EQUAL_WEIGTH_INITIAL_DAI_BALANCE = 1000 ether;
-  uint256 constant EQUAL_WEIGTH_INITIAL_WETH_BALANCE = 1 ether;
+  uint256 constant EQUAL_WEIGHT_INITIAL_DAI_BALANCE = 1000 ether;
+  uint256 constant EQUAL_WEIGHT_INITIAL_WETH_BALANCE = 1 ether;
   uint256 constant INITIAL_SPOT_PRICE = 0.001e18;
 
   uint256 constant SKEWENESS_RATIO = 95; // -5% skewness
@@ -70,14 +70,14 @@ contract BCoWHelperIntegrationTest is Test {
 
     DAI.approve(address(basicPool), type(uint256).max);
     WETH.approve(address(basicPool), type(uint256).max);
-    basicPool.bind(address(DAI), EQUAL_WEIGTH_INITIAL_DAI_BALANCE, 4.2e18); // no weight
-    basicPool.bind(address(WETH), EQUAL_WEIGTH_INITIAL_WETH_BALANCE, 4.2e18); // no weight
+    basicPool.bind(address(DAI), EQUAL_WEIGHT_INITIAL_DAI_BALANCE, 4.2e18); // no weight
+    basicPool.bind(address(WETH), EQUAL_WEIGHT_INITIAL_WETH_BALANCE, 4.2e18); // no weight
 
     DAI.approve(address(weightedPool), type(uint256).max);
     WETH.approve(address(weightedPool), type(uint256).max);
     // NOTE: pool is 80-20 DAI-WETH, has 4xDAI balance than basic, same spot price
-    weightedPool.bind(address(DAI), 4 * EQUAL_WEIGTH_INITIAL_DAI_BALANCE, 8e18); // 80% weight
-    weightedPool.bind(address(WETH), EQUAL_WEIGTH_INITIAL_WETH_BALANCE, 2e18); // 20% weight
+    weightedPool.bind(address(DAI), 4 * EQUAL_WEIGHT_INITIAL_DAI_BALANCE, 8e18); // 80% weight
+    weightedPool.bind(address(WETH), EQUAL_WEIGHT_INITIAL_WETH_BALANCE, 2e18); // 20% weight
 
     // finalize
     basicPool.finalize();
@@ -128,8 +128,8 @@ contract BCoWHelperIntegrationTest is Test {
     // if the first token is DAI and the second WETH then a price of 3000
     // DAI per WETH means a price vector of [1, 3000] (if the decimals are
     // different, as in WETH/USDC, then the atom amount is what counts).
-    prices[daiIndex] = EQUAL_WEIGTH_INITIAL_WETH_BALANCE;
-    prices[wethIndex] = EQUAL_WEIGTH_INITIAL_DAI_BALANCE * SKEWENESS_RATIO / 100;
+    prices[daiIndex] = EQUAL_WEIGHT_INITIAL_WETH_BALANCE;
+    prices[wethIndex] = EQUAL_WEIGHT_INITIAL_DAI_BALANCE * SKEWENESS_RATIO / 100;
 
     // The helper generates the AMM order
     GPv2Order.Data memory ammOrder;
