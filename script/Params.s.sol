@@ -48,7 +48,7 @@ abstract contract Params {
   constructor(
     uint256 chainId
   ) {
-    if (chainId == 1 || chainId == 100 || chainId == 11_155_111 || chainId == 42_161) {
+    if (chainId == 1) {
       // Ethereum Mainnet
       _bFactoryDeploymentParams = BFactoryDeploymentParams({bDao: _B_DAO});
       _bCoWFactoryDeploymentParams =
