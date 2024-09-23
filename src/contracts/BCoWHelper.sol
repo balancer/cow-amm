@@ -109,6 +109,18 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
     Reserves memory reservesOut = _reserves(IBCoWPool(pool), IERC20(tokenPair[0]));
     Reserves memory reservesIn = _reserves(IBCoWPool(pool), IERC20(tokenPair[1]));
 
+    // The out amount is computed according to the following formula:
+    // aO = amountOut
+    // bI = reservesIn.balance                   bO * wI - p * bI * wO
+    // bO = reservesOut.balance            aO =  ---------------------
+    // wI = reservesIn.denormWeight                     wI + wO
+    // wO = reservesOut.denormWeight
+    // p  = priceNumerator / priceDenominator
+    //
+    // Note that in the code we use normalized weights instead of computing the
+    // full expression from raw weights. This is equivalent to assuming that
+    // wI + wO = 1.
+
     // The price of this function is expressed as amount of token1 per amount
     // of token0. The `prices` vector is expressed the other way around, as
     // confirmed by dimensional analysis of the expression above.
@@ -123,14 +135,6 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
       (balanceOutTimesWeightIn, balanceInTimesWeightOut) = (balanceInTimesWeightOut, balanceOutTimesWeightIn);
       (priceNumerator, priceDenominator) = (priceDenominator, priceNumerator);
     }
-    // The out amount is computed according to the following formula:
-    // aO = amountOut
-    // bI = reservesIn.balance                   bO * wI - p * bI * wO
-    // bO = reservesOut.balance            aO =  ---------------------
-    // wI = reservesIn.denormWeight                     wI + wO
-    // wO = reservesOut.denormWeight
-    // p  = priceNumerator / priceDenominator
-    // sF = swapFee
     uint256 par = bdiv(bmul(balanceInTimesWeightOut, priceNumerator), priceDenominator);
     uint256 amountOut = balanceOutTimesWeightIn - par;
     uint256 amountIn = calcInGivenOut({
