@@ -129,7 +129,12 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
     uint256 balanceOutTimesWeightIn = bmul(reservesOut.balance, reservesIn.normWeight);
     uint256 balanceInTimesWeightOut = bmul(reservesIn.balance, reservesOut.normWeight);
     // This check compares the (weight-adjusted) pool spot price with the input
-    // price.
+    // price. The formula for the pool's spot price can be found in the
+    // definition of `calcSpotPrice`, assuming no swap fee. The comparison is
+    // derived from the following expression:
+    //       priceNumerator     bI / wI      /   bI * wO  \ 
+    //      ---------------- > --------     |  = -------   |
+    //      priceDenominator    bO / wO      \   bO * wI  / 
     if (bmul(balanceInTimesWeightOut, priceNumerator) > bmul(balanceOutTimesWeightIn, priceDenominator)) {
       (reservesOut, reservesIn) = (reservesIn, reservesOut);
       (balanceOutTimesWeightIn, balanceInTimesWeightOut) = (balanceInTimesWeightOut, balanceOutTimesWeightIn);
