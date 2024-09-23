@@ -125,7 +125,7 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
     }
     // The out amount is computed according to the following formula:
     // aO = amountOut
-    // bI = reservesIn.balance                   bO * wI - p * bO * wI
+    // bI = reservesIn.balance                   bO * wI - p * bI * wO
     // bO = reservesOut.balance            aO =  ---------------------
     // wI = reservesIn.denormWeight                     wI + wO
     // wO = reservesOut.denormWeight
