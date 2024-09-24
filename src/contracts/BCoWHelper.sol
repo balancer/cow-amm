@@ -128,13 +128,20 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
     uint256 priceDenominator = prices[0];
     uint256 balanceOutTimesWeightIn = bmul(reservesOut.balance, reservesIn.normWeight);
     uint256 balanceInTimesWeightOut = bmul(reservesIn.balance, reservesOut.normWeight);
+
     // This check compares the (weight-adjusted) pool spot price with the input
     // price. The formula for the pool's spot price can be found in the
     // definition of `calcSpotPrice`, assuming no swap fee. The comparison is
     // derived from the following expression:
-    //       priceNumerator     bI / wI      /   bI * wO  \ 
-    //      ---------------- > --------     |  = -------   |
-    //      priceDenominator    bO / wO      \   bO * wI  / 
+    //
+    //       priceNumerator    bO / wO      /   bO * wI  \ 
+    //      ---------------- > -------     |  = -------   |
+    //      priceDenominator   bI / wI      \   bI * wO  /
+    //
+    // This inequality also guarantees that the amount out is positive: the
+    // amount out is positive if and only if this inequality is false, meaning
+    // that if the following condition matches then we want to invert the sell
+    // and buy tokens.
     if (bmul(balanceInTimesWeightOut, priceNumerator) > bmul(balanceOutTimesWeightIn, priceDenominator)) {
       (reservesOut, reservesIn) = (reservesIn, reservesOut);
       (balanceOutTimesWeightIn, balanceInTimesWeightOut) = (balanceInTimesWeightOut, balanceOutTimesWeightIn);
