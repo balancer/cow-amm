@@ -118,8 +118,8 @@ contract BCoWHelper is ICOWAMMPoolHelper, BMath, BCoWConst {
     // p  = priceNumerator / priceDenominator
     //
     // Note that in the code we use normalized weights instead of computing the
-    // full expression from raw weights. This is equivalent to assuming that
-    // wI + wO = 1.
+    // full expression from raw weights. Since BCoW pools support only two
+    // tokens, this is equivalent to assuming that wI + wO = 1.
 
     // The price of this function is expressed as amount of token1 per amount
     // of token0. The `prices` vector is expressed the other way around, as
