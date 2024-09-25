@@ -10,9 +10,9 @@ BCoWHelperTest::tokens
 │   └── it should revert
 ├── when pool has more than 2 tokens
 │   └── it should revert
-├── when pool tokens have different weights
-│   └── it should revert
-└── when pool is supported
+├── when pool with equal weights is supported
+│   └── it should return pool tokens
+└── when pool with different weights is supported
     └── it should return pool tokens
 
 BCoWHelperTest::order

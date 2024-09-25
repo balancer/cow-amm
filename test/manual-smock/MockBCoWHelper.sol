@@ -6,7 +6,6 @@ import {
   BMath,
   GPv2Interaction,
   GPv2Order,
-  GetTradeableOrder,
   IBCoWFactory,
   IBCoWPool,
   ICOWAMMPoolHelper,
