@@ -122,10 +122,9 @@ contract BFactoryTest is Test {
     factory.collect(IBPool(_mockPool));
   }
 
-  function test_CollectRevertWhen_TheBtokenTransferFails(uint256 _factoryBTBalance)
-    external
-    whenTheSenderIsTheCurrentBDao
-  {
+  function test_CollectRevertWhen_TheBtokenTransferFails(
+    uint256 _factoryBTBalance
+  ) external whenTheSenderIsTheCurrentBDao {
     address _mockPool = makeAddr('pool');
     vm.mockCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)), abi.encode(_factoryBTBalance));
     vm.expectCall(_mockPool, abi.encodeCall(IERC20.balanceOf, address(factory)));

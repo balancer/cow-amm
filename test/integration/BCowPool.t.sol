@@ -21,12 +21,14 @@ contract BCowPoolIntegrationTest is BPoolIntegrationTest, BCoWConst {
 
   address public solver = address(0xa5559C2E1302c5Ce82582A6b1E4Aec562C2FbCf4);
 
+  address private bdaoMsig = 0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f;
+
   ISettlement public settlement = ISettlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
 
   bytes32 public constant APP_DATA = bytes32('exampleIntegrationAppData');
 
   function _deployFactory() internal override returns (IBFactory) {
-    return new BCoWFactory(address(settlement), APP_DATA);
+    return new BCoWFactory(address(settlement), APP_DATA, bdaoMsig);
   }
 
   function _makeSwap() internal override {
