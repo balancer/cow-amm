@@ -14,6 +14,7 @@ import {ICOWAMMPoolHelper} from '@cow-amm/interfaces/ICOWAMMPoolHelper.sol';
 import {GPv2Interaction} from '@cowprotocol/libraries/GPv2Interaction.sol';
 import {GPv2Order} from '@cowprotocol/libraries/GPv2Order.sol';
 
+import {BCoWHelper} from 'contracts/BCoWHelper.sol';
 import {BMath} from 'contracts/BMath.sol';
 import {MockBCoWFactory} from 'test/manual-smock/MockBCoWFactory.sol';
 import {MockBCoWPool} from 'test/manual-smock/MockBCoWPool.sol';
@@ -27,18 +28,25 @@ contract BCoWHelperTest is Test, BMath {
   address[] tokens = new address[](2);
   uint256[] priceVector = new uint256[](2);
 
+  uint256 constant ONE_IN_A_THOUSAND = 1 ether / 1000;
   uint256 constant VALID_WEIGHT = 1e18;
   uint256 constant BASE = 1e18;
+  uint256 constant ANY_AMOUNT = 1e18;
   string constant ERC20_NAME = 'Balancer Pool Token';
   string constant ERC20_SYMBOL = 'BPT';
+  bytes32 constant DOMAIN_SEPARATOR = bytes32('domainSeparator');
+
+  struct Reserves {
+    address addr;
+    uint256 weight;
+    uint256 balance;
+  }
 
   function setUp() external {
     factory = new MockBCoWFactory(address(0), bytes32(0));
 
     address solutionSettler = makeAddr('solutionSettler');
-    vm.mockCall(
-      solutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(bytes32('domainSeparator'))
-    );
+    vm.mockCall(solutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(DOMAIN_SEPARATOR));
     vm.mockCall(
       solutionSettler, abi.encodePacked(ISettlement.vaultRelayer.selector), abi.encode(makeAddr('vaultRelayer'))
     );
@@ -151,28 +159,9 @@ contract BCoWHelperTest is Test, BMath {
       bytes memory sig
     ) = helper.order(address(pool), priceVector);
 
-    // it should return a valid pool order
-    assertEq(order_.receiver, GPv2Order.RECEIVER_SAME_AS_OWNER);
-    assertLe(order_.validTo, block.timestamp + 5 minutes);
-    assertEq(order_.feeAmount, 0);
-    assertEq(order_.appData, factory.APP_DATA());
-    assertEq(order_.kind, GPv2Order.KIND_SELL);
-    assertEq(order_.buyTokenBalance, GPv2Order.BALANCE_ERC20);
-    assertEq(order_.sellTokenBalance, GPv2Order.BALANCE_ERC20);
-
-    // it should return a commit pre-interaction
-    assertEq(preInteractions.length, 1);
-    assertEq(preInteractions[0].target, address(pool));
-    assertEq(preInteractions[0].value, 0);
-    bytes memory commitment = abi.encodeCall(IBCoWPool.commit, GPv2Order.hash(order_, domainSeparator));
-    assertEq(keccak256(preInteractions[0].callData), keccak256(commitment));
-
-    // it should return an empty post-interaction
-    assertTrue(postInteractions.length == 0);
-
-    // it should return a valid signature
-    bytes memory validSig = abi.encodePacked(pool, abi.encode(order_));
-    assertEq(keccak256(validSig), keccak256(sig));
+    assertValidStaticOrderParams(order_, factory);
+    assertValidInteractions(preInteractions, postInteractions, order_, pool, domainSeparator);
+    assertValidSignature(order_, sig, pool);
   }
 
   function test_OrderGivenAPriceSkewenessToToken1(
@@ -245,5 +234,184 @@ contract BCoWHelperTest is Test, BMath {
     // it should return a valid pool order
     // this call should not revert
     pool.verify(ammOrder);
+  }
+
+  function test_OrderFromSellAmountRevertWhen_ThePoolIsNotSupported() external {
+    // it should revert
+    vm.expectRevert(ICOWAMMPoolHelper.PoolDoesNotExist.selector);
+    helper.orderFromSellAmount(invalidPool, makeAddr('any address'), ANY_AMOUNT);
+  }
+
+  function test_OrderFromSellAmountRevertWhen_TheTokenIsNotTraded() external {
+    // it should revert
+    vm.expectRevert(BCoWHelper.InvalidToken.selector);
+    helper.orderFromSellAmount(address(pool), makeAddr('invalid token'), ANY_AMOUNT);
+  }
+
+  function test_OrderFromSellAmountWhenThePoolIsSupported(
+    uint256 sellAmount,
+    uint256 balanceToken0,
+    uint256 balanceToken1,
+    uint256 weightToken0,
+    uint256 weightToken1,
+    bool token0IsSellToken
+  ) external {
+    balanceToken0 = bound(balanceToken0, 1e10, 1e27);
+    balanceToken1 = bound(balanceToken1, 1e10, 1e27);
+    // The bounds are stricter compared to the case of `orderFromBuyAmount`
+    // because rounding issues can significantly affect the result of the test.
+    // This is also why we match the sell amount approximately
+    weightToken0 = bound(weightToken0, 1e17, 1e18);
+    weightToken1 = bound(weightToken1, 1e17, 1e18);
+
+    // it should support selling both token0 or token1
+    Reserves memory sellToken;
+    Reserves memory buyToken;
+    {
+      Reserves memory token0 = Reserves({addr: address(tokens[0]), weight: weightToken0, balance: balanceToken0});
+      Reserves memory token1 = Reserves({addr: address(tokens[1]), weight: weightToken1, balance: balanceToken1});
+      (sellToken, buyToken) = token0IsSellToken ? (token0, token1) : (token1, token0);
+    }
+    sellAmount = bound(sellAmount, sellToken.balance / 1e6, sellToken.balance / 1e2);
+
+    pool = setUpMockPoolFromDefaults(weightToken0, weightToken1);
+    vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken0));
+    vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken1));
+
+    (
+      GPv2Order.Data memory order_,
+      GPv2Interaction.Data[] memory preInteractions,
+      GPv2Interaction.Data[] memory postInteractions,
+      bytes memory sig
+    ) = helper.orderFromSellAmount(address(pool), sellToken.addr, sellAmount);
+
+    // it should set expected buy and sell tokens
+    assertEq(address(order_.sellToken), sellToken.addr);
+    assertEq(address(order_.buyToken), buyToken.addr);
+    // it should approximately match the input sell amount
+    assertApproxEqRel(order_.sellAmount, sellAmount, ONE_IN_A_THOUSAND);
+    // it should have the highest tradable sell amount
+    uint256 expectedSellAmount = calcOutGivenIn({
+      tokenBalanceIn: buyToken.balance,
+      tokenWeightIn: buyToken.weight,
+      tokenBalanceOut: sellToken.balance,
+      tokenWeightOut: sellToken.weight,
+      tokenAmountIn: order_.buyAmount,
+      swapFee: 0
+    });
+    assertEq(order_.sellAmount, expectedSellAmount);
+
+    assertValidStaticOrderParams(order_, factory);
+    assertValidInteractions(preInteractions, postInteractions, order_, pool, DOMAIN_SEPARATOR);
+    assertValidSignature(order_, sig, pool);
+
+    // it should return a valid pool order
+    // this call should not revert
+    pool.verify(order_);
+  }
+
+  function test_OrderFromBuyAmountRevertWhen_ThePoolIsNotSupported() external {
+    // it should revert
+    vm.expectRevert(ICOWAMMPoolHelper.PoolDoesNotExist.selector);
+    helper.orderFromBuyAmount(invalidPool, makeAddr('any address'), ANY_AMOUNT);
+  }
+
+  function test_OrderFromBuyAmountRevertWhen_TheTokenIsNotTraded() external {
+    // it should revert
+    vm.expectRevert(BCoWHelper.InvalidToken.selector);
+    helper.orderFromBuyAmount(address(pool), makeAddr('invalid token'), ANY_AMOUNT);
+  }
+
+  function test_OrderFromBuyAmountWhenThePoolIsSupported(
+    uint256 buyAmount,
+    uint256 balanceToken0,
+    uint256 balanceToken1,
+    uint256 weightToken0,
+    uint256 weightToken1,
+    bool token0IsBuyToken
+  ) external {
+    balanceToken0 = bound(balanceToken0, 1e10, 1e27);
+    balanceToken1 = bound(balanceToken1, 1e10, 1e27);
+    weightToken0 = bound(weightToken0, 1e16, 1e18);
+    weightToken1 = bound(weightToken1, 1e16, 1e18);
+
+    // it should support buying both token0 or token1
+    Reserves memory sellToken;
+    Reserves memory buyToken;
+    {
+      Reserves memory token0 = Reserves({addr: address(tokens[0]), weight: weightToken0, balance: balanceToken0});
+      Reserves memory token1 = Reserves({addr: address(tokens[1]), weight: weightToken1, balance: balanceToken1});
+      (sellToken, buyToken) = token0IsBuyToken ? (token1, token0) : (token0, token1);
+    }
+    buyAmount = bound(buyAmount, buyToken.balance / 1e9, buyToken.balance / 1e2);
+
+    pool = setUpMockPoolFromDefaults(weightToken0, weightToken1);
+    vm.mockCall(tokens[0], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken0));
+    vm.mockCall(tokens[1], abi.encodePacked(IERC20.balanceOf.selector), abi.encode(balanceToken1));
+
+    (
+      GPv2Order.Data memory order_,
+      GPv2Interaction.Data[] memory preInteractions,
+      GPv2Interaction.Data[] memory postInteractions,
+      bytes memory sig
+    ) = helper.orderFromBuyAmount(address(pool), buyToken.addr, buyAmount);
+
+    assertEq(address(order_.sellToken), sellToken.addr);
+    assertEq(address(order_.buyToken), buyToken.addr);
+    // it should exactly match the input buy amount
+    assertEq(order_.buyAmount, buyAmount);
+    // it should have the highest tradable sell amount
+    uint256 expectedSellAmount = calcOutGivenIn({
+      tokenBalanceIn: buyToken.balance,
+      tokenWeightIn: buyToken.weight,
+      tokenBalanceOut: sellToken.balance,
+      tokenWeightOut: sellToken.weight,
+      tokenAmountIn: order_.buyAmount,
+      swapFee: 0
+    });
+    assertEq(order_.sellAmount, expectedSellAmount);
+
+    assertValidStaticOrderParams(order_, factory);
+    assertValidInteractions(preInteractions, postInteractions, order_, pool, DOMAIN_SEPARATOR);
+    assertValidSignature(order_, sig, pool);
+
+    // it should return a valid pool order
+    // this call should not revert
+    pool.verify(order_);
+  }
+
+  function assertValidStaticOrderParams(GPv2Order.Data memory order_, MockBCoWFactory factory_) internal {
+    // it should return a valid pool order
+    assertEq(order_.receiver, GPv2Order.RECEIVER_SAME_AS_OWNER);
+    assertLe(order_.validTo, block.timestamp + 5 minutes);
+    assertEq(order_.feeAmount, 0);
+    assertEq(order_.appData, factory_.APP_DATA());
+    assertEq(order_.kind, GPv2Order.KIND_SELL);
+    assertEq(order_.buyTokenBalance, GPv2Order.BALANCE_ERC20);
+    assertEq(order_.sellTokenBalance, GPv2Order.BALANCE_ERC20);
+  }
+
+  function assertValidInteractions(
+    GPv2Interaction.Data[] memory preInteractions,
+    GPv2Interaction.Data[] memory postInteractions,
+    GPv2Order.Data memory order_,
+    MockBCoWPool pool_,
+    bytes32 domainSeparator
+  ) internal {
+    // it should return a commit pre-interaction
+    assertEq(preInteractions.length, 1);
+    assertEq(preInteractions[0].target, address(pool_));
+    assertEq(preInteractions[0].value, 0);
+    bytes memory commitment = abi.encodeCall(IBCoWPool.commit, GPv2Order.hash(order_, domainSeparator));
+    assertEq(keccak256(preInteractions[0].callData), keccak256(commitment));
+
+    // it should return an empty post-interaction
+    assertTrue(postInteractions.length == 0);
+  }
+
+  function assertValidSignature(GPv2Order.Data memory order_, bytes memory sig, MockBCoWPool pool_) internal {
+    // it should return a valid signature
+    bytes memory validSig = abi.encodePacked(pool_, abi.encode(order_));
+    assertEq(keccak256(validSig), keccak256(sig));
   }
 }

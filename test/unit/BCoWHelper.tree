@@ -31,3 +31,33 @@ BCoWHelperTest::order
 └── given a price skeweness to token0
     ├── it should buy token1
     └── it should return a valid pool order
+
+BCoWHelperTest::orderFromSellAmount
+├── when the pool is not supported
+│   └── it should revert
+├── when the token is not traded
+│   └── it should revert
+└── when the pool is supported
+    ├── it should support selling both token0 or token1
+    ├── it should return a valid pool order
+    ├── it should set expected buy and sell tokens
+    ├── it should approximately match the input sell amount
+    ├── it should have the highest tradable sell amount
+    ├── it should return a commit pre-interaction
+    ├── it should return an empty post-interaction
+    └── it should return a valid signature
+
+BCoWHelperTest::orderFromBuyAmount
+├── when the pool is not supported
+│   └── it should revert
+├── when the token is not traded
+│   └── it should revert
+└── when the pool is supported
+    ├── it should support buying both token0 or token1
+    ├── it should return a valid pool order
+    ├── it should set expected buy and sell tokens
+    ├── it should exactly match the input buy amount
+    ├── it should have the highest tradable sell amount
+    ├── it should return a commit pre-interaction
+    ├── it should return an empty post-interaction
+    └── it should return a valid signature
