@@ -64,6 +64,7 @@ yarn test    # run the tests
 Ethereum Mainnet:
   - BCoWFactory: [0xf76c421bAb7df8548604E60deCCcE50477C10462](https://etherscan.io/address/0xf76c421bAb7df8548604E60deCCcE50477C10462)
   - BCoWHelper: [0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31](https://etherscan.io/address/0x3FF0041A614A9E6Bf392cbB961C97DA214E9CB31)
+  - BCoWHelper with arbitrary amounts: [0x03362f847b4fabc12e1ce98b6b59f94401e4588e](https://etherscan.io/address/0x03362f847b4fabc12e1ce98b6b59f94401e4588e#code)
 
 Ethereum Sepolia:
   - BCoWFactory: [0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9](https://sepolia.etherscan.io/address/0x1E3D76AC2BB67a2D7e8395d3A624b30AA9056DF9)
@@ -73,3 +74,8 @@ Ethereum Sepolia:
   Gnosis Mainnet:
   - BCoWFactory: [0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624](https://gnosisscan.io/address/0x703Bd8115E6F21a37BB5Df97f78614ca72Ad7624)
   - BCoWHelper: [0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751](https://gnosisscan.io/address/0x198B6F66dE03540a164ADCA4eC5db2789Fbd4751)
+  - BCoWHelper with arbitrary amounts: [0xdb2aeab529c035469e190310def9957ef0398ba8](https://gnosisscan.io/address/0xdb2aeab529c035469e190310def9957ef0398ba8)
+
+  Arbitrum One:
+  - BCowFactory with Pausable: [0xE0e2Ba143EE5268DA87D529949a2521115987302](https://arbiscan.io/address/0xe0e2ba143ee5268da87d529949a2521115987302)
+  - BCoWHelper with arbitrary amounts: [0xdb2aeab529c035469e190310def9957ef0398ba8](https://arbiscan.io/address/0xdb2aeab529c035469e190310def9957ef0398ba8#code)
