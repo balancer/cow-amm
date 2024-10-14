@@ -16,6 +16,7 @@
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --match-path 'test/unit/**'",
+    "deploy:arbitrum": "forge script DeployBCoWFactory -vvvvv --rpc-url $ARBITRUM_RPC --broadcast --chain arbitrum --private-key $ARBITRUM_DEPLOYER_PK --verify",
     "deploy:gnosis": "forge script DeployBCoWFactory -vvvvv --rpc-url $GNOSIS_RPC --broadcast --chain gnosis --private-key $GNOSIS_DEPLOYER_PK --verify",
     "deploy:mainnet": "forge script DeployBCoWFactory -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK --verify",
     "deploy:testnet": "forge script DeployBCoWFactory -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK --verify",

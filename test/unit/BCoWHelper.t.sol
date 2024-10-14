@@ -43,7 +43,7 @@ contract BCoWHelperTest is Test, BMath {
   }
 
   function setUp() external {
-    factory = new MockBCoWFactory(address(0), bytes32(0));
+    factory = new MockBCoWFactory(address(0), bytes32(0), address(0));
 
     address solutionSettler = makeAddr('solutionSettler');
     vm.mockCall(solutionSettler, abi.encodePacked(ISettlement.domainSeparator.selector), abi.encode(DOMAIN_SEPARATOR));

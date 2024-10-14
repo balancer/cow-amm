@@ -33,6 +33,8 @@ contract BCoWHelperIntegrationTest is Test {
 
   address private solver = 0x423cEc87f19F0778f549846e0801ee267a917935;
 
+  address private bdaoMsig = 0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f;
+
   BCoWFactory private ammFactory;
   IBPool private weightedPool;
   IBPool private basicPool;
@@ -58,7 +60,7 @@ contract BCoWHelperIntegrationTest is Test {
 
     vaultRelayer = address(settlement.vaultRelayer());
 
-    ammFactory = new BCoWFactory(address(settlement), bytes32('appData'));
+    ammFactory = new BCoWFactory(address(settlement), bytes32('appData'), bdaoMsig);
     helper = new BCoWHelper(address(ammFactory));
 
     deal(address(DAI), lp, type(uint256).max, false);

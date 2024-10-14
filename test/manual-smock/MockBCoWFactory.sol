@@ -15,7 +15,11 @@ contract MockBCoWFactory is BCoWFactory, Test {
   }
 
   // BCoWFactory methods
-  constructor(address solutionSettler, bytes32 appData) BCoWFactory(solutionSettler, appData) {}
+  constructor(
+    address solutionSettler,
+    bytes32 appData,
+    address bdaoMsig
+  ) BCoWFactory(solutionSettler, appData, bdaoMsig) {}
 
   function mock_call_logBCoWPool() public {
     vm.mockCall(address(this), abi.encodeWithSignature('logBCoWPool()'), abi.encode());

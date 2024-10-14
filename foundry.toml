@@ -40,8 +40,10 @@ max_test_rejects = 2_500_000
 mainnet = "${MAINNET_RPC}"
 gnosis = "${GNOSIS_RPC}"
 sepolia = "${SEPOLIA_RPC}"
+arbitrum = "${ARBITRUM_RPC}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}", chain = "mainnet" }
 gnosis = { key = "${ETHERSCAN_API_KEY}", chain = "gnosis" }
 sepolia = { key = "${ETHERSCAN_API_KEY}", chain = "sepolia" }
+arbitrum_one = { key = "${ETHERSCAN_API_KEY}", chain = "arbitrum" }
