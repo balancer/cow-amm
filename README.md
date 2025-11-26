@@ -82,4 +82,4 @@ Arbitrum One:
 
 Base:
   - BCowFactory with Pausable: [0x03362f847B4fAbC12e1Ce98b6b59F94401E4588e](https://basescan.org/address/0x03362f847b4fabc12e1ce98b6b59f94401e4588e)
-  - BCoWHelper with arbitrary amounts: [0x467665D4ae90e7A99c9C9AF785791058426d6eA0](https://basescan.org/address/0x467665d4ae90e7a99c9c9af785791058426d6ea0)
+  - BCoWHelper with arbitrary amounts: [0x844bc9c8523425e49e5243c396f68370098e285a](https://basescan.org/address/0x844bc9c8523425e49e5243c396f68370098e285a)
